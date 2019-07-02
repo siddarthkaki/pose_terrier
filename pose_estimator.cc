@@ -1,4 +1,6 @@
 #include <Eigen/Core>
+#include <chrono>
+#include <iomanip>
 #include <math.h>
 
 #include "ceres/ceres.h"
@@ -18,6 +20,7 @@ using Eigen::Vector3d;
  */
 int main(int argc, char** argv)
 {
+
     //google::InitGoogleLogging(argv[0]);
 
     const double DEG2RAD = M_PI/180.0;
@@ -71,6 +74,9 @@ int main(int argc, char** argv)
     // add Gaussian noise to simulated measurements
     VectorXd yVecNoise = Utilities::AddNoiseToMeasurements(yVec, meas_std);
 
+    // timing
+    std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
+
     // Build the problem.
     ceres::Problem problem;
 
@@ -100,6 +106,13 @@ int main(int argc, char** argv)
     double pos_score = Utilities::PositionScore(stateVec, stateHatVec);
     double att_score = Utilities::AttitudeScore(stateVec, stateHatVec);
 
+    // timing
+    std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
+    
+    // time taken to perform NLS solution
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>( t2 - t1 ).count();
+
+
     // print to command line
     std::cout << summary.BriefReport() << "\n";
     
@@ -117,6 +130,8 @@ int main(int argc, char** argv)
 
     std::cout << "pos_score :\t" << pos_score << " [m]" << std::endl;
     std::cout << "att_score :\t" << att_score*RAD2DEG << " [deg]"<< std::endl;
+
+    std::cout << "Time taken by program is : "  << std::setprecision(9) << (double)duration << " [ms]" << std::endl; 
 
     return 0;
 }
