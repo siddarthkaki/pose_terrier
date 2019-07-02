@@ -1,6 +1,7 @@
 #include "Utilities.h"
 
 using Eigen::AngleAxisd;
+using Eigen::Quaterniond;
 
 /**
  * @function Euler2DCM_312
@@ -136,4 +137,45 @@ VectorXd Utilities::AddNoiseToMeasurements(VectorXd yVec, double std)
     VectorXd yVecNoise = normX_solver.samples(1);
 
     return yVecNoise;
+}
+
+/**
+ * @function PositionScore
+ * @brief computes the position score for a position state estimate
+ * @return returns single position score value
+ */
+double Utilities::PositionScore(VectorXd stateVec, VectorXd stateHatVec)
+{
+    Vector3d posVec = stateVec.head(3);
+    Vector3d posHatVec = stateHatVec.head(3);
+
+    Vector3d posErrVec = posVec - posHatVec;
+
+    double pos_score = posErrVec.squaredNorm()/posVec.squaredNorm();
+    return pos_score;
+}
+
+/**
+ * @function AttitudeScore
+ * @brief computes the attitude score for an attitude state estimate
+ * @return returns single attitude score value
+ */
+double Utilities::AttitudeScore(VectorXd stateVec, VectorXd stateHatVec)
+{
+    Vector3d eulVec = stateVec.tail(3);
+    Vector3d eulHatVec = stateHatVec.tail(3);
+
+    Matrix3d DCM = Euler2DCM_312(eulVec);
+    Matrix3d DCMHat = Euler2DCM_312(eulHatVec);
+
+    Quaterniond qVec = Quaterniond(DCM);
+    Quaterniond qHatVec = Quaterniond(DCMHat);
+
+    qVec.normalize();
+    qHatVec.normalize();
+
+    Quaterniond dqVec = qVec*qHatVec.inverse();
+
+    double att_score = 2*acos( std::abs( dqVec.w() ) );
+    return att_score;
 }
