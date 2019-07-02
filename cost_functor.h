@@ -63,7 +63,7 @@ class MeasResidCostFunctor
     /*
     static ceres::CostFunction* Create( const VectorXd yVec,
                                         const MatrixXd rFeaMat,
-                                        const Vector3d rCamVec_ )
+                                        const Vector3d rCamVec )
     {
         return (new ceres::AutoDiffCostFunction<MeasResidCostFunctor, 8, 3, 3>(
             new MeasResidCostFunctor(yVec, rFeaMat, rCamVec)));

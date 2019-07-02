@@ -2,6 +2,11 @@
 
 using Eigen::AngleAxisd;
 
+/**
+ * @function Euler2DCM_312
+ * @brief converts euler angles phi, theta, psi (RPY) to DCM with 3-1-2 rotation
+ * @return DCM corresponding to 3-1-2 euler angle rotation
+ */
 Matrix3d Utilities::Euler2DCM_312(Vector3d eulVec)
 {
     double phi   = eulVec(0);
@@ -9,13 +14,18 @@ Matrix3d Utilities::Euler2DCM_312(Vector3d eulVec)
     double psi   = eulVec(2);
 
     Matrix3d DCM;
-    DCM =   AngleAxisd( theta, Vector3d::UnitY() )*
-            AngleAxisd(   phi, Vector3d::UnitX() )*
-            AngleAxisd(   psi, Vector3d::UnitZ() );
+    DCM =   AngleAxisd( theta, Vector3d::UnitY() ).toRotationMatrix().transpose()*
+            AngleAxisd(   phi, Vector3d::UnitX() ).toRotationMatrix().transpose()*
+            AngleAxisd(   psi, Vector3d::UnitZ() ).toRotationMatrix().transpose();
 
     return DCM;
 }
 
+/**
+ * @function FeaPointsTargetToChaser
+ * @brief transforms feature points in target frame wrt target to chaser frame wrt chaser
+ * @return matrix of feature points in chaser frame wrt chaser
+ */
 MatrixXd Utilities::FeaPointsTargetToChaser(VectorXd stateVec, Vector3d rCamVec, MatrixXd rFeaMat)
 {
     // DCM from target frame to chaser frame
@@ -41,6 +51,11 @@ MatrixXd Utilities::FeaPointsTargetToChaser(VectorXd stateVec, Vector3d rCamVec,
     return rMat_c;
 }
 
+/**
+ * @function CameraProjection
+ * @brief performs simple camera projection of 3D point to image plane
+ * @return returns vector of projected 2D point
+ */
 Vector2d Utilities::CameraProjection(Vector3d point3DVec, double f)
 {
     MatrixXd PMat(3,4);
@@ -57,8 +72,8 @@ Vector2d Utilities::CameraProjection(Vector3d point3DVec, double f)
     double x = projVec(0)/projVec(2);
     double y = projVec(1)/projVec(2);
 
-    if (~std::isfinite(x)) { x = 0; }
-    if (~std::isfinite(y)) { x = 0; }
+    if (!std::isfinite(x)) { x = 0; }
+    if (!std::isfinite(y)) { y = 0; }
 
     Vector2d point2DVec;
     point2DVec << x, y;
@@ -66,6 +81,11 @@ Vector2d Utilities::CameraProjection(Vector3d point3DVec, double f)
     return point2DVec;
 }
 
+/**
+ * @function SimulateMeasurements
+ * @brief simulates measurements from given pose
+ * @return vector of measurements
+ */
 VectorXd Utilities::SimulateMeasurements(MatrixXd rMat, double focal_length)
 {
     unsigned int numPts = rMat.rows();
@@ -98,4 +118,22 @@ VectorXd Utilities::SimulateMeasurements(MatrixXd rMat, double focal_length)
     }
 
     return yVec;
+}
+
+/**
+ * @function AddNoiseToMeasurements
+ * @brief adds zero-mean Gaussian noise with provided std to measurements
+ * @return returns input vector values with additive Gaussian noise
+ */
+VectorXd Utilities::AddNoiseToMeasurements(VectorXd yVec, double std)
+{
+    const unsigned int numMeas = yVec.size();
+
+    MatrixXd covarMat = pow(std,2)*MatrixXd::Identity(numMeas, numMeas);
+
+    Eigen::EigenMultivariateNormal<double> normX_solver(yVec, covarMat);
+    
+    VectorXd yVecNoise = normX_solver.samples(1);
+
+    return yVecNoise;
 }

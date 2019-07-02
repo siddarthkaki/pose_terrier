@@ -5,6 +5,8 @@
 #include <Eigen/Geometry>
 #include <math.h>
 
+#include "third_party/eigenmvn/eigenmvn.h"
+
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
@@ -18,11 +20,9 @@ class Utilities
         static Matrix3d Euler2DCM_312(Vector3d eulVec);
         static MatrixXd FeaPointsTargetToChaser(VectorXd stateVec, Vector3d rCamVec, MatrixXd rFeaMat);
 
-        static VectorXd SimulateMeasurements(MatrixXd rMat, double focal_length);
         static Vector2d CameraProjection(Vector3d point3DVec, double f);
+        static VectorXd SimulateMeasurements(MatrixXd rMat, double focal_length);
+        static VectorXd AddNoiseToMeasurements(VectorXd yVec, double std);
 };
-
-
-
 
 #endif // UTILITIES_H_
