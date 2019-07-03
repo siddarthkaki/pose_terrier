@@ -61,7 +61,7 @@ int main(int argc, char** argv)
 
     // true state information
     double posArr [3] = { 0.5377, 1.8339, 18.2235 };
-    double eulArr [3] = {1.0, -1.5, 2.0};//{ 1.3543, 0.5007, -2.0541 };
+    double eulArr [3] = {2.0, -1.75, -1.5};//{ 1.3543, 0.5007, -2.0541 };
 
     // convert true state information from double arrays to Eigen
     VectorXd stateVec(6);
@@ -75,7 +75,7 @@ int main(int argc, char** argv)
     VectorXd yVec = Utilities::SimulateMeasurements(rMat, focal_length);
 
     // add Gaussian noise to simulated measurements
-    VectorXd yVecNoise = Utilities::AddNoiseToMeasurements(yVec, meas_std);
+    VectorXd yVecNoise = Utilities::AddGaussianNoiseToVector(yVec, meas_std);
 
     //------------------------------------------------------------------------/
 
@@ -85,25 +85,24 @@ int main(int argc, char** argv)
     std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
 
     // solve for pose with ceres (via wrapper)
-    VectorXd stateHatVec = PoseSolver::SolvePose(yVecNoise, stateVec0, rCamVec, rFeaMat);
+    PoseSolution poseSol = PoseSolver::SolvePoseReinit(yVecNoise, stateVec0, rCamVec, rFeaMat);
 
     // timing
     std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
     
     // time taken to perform NLS solution
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>( t2 - t1 ).count();
-
     //------------------------------------------------------------------------/
 
     //-- Performance Metrics & Outputs ---------------------------------------/
 
     // compute position and attitude scores
-    double pos_score = Utilities::PositionScore(stateVec, stateHatVec);
-    double att_score = Utilities::AttitudeScore(stateVec, stateHatVec);
+    double pos_score = Utilities::PositionScore(stateVec, poseSol.stateHatVec);
+    double att_score = Utilities::AttitudeScore(stateVec, poseSol.stateHatVec);
 
     // print to command line
-    //std::cout << summary.BriefReport() << "\n";
-    //std::cout << summary.FullReport() << "\n";
+    std::cout << poseSol.summary.BriefReport() << "\n";
+    //std::cout << poseSol.summary.FullReport() << "\n";
     
     /*
     std::cout << "posVec :\t"; // << posVec0 << " -> " << posVec << "\n";

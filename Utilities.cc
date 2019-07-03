@@ -5,7 +5,7 @@ using Eigen::Quaterniond;
 
 /**
  * @function Euler2DCM_312
- * @brief converts euler angles phi, theta, psi (RPY) to DCM with 3-1-2 rotation
+ * @brief Converts euler angles phi, theta, psi (RPY) to DCM with 3-1-2 rotation
  * @return DCM corresponding to 3-1-2 euler angle rotation
  */
 Matrix3d Utilities::Euler2DCM_312(Vector3d eulVec)
@@ -24,8 +24,8 @@ Matrix3d Utilities::Euler2DCM_312(Vector3d eulVec)
 
 /**
  * @function FeaPointsTargetToChaser
- * @brief transforms feature points in target frame wrt target to chaser frame wrt chaser
- * @return matrix of feature points in chaser frame wrt chaser
+ * @brief Transforms feature points in target frame wrt target to chaser frame wrt chaser
+ * @return MatrixXd of feature points in chaser frame wrt chaser
  */
 MatrixXd Utilities::FeaPointsTargetToChaser(VectorXd stateVec, Vector3d rCamVec, MatrixXd rFeaMat)
 {
@@ -54,8 +54,8 @@ MatrixXd Utilities::FeaPointsTargetToChaser(VectorXd stateVec, Vector3d rCamVec,
 
 /**
  * @function CameraProjection
- * @brief performs simple camera projection of 3D point to image plane
- * @return returns vector of projected 2D point
+ * @brief Performs simple camera projection of 3D point to image plane
+ * @return Vector2d of projected 2D point
  */
 Vector2d Utilities::CameraProjection(Vector3d point3DVec, double f)
 {
@@ -84,8 +84,8 @@ Vector2d Utilities::CameraProjection(Vector3d point3DVec, double f)
 
 /**
  * @function SimulateMeasurements
- * @brief simulates measurements from given pose
- * @return vector of measurements
+ * @brief Simulates measurements from given pose
+ * @return VectorXd of measurements
  */
 VectorXd Utilities::SimulateMeasurements(MatrixXd rMat, double focal_length)
 {
@@ -122,27 +122,27 @@ VectorXd Utilities::SimulateMeasurements(MatrixXd rMat, double focal_length)
 }
 
 /**
- * @function AddNoiseToMeasurements
- * @brief adds zero-mean Gaussian noise with provided std to measurements
- * @return returns input vector values with additive Gaussian noise
+ * @function AddGaussianNoiseToVector
+ * @brief Adds zero-mean Gaussian noise with provided std to VectorXd
+ * @return Input VectorXd values with additive Gaussian noise
  */
-VectorXd Utilities::AddNoiseToMeasurements(VectorXd yVec, double std)
+VectorXd Utilities::AddGaussianNoiseToVector(VectorXd vec, double std)
 {
-    const unsigned int numMeas = yVec.size();
+    const unsigned int numMeas = vec.size();
 
     MatrixXd covarMat = pow(std,2)*MatrixXd::Identity(numMeas, numMeas);
 
-    Eigen::EigenMultivariateNormal<double> normX_solver(yVec, covarMat);
+    Eigen::EigenMultivariateNormal<double> normX_solver(vec, covarMat);
     
-    VectorXd yVecNoise = normX_solver.samples(1);
+    VectorXd vecNoise = normX_solver.samples(1);
 
-    return yVecNoise;
+    return vecNoise;
 }
 
 /**
  * @function PositionScore
- * @brief computes the position score for a position state estimate
- * @return returns single position score value
+ * @brief Computes the position score for a position state estimate
+ * @return Position score value for provided state estimate
  */
 double Utilities::PositionScore(VectorXd stateVec, VectorXd stateHatVec)
 {
@@ -158,7 +158,7 @@ double Utilities::PositionScore(VectorXd stateVec, VectorXd stateHatVec)
 /**
  * @function AttitudeScore
  * @brief computes the attitude score for an attitude state estimate
- * @return returns single attitude score value
+ * @return Attitude score value for provided state estimate
  */
 double Utilities::AttitudeScore(VectorXd stateVec, VectorXd stateHatVec)
 {

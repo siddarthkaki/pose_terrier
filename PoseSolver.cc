@@ -7,8 +7,10 @@
  *        2D-3D Correspondences A-Priori
  * @return VectorXd of estimate state (pose)
  */
-VectorXd PoseSolver::SolvePose(VectorXd yVec, VectorXd stateVec0, Vector3d rCamVec, MatrixXd rFeaMat)
+PoseSolution PoseSolver::SolvePose(VectorXd yVec, VectorXd stateVec0, Vector3d rCamVec, MatrixXd rFeaMat)
 {
+    PoseSolution poseSol;
+
     // The variables to solve for with initial values.
     // The variables will be mutated in place by the solver.
     double* posHatArr = stateVec0.head(3).data();
@@ -41,15 +43,45 @@ VectorXd PoseSolver::SolvePose(VectorXd yVec, VectorXd stateVec0, Vector3d rCamV
     options.num_threads = 4;
     options.use_inner_iterations = false;
     options.minimizer_progress_to_stdout = true;
-    ceres::Solver::Summary summary;
-    ceres::Solve(options, &problem, &summary);
+    ceres::Solve(options, &problem, &poseSol.summary);
 
     // convert estimated state information from double arrays to Eigen
-    VectorXd stateHatVec(6);
-    stateHatVec.head(3) = Eigen::Map<Eigen::Matrix<double,3,1>>(posHatArr);
-    stateHatVec.tail(3) = Eigen::Map<Eigen::Matrix<double,3,1>>(eulHatArr);
+    poseSol.stateHatVec = VectorXd::Zero(6);
+    poseSol.stateHatVec.head(3) = Eigen::Map<Eigen::Matrix<double,3,1>>(posHatArr);
+    poseSol.stateHatVec.tail(3) = Eigen::Map<Eigen::Matrix<double,3,1>>(eulHatArr);
 
-    std::cout << summary.BriefReport() << "\n";
+    return poseSol;
+}
+
+/**
+ * @function SolvePoseReinit
+ * @brief Non-linear Least-Squares Levenberg–Marquardt Solver with Multiple
+ *        Random Reinitialisationsfor Pose based on Relative Bearing
+ *        Measurements to Specified Feature Points with A-Priori Known 2D-3D
+ *        Correspondences 
+ * @return VectorXd of estimate state (pose)
+ */
+PoseSolution PoseSolver::SolvePoseReinit(VectorXd yVec, VectorXd stateVec0, Vector3d rCamVec, MatrixXd rFeaMat)
+{
+    unsigned int num_init = 10;
+    double reinit_att_noise_std = 2;
+
+    PoseSolution posSolOptimal;
+    double min_cost = 100;
+
+    for (unsigned int init_idx = 0; init_idx < num_init; init_idx++)
+    {
+        VectorXd stateVec0i = stateVec0;
+        stateVec0i.tail(3) = Utilities::AddGaussianNoiseToVector(stateVec0i.tail(3), reinit_att_noise_std);
+        PoseSolution posSoli = SolvePose(yVec, stateVec0i, rCamVec, rFeaMat);   
     
-    return stateHatVec;
+        double curr_cost = posSoli.summary.final_cost;
+        if (curr_cost < min_cost)
+        {
+            min_cost = curr_cost;
+            posSolOptimal = posSoli;
+        }
+    }
+
+    return posSolOptimal;
 }
