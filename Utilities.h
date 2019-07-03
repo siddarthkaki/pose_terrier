@@ -5,6 +5,9 @@
 #include <Eigen/Geometry>
 #include <math.h>
 
+#include "ceres/ceres.h"
+#include "cost_functor.h"
+
 #include "third_party/eigenmvn/eigenmvn.h"
 
 using Eigen::Vector2d;
@@ -23,6 +26,7 @@ class Utilities
         static VectorXd AddNoiseToMeasurements(VectorXd yVec, double std);
         static double   PositionScore(VectorXd stateVec, VectorXd stateHatVec);
         static double   AttitudeScore(VectorXd stateVec, VectorXd stateHatVec);
+        static VectorXd SolvePoseReinit(VectorXd yVec, VectorXd xHatVec0, Vector3d rCamVec, MatrixXd rFeaMat);
 };
 
 #endif // UTILITIES_H_

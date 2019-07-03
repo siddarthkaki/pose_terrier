@@ -8,6 +8,7 @@
 
 #include "cost_functor.h"
 #include "Utilities.h"
+#include "PoseSolver.h"
 
 using Eigen::Vector3d;
 using Eigen::MatrixXd;
@@ -26,26 +27,7 @@ int main(int argc, char** argv)
     const double DEG2RAD = M_PI/180.0;
     const double RAD2DEG = 180.0/M_PI;
 
-    // true state information
-    double posArr [3] = { 0.5377, 1.8339, 18.2235 };
-    double eulArr [3] = { 1.3543, 0.5007, -2.0541 };
-
-    // initial state guess
-    double posArr0 [3] = { -1.0, 3.0, 25.0 };
-    double eulArr0 [3] = { 1.5, 0.4, -2.2 };
-
-    // The variables to solve for with its initial value.
-    // The variables will be mutated in place by the solver.
-    double posHatArr [3];
-    double eulHatArr [3];
-    
-    memcpy(posHatArr, posArr0, sizeof(posArr));
-    memcpy(eulHatArr, eulArr0, sizeof(eulArr));
-
-    // convert true state information from double arrays to Eigen
-    VectorXd stateVec(6);
-    stateVec.head(3) = Eigen::Map<Eigen::Matrix<double,3,1>>(posArr);
-    stateVec.tail(3) = Eigen::Map<Eigen::Matrix<double,3,1>>(eulArr);
+    //-- Set-up problem geometry and params ----------------------------------/
 
     // specify rigid position vector of camera wrt chaser in chaser frame
     Vector3d rCamVec;
@@ -63,7 +45,28 @@ int main(int argc, char** argv)
                 0.0,    0.0,   -1.5,
                 0.0,    1.0,    1.0,
                 0.0,   -1.0,    1.0;
-    int numPts = rFeaMat.rows();
+
+    //------------------------------------------------------------------------/
+
+    // initial state guess
+    double posArr0[3] = { -1.0, 3.0, 25.0 };
+    double eulArr0[3] = {0.0, 0.0, 0.0};//{ 1.5, 0.4, -2.2 };
+
+    // convert initial state information from double arrays to Eigen
+    VectorXd stateVec0(6);
+    stateVec0.head(3) = Eigen::Map<Eigen::Matrix<double,3,1>>(posArr0);
+    stateVec0.tail(3) = Eigen::Map<Eigen::Matrix<double,3,1>>(eulArr0);
+
+    //-- Simulate Measurements -----------------------------------------------/
+
+    // true state information
+    double posArr [3] = { 0.5377, 1.8339, 18.2235 };
+    double eulArr [3] = {1.0, -1.5, 2.0};//{ 1.3543, 0.5007, -2.0541 };
+
+    // convert true state information from double arrays to Eigen
+    VectorXd stateVec(6);
+    stateVec.head(3) = Eigen::Map<Eigen::Matrix<double,3,1>>(posArr);
+    stateVec.tail(3) = Eigen::Map<Eigen::Matrix<double,3,1>>(eulArr);
 
     // express feature points in chaser frame at the specified pose
     MatrixXd rMat = Utilities::FeaPointsTargetToChaser(stateVec, rCamVec, rFeaMat);
@@ -74,37 +77,15 @@ int main(int argc, char** argv)
     // add Gaussian noise to simulated measurements
     VectorXd yVecNoise = Utilities::AddNoiseToMeasurements(yVec, meas_std);
 
+    //------------------------------------------------------------------------/
+
+    //-- Solve for pose ------------------------------------------------------/
+
     // timing
     std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
 
-    // Build the problem.
-    ceres::Problem problem;
-
-    // Set up the only cost function (also known as residual). This uses
-    // auto-differentiation to obtain the derivative (jacobian).
-    //ceres::CostFunction* cost_function =
-    //    MeasResidCostFunctor::Create(yVecNoise, rFeaMat, rCamVec);
-    ceres::CostFunction* cost_function = new ceres::AutoDiffCostFunction<MeasResidCostFunctor, ceres::DYNAMIC, 3, 3>(
-            new MeasResidCostFunctor(yVecNoise, rFeaMat, rCamVec), numPts*2);
-    
-    problem.AddResidualBlock(cost_function, NULL, posHatArr, eulHatArr);
-
-    // Run the solver
-    ceres::Solver::Options options;
-    options.minimizer_type = ceres::TRUST_REGION;
-    options.trust_region_strategy_type = ceres::LEVENBERG_MARQUARDT;
-    options.minimizer_progress_to_stdout = true;
-    ceres::Solver::Summary summary;
-    ceres::Solve(options, &problem, &summary);
-
-    // convert estimated state information from double arrays to Eigen
-    VectorXd stateHatVec(6);
-    stateHatVec.head(3) = Eigen::Map<Eigen::Matrix<double,3,1>>(posHatArr);
-    stateHatVec.tail(3) = Eigen::Map<Eigen::Matrix<double,3,1>>(eulHatArr);
-
-    // compute position and attitude scores
-    double pos_score = Utilities::PositionScore(stateVec, stateHatVec);
-    double att_score = Utilities::AttitudeScore(stateVec, stateHatVec);
+    // solve for pose with ceres (via wrapper)
+    VectorXd stateHatVec = PoseSolver::SolvePose(yVecNoise, stateVec0, rCamVec, rFeaMat);
 
     // timing
     std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
@@ -112,10 +93,19 @@ int main(int argc, char** argv)
     // time taken to perform NLS solution
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>( t2 - t1 ).count();
 
+    //------------------------------------------------------------------------/
+
+    //-- Performance Metrics & Outputs ---------------------------------------/
+
+    // compute position and attitude scores
+    double pos_score = Utilities::PositionScore(stateVec, stateHatVec);
+    double att_score = Utilities::AttitudeScore(stateVec, stateHatVec);
 
     // print to command line
-    std::cout << summary.BriefReport() << "\n";
+    //std::cout << summary.BriefReport() << "\n";
+    //std::cout << summary.FullReport() << "\n";
     
+    /*
     std::cout << "posVec :\t"; // << posVec0 << " -> " << posVec << "\n";
     for (const auto& e : posArr0) { std::cout << e << ", "; }
     std::cout << "\t->\t";
@@ -127,11 +117,17 @@ int main(int argc, char** argv)
     std::cout << "\t->\t";
     for (const auto& e : eulHatArr)  { std::cout << e*180.0/M_PI << ", "; }
     std::cout << "[deg]" << std::endl;
+    */
 
     std::cout << "pos_score :\t" << pos_score << " [m]" << std::endl;
     std::cout << "att_score :\t" << att_score*RAD2DEG << " [deg]"<< std::endl;
 
-    std::cout << "Time taken by program is : "  << std::setprecision(9) << (double)duration << " [ms]" << std::endl; 
+    std::cout << "Time taken by program is : "  << std::setprecision(9)
+                                                << (double)duration
+                                                << " [ms]"
+                                                << std::endl; 
+
+    //------------------------------------------------------------------------/
 
     return 0;
 }
