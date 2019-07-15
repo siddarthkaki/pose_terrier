@@ -61,7 +61,7 @@ int main(int argc, char** argv)
 
     // true state information
     double posArr [3] = { 0.5377, 1.8339, 18.2235 };
-    double eulArr [3] = {2.0, -1.75, -1.5};//{ 1.3543, 0.5007, -2.0541 };
+    double eulArr [3] = {-2.0, -1.75, -1.5};//{ 1.3543, 0.5007, -2.0541 };
 
     // convert true state information from double arrays to Eigen
     VectorXd stateVec(6);
@@ -85,7 +85,7 @@ int main(int argc, char** argv)
     std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
 
     // solve for pose with ceres (via wrapper)
-    PoseSolution poseSol = PoseSolver::SolvePoseReinit(yVecNoise, stateVec0, rCamVec, rFeaMat);
+    PoseSolution poseSol = PoseSolver::SolvePoseReinit(stateVec0, yVecNoise, rCamVec, rFeaMat);
 
     // timing
     std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();

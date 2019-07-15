@@ -7,7 +7,7 @@
  *        2D-3D Correspondences A-Priori
  * @return VectorXd of estimate state (pose)
  */
-PoseSolution PoseSolver::SolvePose(VectorXd yVec, VectorXd stateVec0, Vector3d rCamVec, MatrixXd rFeaMat)
+PoseSolution PoseSolver::SolvePose(VectorXd stateVec0, const VectorXd& yVec, const Vector3d& rCamVec, const MatrixXd& rFeaMat)
 {
     PoseSolution poseSol;
 
@@ -61,9 +61,9 @@ PoseSolution PoseSolver::SolvePose(VectorXd yVec, VectorXd stateVec0, Vector3d r
  *        Correspondences 
  * @return VectorXd of estimate state (pose)
  */
-PoseSolution PoseSolver::SolvePoseReinit(VectorXd yVec, VectorXd stateVec0, Vector3d rCamVec, MatrixXd rFeaMat)
+PoseSolution PoseSolver::SolvePoseReinit(const VectorXd& stateVec0, const VectorXd& yVec, const Vector3d& rCamVec, const MatrixXd& rFeaMat)
 {
-    unsigned int num_init = 10;
+    unsigned int num_init = 5;
     double reinit_att_noise_std = 2;
 
     PoseSolution posSolOptimal;
@@ -73,7 +73,7 @@ PoseSolution PoseSolver::SolvePoseReinit(VectorXd yVec, VectorXd stateVec0, Vect
     {
         VectorXd stateVec0i = stateVec0;
         stateVec0i.tail(3) = Utilities::AddGaussianNoiseToVector(stateVec0i.tail(3), reinit_att_noise_std);
-        PoseSolution posSoli = SolvePose(yVec, stateVec0i, rCamVec, rFeaMat);   
+        PoseSolution posSoli = SolvePose(stateVec0i, yVec, rCamVec, rFeaMat);   
     
         double curr_cost = posSoli.summary.final_cost;
         if (curr_cost < min_cost)

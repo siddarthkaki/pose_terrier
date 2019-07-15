@@ -24,8 +24,8 @@ struct PoseSolution
 class PoseSolver
 {
     public:
-        static PoseSolution SolvePose(VectorXd yVec, VectorXd stateVec0, Vector3d rCamVec, MatrixXd rFeaMat);
-        static PoseSolution SolvePoseReinit(VectorXd yVec, VectorXd stateVec0, Vector3d rCamVec, MatrixXd rFeaMat);
+        static PoseSolution SolvePose(VectorXd stateVec0, const VectorXd& yVec, const Vector3d& rCamVec, const MatrixXd& rFeaMat);
+        static PoseSolution SolvePoseReinit(const VectorXd& stateVec0, const VectorXd& yVec, const Vector3d& rCamVec, const MatrixXd& rFeaMat);
 };
 
 #endif // POSESOLVER_H_

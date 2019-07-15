@@ -8,16 +8,16 @@ using Eigen::Quaterniond;
  * @brief Converts euler angles phi, theta, psi (RPY) to DCM with 3-1-2 rotation
  * @return DCM corresponding to 3-1-2 euler angle rotation
  */
-Matrix3d Utilities::Euler2DCM_312(Vector3d eulVec)
+Matrix3d Utilities::Euler2DCM_312(const Vector3d& eulVec)
 {
-    double phi   = eulVec(0);
-    double theta = eulVec(1);
-    double psi   = eulVec(2);
+    //double phi   = eulVec(0);
+    //double theta = eulVec(1);
+    //double psi   = eulVec(2);
 
     Matrix3d DCM;
-    DCM =   AngleAxisd( theta, Vector3d::UnitY() ).toRotationMatrix().transpose()*
-            AngleAxisd(   phi, Vector3d::UnitX() ).toRotationMatrix().transpose()*
-            AngleAxisd(   psi, Vector3d::UnitZ() ).toRotationMatrix().transpose();
+    DCM =   AngleAxisd( eulVec(1), Vector3d::UnitY() ).toRotationMatrix().transpose()*
+            AngleAxisd( eulVec(0), Vector3d::UnitX() ).toRotationMatrix().transpose()*
+            AngleAxisd( eulVec(2), Vector3d::UnitZ() ).toRotationMatrix().transpose();
 
     return DCM;
 }
@@ -27,7 +27,7 @@ Matrix3d Utilities::Euler2DCM_312(Vector3d eulVec)
  * @brief Transforms feature points in target frame wrt target to chaser frame wrt chaser
  * @return MatrixXd of feature points in chaser frame wrt chaser
  */
-MatrixXd Utilities::FeaPointsTargetToChaser(VectorXd stateVec, Vector3d rCamVec, MatrixXd rFeaMat)
+MatrixXd Utilities::FeaPointsTargetToChaser(const VectorXd& stateVec, const Vector3d& rCamVec, const MatrixXd& rFeaMat)
 {
     // DCM from target frame to chaser frame
     Vector3d relVec = stateVec.segment(0,3); // extract first three elements of state
@@ -57,7 +57,7 @@ MatrixXd Utilities::FeaPointsTargetToChaser(VectorXd stateVec, Vector3d rCamVec,
  * @brief Performs simple camera projection of 3D point to image plane
  * @return Vector2d of projected 2D point
  */
-Vector2d Utilities::CameraProjection(Vector3d point3DVec, double f)
+Vector2d Utilities::CameraProjection(const Vector3d& point3DVec, const double& f)
 {
     MatrixXd PMat(3,4);
     PMat << f, 0, 0, 0,
@@ -87,7 +87,7 @@ Vector2d Utilities::CameraProjection(Vector3d point3DVec, double f)
  * @brief Simulates measurements from given pose
  * @return VectorXd of measurements
  */
-VectorXd Utilities::SimulateMeasurements(MatrixXd rMat, double focal_length)
+VectorXd Utilities::SimulateMeasurements(const MatrixXd& rMat, const double& focal_length)
 {
     unsigned int numPts = rMat.rows();
    
@@ -126,7 +126,7 @@ VectorXd Utilities::SimulateMeasurements(MatrixXd rMat, double focal_length)
  * @brief Adds zero-mean Gaussian noise with provided std to VectorXd
  * @return Input VectorXd values with additive Gaussian noise
  */
-VectorXd Utilities::AddGaussianNoiseToVector(VectorXd vec, double std)
+VectorXd Utilities::AddGaussianNoiseToVector(const VectorXd& vec, const double& std)
 {
     const unsigned int numMeas = vec.size();
 
@@ -144,7 +144,7 @@ VectorXd Utilities::AddGaussianNoiseToVector(VectorXd vec, double std)
  * @brief Computes the position score for a position state estimate
  * @return Position score value for provided state estimate
  */
-double Utilities::PositionScore(VectorXd stateVec, VectorXd stateHatVec)
+double Utilities::PositionScore(const VectorXd& stateVec, const VectorXd& stateHatVec)
 {
     Vector3d posVec = stateVec.head(3);
     Vector3d posHatVec = stateHatVec.head(3);
@@ -160,7 +160,7 @@ double Utilities::PositionScore(VectorXd stateVec, VectorXd stateHatVec)
  * @brief computes the attitude score for an attitude state estimate
  * @return Attitude score value for provided state estimate
  */
-double Utilities::AttitudeScore(VectorXd stateVec, VectorXd stateHatVec)
+double Utilities::AttitudeScore(const VectorXd& stateVec, const VectorXd& stateHatVec)
 {
     Vector3d eulVec = stateVec.tail(3);
     Vector3d eulHatVec = stateHatVec.tail(3);

@@ -16,14 +16,13 @@ using Eigen::MatrixXd;
 class Utilities
 {
     public:
-        static Matrix3d Euler2DCM_312(Vector3d eulVec);
-        static MatrixXd FeaPointsTargetToChaser(VectorXd stateVec, Vector3d rCamVec, MatrixXd rFeaMat);
-        static Vector2d CameraProjection(Vector3d point3DVec, double f);
-        static VectorXd SimulateMeasurements(MatrixXd rMat, double focal_length);
-        static VectorXd AddGaussianNoiseToVector(VectorXd vec, double std);
-        static double   PositionScore(VectorXd stateVec, VectorXd stateHatVec);
-        static double   AttitudeScore(VectorXd stateVec, VectorXd stateHatVec);
-        static VectorXd SolvePoseReinit(VectorXd yVec, VectorXd xHatVec0, Vector3d rCamVec, MatrixXd rFeaMat);
+        static Matrix3d Euler2DCM_312(const Vector3d& eulVec);
+        static MatrixXd FeaPointsTargetToChaser(const VectorXd& stateVec, const Vector3d& rCamVec, const MatrixXd& rFeaMat);
+        static Vector2d CameraProjection(const Vector3d& point3DVec, const double& f);
+        static VectorXd SimulateMeasurements(const MatrixXd& rMat, const double& focal_length);
+        static VectorXd AddGaussianNoiseToVector(const VectorXd& vec, const double& std);
+        static double   PositionScore(const VectorXd& stateVec, const VectorXd& stateHatVec);
+        static double   AttitudeScore(const VectorXd& stateVec, const VectorXd& stateHatVec);
 };
 
 #endif // UTILITIES_H_
