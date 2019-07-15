@@ -17,10 +17,12 @@ class Utilities
 {
     public:
         static Matrix3d Euler2DCM_312(const Vector3d& eulVec);
+        static Vector3d DCM2Euler_312(const MatrixXd& DCM);
         static MatrixXd FeaPointsTargetToChaser(const VectorXd& stateVec, const Vector3d& rCamVec, const MatrixXd& rFeaMat);
         static Vector2d CameraProjection(const Vector3d& point3DVec, const double& f);
         static VectorXd SimulateMeasurements(const MatrixXd& rMat, const double& focal_length);
         static VectorXd AddGaussianNoiseToVector(const VectorXd& vec, const double& std);
+        static VectorXd ConjugatePose(const VectorXd& stateVec);
         static double   PositionScore(const VectorXd& stateVec, const VectorXd& stateHatVec);
         static double   AttitudeScore(const VectorXd& stateVec, const VectorXd& stateHatVec);
 };

@@ -23,6 +23,25 @@ Matrix3d Utilities::Euler2DCM_312(const Vector3d& eulVec)
 }
 
 /**
+ * @function DCM2Euler_312
+ * @brief Converts DCM to euler angles phi, theta, psi (RPY) representing 3-1-2 rotation
+ * @return Euler angles corresponding to 3-1-2 rotation
+ */
+Vector3d Utilities::DCM2Euler_312(const MatrixXd& DCM)
+{
+    double phi = asin( DCM(1,2) );
+
+    double theta = atan2( -DCM(0,2), DCM(2,2) );
+
+    double psi = atan2( -DCM(1,0), DCM(1,1) );
+
+    Vector3d eulVec;
+    eulVec << phi, theta, psi;
+
+    return eulVec;
+}
+
+/**
  * @function FeaPointsTargetToChaser
  * @brief Transforms feature points in target frame wrt target to chaser frame wrt chaser
  * @return MatrixXd of feature points in chaser frame wrt chaser
@@ -137,6 +156,36 @@ VectorXd Utilities::AddGaussianNoiseToVector(const VectorXd& vec, const double& 
     VectorXd vecNoise = normX_solver.samples(1);
 
     return vecNoise;
+}
+
+/**
+ * @function ConjugatePose
+ * @brief Finds the so-called "conjugate pose" for a given pose
+ * @return VectorXd of conjugate pose
+ */
+VectorXd Utilities::ConjugatePose(const VectorXd& stateVec)
+{
+    Matrix3d DCMHat = Euler2DCM_312(stateVec.tail(3));
+
+    Vector3d p0 = DCMHat*Vector3d::Zero();
+    Vector3d p1 = DCMHat*Vector3d::UnitZ();
+    Vector3d p2 = DCMHat*Vector3d::UnitY();
+
+    Vector3d p01 = p1 - p0;
+    Vector3d p02 = p2 - p0;
+    Vector3d n = p01.cross(p02);
+    
+    if ( n(2) < 0 ) { n = -n; }
+
+    double phi  = acos( n.dot(Vector3d::UnitZ())/n.norm() );
+    Vector3d aHat = n.cross(Vector3d::UnitZ()).normalized();
+
+    MatrixXd DCMHat2 = AngleAxisd( -2*phi, aHat ).toRotationMatrix().transpose()*DCMHat;
+    
+    VectorXd stateVecConj = stateVec;
+    stateVecConj.tail(3) = DCM2Euler_312(DCMHat2);
+
+    return stateVecConj;
 }
 
 /**
