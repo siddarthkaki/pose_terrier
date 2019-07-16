@@ -1,6 +1,7 @@
 #include <Eigen/Core>
 #include <chrono>
 #include <iomanip>
+#include <fstream>
 #include <math.h>
 
 #include "ceres/ceres.h"
@@ -10,10 +11,13 @@
 #include "Utilities.h"
 #include "PoseSolver.h"
 
+#include "third_party/json.hpp"
+
 using Eigen::Vector3d;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 using Eigen::Vector3d;
+using nlohmann::json;
 
 /**
  * @function main
@@ -27,26 +31,31 @@ int main(int argc, char** argv)
     const double DEG2RAD = M_PI/180.0;
     const double RAD2DEG = 180.0/M_PI;
 
-    //-- Set-up problem geometry and params ----------------------------------/
+    //-- Read-in problem geometry and params ---------------------------------/
+
+    // read params from JSON file
+    std::ifstream input_stream("../params.json");
+    json json_params;
+    input_stream >> json_params;
 
     // specify rigid position vector of camera wrt chaser in chaser frame
     Vector3d rCamVec;
-    rCamVec << 0.0, 0.0, 0.0;
+    for (unsigned int idx = 0; idx < 2; idx++)
+    { rCamVec(idx) = json_params["rCamVec"].at(idx); }
 
     // specify camera focal length
-    double focal_length = 5.5*pow(10,-3);
+    double focal_length = json_params["focal_length"];//5.5*pow(10,-3);
 
     // specify measurement noise standard deviation (rad)
-    double meas_std = 2.0*DEG2RAD;
+    double meas_std = double(json_params["meas_std_deg"])*DEG2RAD;
 
     // specify rigid position vector of feature points wrt target in target frame
-    MatrixXd rFeaMat(4,3);
-    rFeaMat <<  0.0,    0.0,    0.5,
-                0.0,    0.0,   -1.5,
-                0.0,    1.0,    1.0,
-                0.0,   -1.0,    1.0;
-                //1.0,    0.0,    0.5;
-
+    unsigned int num_features = json_params["rFeaMat"].size();
+    MatrixXd rFeaMat(num_features,3);
+    for (unsigned int idx = 0; idx < num_features; idx++)
+    {   for (unsigned int jdx = 0; jdx < 3; jdx++)
+        { rFeaMat(idx,jdx) = json_params["rFeaMat"][idx]["fea" + std::to_string(idx+1)][jdx]; } }
+    
     //------------------------------------------------------------------------/
 
     // initial state guess

@@ -40,9 +40,9 @@ PoseSolution PoseSolver::SolvePose(VectorXd stateVec0, const VectorXd& yVec, con
     options.trust_region_strategy_type = ceres::LEVENBERG_MARQUARDT;
     options.linear_solver_type = ceres::DENSE_QR;
     options.use_nonmonotonic_steps = true;
-    options.num_threads = 4;
+    options.num_threads = 1;
     options.use_inner_iterations = false;
-    options.minimizer_progress_to_stdout = true;
+    options.minimizer_progress_to_stdout = false;
     ceres::Solve(options, &problem, &poseSol.summary);
 
     // convert estimated state information from double arrays to Eigen
