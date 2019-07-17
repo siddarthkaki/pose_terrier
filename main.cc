@@ -17,6 +17,7 @@ using Eigen::Vector3d;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 using Eigen::Vector3d;
+using Eigen::Quaterniond;
 using nlohmann::json;
 
 /**
@@ -60,9 +61,9 @@ int main(int argc, char** argv)
     double quatArr0[4] = {1.0, 0.0, 0.0, 0.0}; // w,x,y,z
 
     // convert initial state information from double arrays to Eigen
-    VectorXd stateVec0(7);
-    stateVec0.head(3) = Eigen::Map<Eigen::Matrix<double,3,1>>(posArr0);
-    stateVec0.tail(4) = Eigen::Map<Eigen::Matrix<double,4,1>>(quatArr0);
+    Pose state0;
+    state0.pos  = Eigen::Map<Eigen::Matrix<double,3,1>>(posArr0);
+    state0.quat = Eigen::Map<Eigen::Matrix<double,4,1>>(quatArr0);
 
     //-- Simulate Measurements -----------------------------------------------/
 
@@ -72,12 +73,13 @@ int main(int argc, char** argv)
     double quatArr [4] = {0.6937, -0.6773, 0.0642, 0.2365};
 
     // convert true state information from double arrays to Eigen
-    VectorXd stateVec(7);
-    stateVec.head(3) = Eigen::Map<Eigen::Matrix<double,3,1>>(posArr);
-    stateVec.tail(4) = Eigen::Map<Eigen::Matrix<double,4,1>>(quatArr);
+    Pose stateTrue;
+    stateTrue.pos  = Eigen::Map<Eigen::Matrix<double,3,1>>(posArr);
+    stateTrue.quat = Eigen::Map<Eigen::Matrix<double,4,1>>(quatArr);
+    stateTrue.quat.normalize();
 
     // express feature points in chaser frame at the specified pose
-    MatrixXd rMat = Utilities::FeaPointsTargetToChaser(stateVec, rCamVec, rFeaMat);
+    MatrixXd rMat = Utilities::FeaPointsTargetToChaser(stateTrue, rCamVec, rFeaMat);
 
     // generate simulated measurements
     VectorXd yVec = Utilities::SimulateMeasurements(rMat, focal_length);
@@ -93,7 +95,7 @@ int main(int argc, char** argv)
     std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
 
     // solve for pose with ceres (via wrapper)
-    PoseSolution poseSol = PoseSolver::SolvePose(stateVec0, yVecNoise, rCamVec, rFeaMat);
+    PoseSolution poseSol = PoseSolver::SolvePoseReinit(state0, yVecNoise, rCamVec, rFeaMat);
 
     // timing
     std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
@@ -105,12 +107,12 @@ int main(int argc, char** argv)
     //-- Performance Metrics & Outputs ---------------------------------------/
 
     // compute position and attitude scores
-    double pos_score = Utilities::PositionScore(stateVec, poseSol.stateHatVec);
-    double att_score = Utilities::AttitudeScore(stateVec, poseSol.stateHatVec);
+    double pos_score = Utilities::PositionScore(stateTrue.pos , poseSol.state.pos );
+    double att_score = Utilities::AttitudeScore(stateTrue.quat, poseSol.state.quat);
 
     // print to command line
-    //std::cout << poseSol.summary.BriefReport() << "\n";
-    std::cout << poseSol.summary.FullReport() << "\n";
+    std::cout << poseSol.summary.BriefReport() << "\n";
+    //std::cout << poseSol.summary.FullReport() << "\n";
     
     /*
     std::cout << "posVec :\t"; // << posVec0 << " -> " << posVec << "\n";

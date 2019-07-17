@@ -46,13 +46,8 @@ Vector3d Utilities::DCM2Euler_312(const MatrixXd& DCM)
  * @brief Transforms feature points in target frame wrt target to chaser frame wrt chaser
  * @return MatrixXd of feature points in chaser frame wrt chaser
  */
-MatrixXd Utilities::FeaPointsTargetToChaser(const VectorXd& stateVec, const Vector3d& rCamVec, const MatrixXd& rFeaMat)
+MatrixXd Utilities::FeaPointsTargetToChaser(const Pose& state, const Vector3d& rCamVec, const MatrixXd& rFeaMat)
 {
-    // DCM from target frame to chaser frame
-    Vector3d relVec = stateVec.head(3); // extract first three elements of state
-    Quaterniond quatVec(stateVec.tail(4).data()); // extract last four elements of state
-    quatVec.normalize();
-
     unsigned int numPts = rFeaMat.rows(); // number of feature points
 
     MatrixXd rMat_c = MatrixXd::Zero(numPts, 3);
@@ -60,10 +55,10 @@ MatrixXd Utilities::FeaPointsTargetToChaser(const VectorXd& stateVec, const Vect
     for (unsigned int idx = 0; idx < numPts; idx++)
     {
         Vector3d rFeaVeci = rFeaMat.row(idx);
-        Vector3d rFeaVeci_c = quatVec*rFeaVeci;
+        Vector3d rFeaVeci_c = state.quat*rFeaVeci;
 
         // position vector of feature point i wrt chaser in chaser frame
-        Vector3d rVeci = relVec - rCamVec + rFeaVeci_c;
+        Vector3d rVeci = state.pos - rCamVec + rFeaVeci_c;
 
         rMat_c.row(idx) = rVeci.transpose();
     }
@@ -194,14 +189,11 @@ VectorXd Utilities::ConjugatePose(const VectorXd& stateVec)
  * @brief Computes the position score for a position state estimate
  * @return Position score value for provided state estimate
  */
-double Utilities::PositionScore(const VectorXd& stateVec, const VectorXd& stateHatVec)
+double Utilities::PositionScore(const Vector3d& pos, const Vector3d& posHat)
 {
-    Vector3d posVec = stateVec.head(3);
-    Vector3d posHatVec = stateHatVec.head(3);
+    Vector3d posErrVec = pos - posHat;
 
-    Vector3d posErrVec = posVec - posHatVec;
-
-    double pos_score = posErrVec.squaredNorm()/posVec.squaredNorm();
+    double pos_score = posErrVec.squaredNorm()/pos.squaredNorm();
     return pos_score;
 }
 
@@ -210,24 +202,9 @@ double Utilities::PositionScore(const VectorXd& stateVec, const VectorXd& stateH
  * @brief computes the attitude score for an attitude state estimate
  * @return Attitude score value for provided state estimate
  */
-double Utilities::AttitudeScore(const VectorXd& stateVec, const VectorXd& stateHatVec)
+double Utilities::AttitudeScore(const Quaterniond& quat, const Quaterniond& quatHat)
 {
-    /*Vector3d eulVec = stateVec.tail(3);
-    Vector3d eulHatVec = stateHatVec.tail(3);
-
-    Matrix3d DCM = Euler2DCM_312(eulVec);
-    Matrix3d DCMHat = Euler2DCM_312(eulHatVec);
-
-    Quaterniond qVec = Quaterniond(DCM);
-    Quaterniond qHatVec = Quaterniond(DCMHat);*/
-
-    Quaterniond qVec(stateVec.tail(4).data());
-    Quaterniond qHatVec(stateHatVec.tail(4).data());
-
-    //qVec.normalize();
-    //qHatVec.normalize();
-
-    Quaterniond dqVec = qVec*qHatVec.inverse();
+    Quaterniond dqVec = quat.normalized()*quatHat.normalized().inverse();
 
     double att_score = 2*acos( std::abs( dqVec.w() ) );
     return att_score;
