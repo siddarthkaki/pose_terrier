@@ -25,11 +25,7 @@ using nlohmann::json;
  */
 int main(int argc, char** argv)
 {
-
     //google::InitGoogleLogging(argv[0]);
-
-    const double DEG2RAD = M_PI/180.0;
-    const double RAD2DEG = 180.0/M_PI;
 
     //-- Read-in problem geometry and params ---------------------------------/
 
@@ -47,7 +43,7 @@ int main(int argc, char** argv)
     double focal_length = json_params["focal_length"];//5.5*pow(10,-3);
 
     // specify measurement noise standard deviation (rad)
-    double meas_std = double(json_params["meas_std_deg"])*DEG2RAD;
+    double meas_std = double(json_params["meas_std_deg"])*Utilities::DEG2RAD;
 
     // specify rigid position vector of feature points wrt target in target frame
     unsigned int num_features = json_params["rFeaMat"].size();
@@ -60,23 +56,25 @@ int main(int argc, char** argv)
 
     // initial state guess
     double posArr0[3] = { -1.0, 3.0, 25.0 };
-    double eulArr0[3] = {0.0, 0.0, 0.0};//{ 1.5, 0.4, -2.2 };
+    //double eulArr0[3] = {0.0, 0.0, 0.0};//{ 1.5, 0.4, -2.2 };
+    double quatArr0[4] = {1.0, 0.0, 0.0, 0.0}; // w,x,y,z
 
     // convert initial state information from double arrays to Eigen
-    VectorXd stateVec0(6);
+    VectorXd stateVec0(7);
     stateVec0.head(3) = Eigen::Map<Eigen::Matrix<double,3,1>>(posArr0);
-    stateVec0.tail(3) = Eigen::Map<Eigen::Matrix<double,3,1>>(eulArr0);
+    stateVec0.tail(4) = Eigen::Map<Eigen::Matrix<double,4,1>>(quatArr0);
 
     //-- Simulate Measurements -----------------------------------------------/
 
     // true state information
     double posArr [3] = { 0.5377, 1.8339, 18.2235 };
-    double eulArr [3] = {-2.0, -1.75, -1.5};//{ 1.3543, 0.5007, -2.0541 };
+    //double eulArr [3] = {-2.0, -1.75, -1.5};//{ 1.3543, 0.5007, -2.0541 };
+    double quatArr [4] = {0.6937, -0.6773, 0.0642, 0.2365};
 
     // convert true state information from double arrays to Eigen
-    VectorXd stateVec(6);
+    VectorXd stateVec(7);
     stateVec.head(3) = Eigen::Map<Eigen::Matrix<double,3,1>>(posArr);
-    stateVec.tail(3) = Eigen::Map<Eigen::Matrix<double,3,1>>(eulArr);
+    stateVec.tail(4) = Eigen::Map<Eigen::Matrix<double,4,1>>(quatArr);
 
     // express feature points in chaser frame at the specified pose
     MatrixXd rMat = Utilities::FeaPointsTargetToChaser(stateVec, rCamVec, rFeaMat);
@@ -95,7 +93,7 @@ int main(int argc, char** argv)
     std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
 
     // solve for pose with ceres (via wrapper)
-    PoseSolution poseSol = PoseSolver::SolvePoseReinit(stateVec0, yVecNoise, rCamVec, rFeaMat);
+    PoseSolution poseSol = PoseSolver::SolvePose(stateVec0, yVecNoise, rCamVec, rFeaMat);
 
     // timing
     std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
@@ -111,8 +109,8 @@ int main(int argc, char** argv)
     double att_score = Utilities::AttitudeScore(stateVec, poseSol.stateHatVec);
 
     // print to command line
-    std::cout << poseSol.summary.BriefReport() << "\n";
-    //std::cout << poseSol.summary.FullReport() << "\n";
+    //std::cout << poseSol.summary.BriefReport() << "\n";
+    std::cout << poseSol.summary.FullReport() << "\n";
     
     /*
     std::cout << "posVec :\t"; // << posVec0 << " -> " << posVec << "\n";
@@ -129,7 +127,7 @@ int main(int argc, char** argv)
     */
 
     std::cout << "pos_score :\t" << pos_score << " [m]" << std::endl;
-    std::cout << "att_score :\t" << att_score*RAD2DEG << " [deg]"<< std::endl;
+    std::cout << "att_score :\t" << att_score*Utilities::RAD2DEG << " [deg]"<< std::endl;
 
     std::cout << "Time taken by program is : "  << std::setprecision(9)
                                                 << (double)duration

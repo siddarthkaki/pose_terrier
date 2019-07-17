@@ -51,23 +51,25 @@ int main(int argc, char** argv)
 
     // initial state guess
     double posArr0[3] = { -1.0, 3.0, 25.0 };
-    double eulArr0[3] = {0.0, 0.0, 0.0};//{ 1.5, 0.4, -2.2 };
+    //double eulArr0[3] = {0.0, 0.0, 0.0};//{ 1.5, 0.4, -2.2 };
+    double quatArr0[4] = {1.0, 0.0, 0.0, 0.0}; // w,x,y,z
 
     // convert initial state information from double arrays to Eigen
-    VectorXd stateVec0(6);
+    VectorXd stateVec0(7);
     stateVec0.head(3) = Eigen::Map<Eigen::Matrix<double,3,1>>(posArr0);
-    stateVec0.tail(3) = Eigen::Map<Eigen::Matrix<double,3,1>>(eulArr0);
+    stateVec0.tail(4) = Eigen::Map<Eigen::Matrix<double,4,1>>(quatArr0);
 
     //-- Simulate Measurements -----------------------------------------------/
 
     // true state information
     double posArr [3] = { 0.5377, 1.8339, 18.2235 };
-    double eulArr [3] = {-2.0, -1.75, -1.5};//{ 1.3543, 0.5007, -2.0541 };
+    //double eulArr [3] = {-2.0, -1.75, -1.5};//{ 1.3543, 0.5007, -2.0541 };
+    double quatArr [4] = {0.6937, -0.6773, 0.0642, 0.2365};
 
     // convert true state information from double arrays to Eigen
-    VectorXd stateVec(6);
+    VectorXd stateVec(7);
     stateVec.head(3) = Eigen::Map<Eigen::Matrix<double,3,1>>(posArr);
-    stateVec.tail(3) = Eigen::Map<Eigen::Matrix<double,3,1>>(eulArr);
+    stateVec.tail(4) = Eigen::Map<Eigen::Matrix<double,4,1>>(quatArr);
 
     // express feature points in chaser frame at the specified pose
     MatrixXd rMat = Utilities::FeaPointsTargetToChaser(stateVec, rCamVec, rFeaMat);

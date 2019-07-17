@@ -49,9 +49,9 @@ Vector3d Utilities::DCM2Euler_312(const MatrixXd& DCM)
 MatrixXd Utilities::FeaPointsTargetToChaser(const VectorXd& stateVec, const Vector3d& rCamVec, const MatrixXd& rFeaMat)
 {
     // DCM from target frame to chaser frame
-    Vector3d relVec = stateVec.segment(0,3); // extract first three elements of state
-    Vector3d eulVec = stateVec.segment(3,3); // extract last three elements of state
-    Matrix3d DCM = Euler2DCM_312(eulVec); // 3-1-2 sequence
+    Vector3d relVec = stateVec.head(3); // extract first three elements of state
+    Quaterniond quatVec(stateVec.tail(4).data()); // extract last four elements of state
+    quatVec.normalize();
 
     unsigned int numPts = rFeaMat.rows(); // number of feature points
 
@@ -60,7 +60,7 @@ MatrixXd Utilities::FeaPointsTargetToChaser(const VectorXd& stateVec, const Vect
     for (unsigned int idx = 0; idx < numPts; idx++)
     {
         Vector3d rFeaVeci = rFeaMat.row(idx);
-        Vector3d rFeaVeci_c = DCM*rFeaVeci;
+        Vector3d rFeaVeci_c = quatVec*rFeaVeci;
 
         // position vector of feature point i wrt chaser in chaser frame
         Vector3d rVeci = relVec - rCamVec + rFeaVeci_c;
@@ -165,6 +165,7 @@ VectorXd Utilities::AddGaussianNoiseToVector(const VectorXd& vec, const double& 
  */
 VectorXd Utilities::ConjugatePose(const VectorXd& stateVec)
 {
+    // TODO UPDATE FOR QUAT
     Matrix3d DCMHat = Euler2DCM_312(stateVec.tail(3));
 
     Vector3d p0 = DCMHat*Vector3d::Zero();
@@ -211,17 +212,20 @@ double Utilities::PositionScore(const VectorXd& stateVec, const VectorXd& stateH
  */
 double Utilities::AttitudeScore(const VectorXd& stateVec, const VectorXd& stateHatVec)
 {
-    Vector3d eulVec = stateVec.tail(3);
+    /*Vector3d eulVec = stateVec.tail(3);
     Vector3d eulHatVec = stateHatVec.tail(3);
 
     Matrix3d DCM = Euler2DCM_312(eulVec);
     Matrix3d DCMHat = Euler2DCM_312(eulHatVec);
 
     Quaterniond qVec = Quaterniond(DCM);
-    Quaterniond qHatVec = Quaterniond(DCMHat);
+    Quaterniond qHatVec = Quaterniond(DCMHat);*/
 
-    qVec.normalize();
-    qHatVec.normalize();
+    Quaterniond qVec(stateVec.tail(4).data());
+    Quaterniond qHatVec(stateHatVec.tail(4).data());
+
+    //qVec.normalize();
+    //qHatVec.normalize();
 
     Quaterniond dqVec = qVec*qHatVec.inverse();
 

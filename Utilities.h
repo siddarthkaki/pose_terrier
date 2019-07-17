@@ -25,6 +25,9 @@ class Utilities
         static VectorXd ConjugatePose(const VectorXd& stateVec);
         static double   PositionScore(const VectorXd& stateVec, const VectorXd& stateHatVec);
         static double   AttitudeScore(const VectorXd& stateVec, const VectorXd& stateHatVec);
+
+        static constexpr double DEG2RAD = M_PI/180.0;
+        static constexpr double RAD2DEG = 180.0/M_PI;
 };
 
 #endif // UTILITIES_H_
