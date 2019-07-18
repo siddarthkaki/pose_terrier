@@ -154,18 +154,37 @@ VectorXd Utilities::AddGaussianNoiseToVector(const VectorXd& vec, const double& 
 }
 
 /**
+ * @function UniformRandomAttitude
+ * @brief Generates a quaternion representing a uniform random rotation in SO(3)
+ * @return Quaterniond contain uniform random rotation
+ */
+Quaterniond Utilities::UniformRandomAttitude()
+{
+    Eigen::EigenMultivariateNormal<double> normX_solver(Vector3d::Zero(), MatrixXd::Identity(3,3));
+    
+    Vector3d rand_axis = normX_solver.samples(1);
+    rand_axis.normalize();
+
+    std::default_random_engine generator;
+    std::uniform_real_distribution<double> distribution(0.0, 2.0*M_PI);
+    double rand_ang = distribution(generator);
+
+    Quaterniond rand_att;
+    rand_att = AngleAxisd(rand_ang, rand_axis);
+
+    return rand_att;
+}
+
+/**
  * @function ConjugatePose
  * @brief Finds the so-called "conjugate pose" for a given pose
- * @return VectorXd of conjugate pose
+ * @return Pose struct of conjugate pose
  */
-VectorXd Utilities::ConjugatePose(const VectorXd& stateVec)
+Pose Utilities::ConjugatePose(const Pose& state)
 {
-    // TODO UPDATE FOR QUAT
-    Matrix3d DCMHat = Euler2DCM_312(stateVec.tail(3));
-
-    Vector3d p0 = DCMHat*Vector3d::Zero();
-    Vector3d p1 = DCMHat*Vector3d::UnitZ();
-    Vector3d p2 = DCMHat*Vector3d::UnitY();
+    Vector3d p0 = state.quat*Vector3d::Zero();
+    Vector3d p1 = state.quat*Vector3d::UnitZ();
+    Vector3d p2 = state.quat*Vector3d::UnitY();
 
     Vector3d p01 = p1 - p0;
     Vector3d p02 = p2 - p0;
@@ -176,12 +195,15 @@ VectorXd Utilities::ConjugatePose(const VectorXd& stateVec)
     double phi  = acos( n.dot(Vector3d::UnitZ())/n.norm() );
     Vector3d aHat = n.cross(Vector3d::UnitZ()).normalized();
 
-    MatrixXd DCMHat2 = AngleAxisd( -2*phi, aHat ).toRotationMatrix().transpose()*DCMHat;
+    Quaterniond conj_quat;
+    conj_quat = AngleAxisd( -2*phi, aHat );
+    conj_quat = conj_quat*state.quat;
     
-    VectorXd stateVecConj = stateVec;
-    stateVecConj.tail(3) = DCM2Euler_312(DCMHat2);
+    Pose conj_state;
+    conj_state.pos = state.pos;
+    conj_state.quat = conj_quat;
 
-    return stateVecConj;
+    return conj_state;
 }
 
 /**

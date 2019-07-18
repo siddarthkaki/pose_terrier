@@ -56,26 +56,25 @@ int main(int argc, char** argv)
     //------------------------------------------------------------------------/
 
     // initial state guess
-    double posArr0[3] = { -1.0, 3.0, 25.0 };
-    //double eulArr0[3] = {0.0, 0.0, 0.0};//{ 1.5, 0.4, -2.2 };
+    double posArr0[3] = { 0.0, 0.0, 25.0 };
     double quatArr0[4] = {1.0, 0.0, 0.0, 0.0}; // w,x,y,z
 
     // convert initial state information from double arrays to Eigen
     Pose state0;
     state0.pos  = Eigen::Map<Eigen::Matrix<double,3,1>>(posArr0);
-    state0.quat = Eigen::Map<Eigen::Matrix<double,4,1>>(quatArr0);
+    state0.quat = Eigen::Map<Eigen::Quaternion<double>>(quatArr0);
+    state0.quat.normalize();
 
     //-- Simulate Measurements -----------------------------------------------/
 
     // true state information
-    double posArr [3] = { 0.5377, 1.8339, 18.2235 };
-    //double eulArr [3] = {-2.0, -1.75, -1.5};//{ 1.3543, 0.5007, -2.0541 };
+    double posArr [3] = {0.5377, 1.8339, 18.2235};
     double quatArr [4] = {0.6937, -0.6773, 0.0642, 0.2365};
-
+    
     // convert true state information from double arrays to Eigen
     Pose stateTrue;
     stateTrue.pos  = Eigen::Map<Eigen::Matrix<double,3,1>>(posArr);
-    stateTrue.quat = Eigen::Map<Eigen::Matrix<double,4,1>>(quatArr);
+    stateTrue.quat = Eigen::Map<Eigen::Quaternion<double>>(quatArr);
     stateTrue.quat.normalize();
 
     // express feature points in chaser frame at the specified pose
@@ -97,6 +96,8 @@ int main(int argc, char** argv)
     // solve for pose with ceres (via wrapper)
     PoseSolution poseSol = PoseSolver::SolvePoseReinit(state0, yVecNoise, rCamVec, rFeaMat);
 
+    Pose conj_state = Utilities::ConjugatePose(poseSol.state);
+
     // timing
     std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
     
@@ -107,8 +108,9 @@ int main(int argc, char** argv)
     //-- Performance Metrics & Outputs ---------------------------------------/
 
     // compute position and attitude scores
-    double pos_score = Utilities::PositionScore(stateTrue.pos , poseSol.state.pos );
-    double att_score = Utilities::AttitudeScore(stateTrue.quat, poseSol.state.quat);
+    double      pos_score = Utilities::PositionScore(stateTrue.pos , poseSol.state.pos );
+    double      att_score = Utilities::AttitudeScore(stateTrue.quat, poseSol.state.quat);
+    double conj_att_score = Utilities::AttitudeScore(stateTrue.quat,    conj_state.quat);
 
     // print to command line
     std::cout << poseSol.summary.BriefReport() << "\n";
@@ -128,8 +130,9 @@ int main(int argc, char** argv)
     std::cout << "[deg]" << std::endl;
     */
 
-    std::cout << "pos_score :\t" << pos_score << " [m]" << std::endl;
-    std::cout << "att_score :\t" << att_score*Utilities::RAD2DEG << " [deg]"<< std::endl;
+    std::cout << "pos_score :\t\t" << pos_score << " [m]" << std::endl;
+    std::cout << "att_score :\t\t" << att_score*Utilities::RAD2DEG << " [deg]"<< std::endl;
+    std::cout << "conj_att_score :\t" << conj_att_score*Utilities::RAD2DEG << " [deg]"<< std::endl;
 
     std::cout << "Time taken by program is : "  << std::setprecision(9)
                                                 << (double)duration

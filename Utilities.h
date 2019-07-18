@@ -3,6 +3,7 @@
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
+#include <random>
 #include <math.h>
 
 #include "ceres/ceres.h"
@@ -37,7 +38,8 @@ class Utilities
         static Vector2d CameraProjection(const Vector3d& point3DVec, const double& f);
         static VectorXd SimulateMeasurements(const MatrixXd& rMat, const double& focal_length);
         static VectorXd AddGaussianNoiseToVector(const VectorXd& vec, const double& std);
-        static VectorXd ConjugatePose(const VectorXd& stateVec);
+        static Quaterniond UniformRandomAttitude();
+        static Pose ConjugatePose(const Pose& state);
         static double   PositionScore(const Vector3d& pos, const Vector3d& posHat);
         static double   AttitudeScore(const Quaterniond& quat, const Quaterniond& quatHat);
 
