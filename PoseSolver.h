@@ -19,7 +19,7 @@ using Eigen::Quaterniond;
 class PoseSolver
 {
     public:
-        static PoseSolution SolvePose(Pose state0, const VectorXd& yVec, const Vector3d& rCamVec, const MatrixXd& rFeaMat);
+        static PoseSolution SolvePose(const Pose& state0, const VectorXd& yVec, const Vector3d& rCamVec, const MatrixXd& rFeaMat);
         static PoseSolution SolvePoseReinit(const Pose& state0, const VectorXd& yVec, const Vector3d& rCamVec, const MatrixXd& rFeaMat);
 };
 

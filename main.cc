@@ -61,20 +61,31 @@ int main(int argc, char** argv)
 
     // convert initial state information from double arrays to Eigen
     Pose state0;
-    state0.pos  = Eigen::Map<Eigen::Matrix<double,3,1>>(posArr0);
-    state0.quat = Eigen::Map<Eigen::Quaternion<double>>(quatArr0);
+    state0.pos(0) = posArr0[0];
+    state0.pos(1) = posArr0[1];
+    state0.pos(2) = posArr0[2];
+    state0.quat.w() = quatArr0[0];
+    state0.quat.x() = quatArr0[1];
+    state0.quat.y() = quatArr0[2];
+    state0.quat.z() = quatArr0[3]; 
     state0.quat.normalize();
 
     //-- Simulate Measurements -----------------------------------------------/
 
     // true state information
     double posArr [3] = {0.5377, 1.8339, 18.2235};
-    double quatArr [4] = {0.6937, -0.6773, 0.0642, 0.2365};
+    //double quatArr [4] = {0.6937, -0.6773, 0.0642, 0.2365};
+    double quatArr [4] = {0.6443,   -0.6230,    0.4369,    0.0767};
     
     // convert true state information from double arrays to Eigen
     Pose stateTrue;
-    stateTrue.pos  = Eigen::Map<Eigen::Matrix<double,3,1>>(posArr);
-    stateTrue.quat = Eigen::Map<Eigen::Quaternion<double>>(quatArr);
+    stateTrue.pos(0) = posArr[0];
+    stateTrue.pos(1) = posArr[1];
+    stateTrue.pos(2) = posArr[2];
+    stateTrue.quat.w() = quatArr[0];
+    stateTrue.quat.x() = quatArr[1];
+    stateTrue.quat.y() = quatArr[2];
+    stateTrue.quat.z() = quatArr[3]; 
     stateTrue.quat.normalize();
 
     // express feature points in chaser frame at the specified pose
@@ -94,7 +105,7 @@ int main(int argc, char** argv)
     std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
 
     // solve for pose with ceres (via wrapper)
-    PoseSolution poseSol = PoseSolver::SolvePoseReinit(state0, yVecNoise, rCamVec, rFeaMat);
+    PoseSolution poseSol = PoseSolver::SolvePose(state0, yVecNoise, rCamVec, rFeaMat);
 
     Pose conj_state = Utilities::ConjugatePose(poseSol.state);
 
@@ -116,19 +127,16 @@ int main(int argc, char** argv)
     std::cout << poseSol.summary.BriefReport() << "\n";
     //std::cout << poseSol.summary.FullReport() << "\n";
     
-    /*
-    std::cout << "posVec :\t"; // << posVec0 << " -> " << posVec << "\n";
-    for (const auto& e : posArr0) { std::cout << e << ", "; }
+    
+    std::cout << "posVec :\t" << state0.pos.transpose();
     std::cout << "\t->\t";
-    for (const auto& e : posHatArr)  { std::cout << e << ", "; }
-    std::cout << "[m]" << std::endl;
+    std::cout << poseSol.state.pos.transpose() << " [m]" << std::endl;
 
-    std::cout << "eulVec :\t";
-    for (const auto& e : eulArr0) { std::cout << e*180.0/M_PI << ", "; }
-    std::cout << "\t->\t";
-    for (const auto& e : eulHatArr)  { std::cout << e*180.0/M_PI << ", "; }
-    std::cout << "[deg]" << std::endl;
-    */
+    std::cout << "attVec :\t" << state0.quat.coeffs().transpose();
+    std::cout << "\t\t->\t";
+    std::cout << poseSol.state.quat.coeffs().transpose() << std::endl;
+    std::cout << "\t\t\t\t\t" << conj_state.quat.coeffs().transpose() << std::endl;
+    
 
     std::cout << "pos_score :\t\t" << pos_score << " [m]" << std::endl;
     std::cout << "att_score :\t\t" << att_score*Utilities::RAD2DEG << " [deg]"<< std::endl;

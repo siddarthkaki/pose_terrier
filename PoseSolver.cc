@@ -7,14 +7,18 @@
  *        2D-3D Correspondences A-Priori
  * @return VectorXd of estimate state (pose)
  */
-PoseSolution PoseSolver::SolvePose(Pose state0, const VectorXd& yVec, const Vector3d& rCamVec, const MatrixXd& rFeaMat)
+PoseSolution PoseSolver::SolvePose(const Pose& state0, const VectorXd& yVec, const Vector3d& rCamVec, const MatrixXd& rFeaMat)
 {
     PoseSolution poseSol;
 
+    Vector3d  posHatVec = state0.pos;
+    VectorXd quatHatVec(4); 
+    quatHatVec << state0.quat.w(), state0.quat.x(), state0.quat.y(), state0.quat.z();
+
     // The variables to solve for with initial values.
     // The variables will be mutated in place by the solver.
-    double*  posHatArr = state0.pos.data();
-    double* quatHatArr = state0.quat.coeffs().data();
+    double*  posHatArr =  posHatVec.data();
+    double* quatHatArr = quatHatVec.data();
     
     // number of feature points
     int numPts = rFeaMat.rows();
@@ -22,15 +26,16 @@ PoseSolution PoseSolver::SolvePose(Pose state0, const VectorXd& yVec, const Vect
     // Build the problem.
     ceres::Problem problem;
 
-    // TODO eigen param or regular
-    ceres::LocalParameterization *quaternion_parameterization = new ceres::EigenQuaternionParameterization;
+    // Specify parameterisation for quaternion block.
+    ceres::LocalParameterization *quaternion_parameterization = new ceres::QuaternionParameterization;
+
+    // Specify loss function.
+    ceres::LossFunction* loss_function = NULL; //new ceres::HuberLoss(0.1);
 
     // Set up the only cost function (also known as residual). This uses
     // auto-differentiation to obtain the derivative (jacobian).    
     ceres::CostFunction* cost_function = new ceres::AutoDiffCostFunction<MeasResidCostFunctorQuat, ceres::DYNAMIC, 3, 4>(
             new MeasResidCostFunctorQuat(yVec, rFeaMat, rCamVec), numPts*2);
-    
-    ceres::LossFunction* loss_function = new ceres::HuberLoss(0.1);
 
     problem.AddResidualBlock(cost_function, loss_function, posHatArr, quatHatArr);
 
@@ -48,8 +53,11 @@ PoseSolution PoseSolver::SolvePose(Pose state0, const VectorXd& yVec, const Vect
     ceres::Solve(options, &problem, &poseSol.summary);
 
     // convert estimated state information from double arrays to Eigen
-    poseSol.state.pos  = Eigen::Map<Eigen::Matrix<double,3,1>>(posHatArr);
-    poseSol.state.quat = Eigen::Map<Eigen::Quaternion<double>>(quatHatArr);
+    poseSol.state.pos  = posHatVec;
+    poseSol.state.quat.w() = quatHatVec(0);
+    poseSol.state.quat.x() = quatHatVec(1);
+    poseSol.state.quat.y() = quatHatVec(2);
+    poseSol.state.quat.z() = quatHatVec(3);
 
     return poseSol;
 }
