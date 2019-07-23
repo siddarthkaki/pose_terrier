@@ -156,29 +156,6 @@ VectorXd Utilities::AddGaussianNoiseToVector(const VectorXd& vec, const double& 
 }
 
 /**
- * @function UniformRandomAttitude
- * @brief Generates a quaternion representing a uniform random rotation in SO(3)
- * @return Quaterniond contain uniform random rotation
- */
-Quaterniond Utilities::UniformRandomAttitude()
-{
-    Eigen::EigenMultivariateNormal<double> normX_solver(Vector3d::Zero(), MatrixXd::Identity(3,3));
-    
-    Vector3d rand_axis = normX_solver.samples(1);
-    rand_axis.normalize();
-
-    std::default_random_engine generator;
-    std::uniform_real_distribution<double> distribution(0.0, 2.0*M_PI);
-    double rand_ang = distribution(generator);
-
-    Quaterniond rand_att;
-    rand_att = AngleAxisd(rand_ang, rand_axis);
-    rand_att.normalize();
-
-    return rand_att;
-}
-
-/**
  * @function ConjugatePose
  * @brief Finds the so-called "conjugate pose" for a given pose
  * @return Pose struct of conjugate pose
