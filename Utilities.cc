@@ -54,8 +54,10 @@ MatrixXd Utilities::FeaPointsTargetToChaser(const Pose& state, const Vector3d& r
 
     for (unsigned int idx = 0; idx < numPts; idx++)
     {
-        Vector3d rFeaVeci = rFeaMat.row(idx);
-        Vector3d rFeaVeci_c = state.quat*rFeaVeci;
+        Quaterniond rFeaVeciQuat;
+        rFeaVeciQuat.w() = 0;
+        rFeaVeciQuat.vec() = rFeaMat.row(idx);
+        Vector3d rFeaVeci_c = ( (state.quat)*rFeaVeciQuat*(state.quat.conjugate()) ).vec();
 
         // position vector of feature point i wrt chaser in chaser frame
         Vector3d rVeci = state.pos - rCamVec + rFeaVeci_c;
@@ -171,6 +173,7 @@ Quaterniond Utilities::UniformRandomAttitude()
 
     Quaterniond rand_att;
     rand_att = AngleAxisd(rand_ang, rand_axis);
+    rand_att.normalize();
 
     return rand_att;
 }
@@ -182,6 +185,7 @@ Quaterniond Utilities::UniformRandomAttitude()
  */
 Pose Utilities::ConjugatePose(const Pose& state)
 {
+    /*
     Vector3d p0 = state.quat*Vector3d::Zero();
     Vector3d p1 = state.quat*Vector3d::UnitZ();
     Vector3d p2 = state.quat*Vector3d::UnitY();
@@ -191,13 +195,21 @@ Pose Utilities::ConjugatePose(const Pose& state)
     Vector3d n = p01.cross(p02);
     
     if ( n(2) < 0 ) { n = -n; }
+    */
+   //Vector3d n = state.quat*Vector3d::UnitZ();
+
+    Quaterniond UnitZQuat;
+    UnitZQuat.w() = 0.0;
+    UnitZQuat.vec() = Vector3d::UnitZ();
+
+    Vector3d n = ( (state.quat)*UnitZQuat*(state.quat.conjugate()) ).vec();
 
     double phi  = acos( n.dot(Vector3d::UnitZ())/n.norm() );
     Vector3d aHat = n.cross(Vector3d::UnitZ()).normalized();
 
     Quaterniond conj_quat;
-    conj_quat = AngleAxisd( -2*phi, aHat );
-    conj_quat = conj_quat*state.quat;
+    conj_quat = AngleAxisd( 2*phi, aHat );
+    conj_quat = conj_quat.conjugate()*state.quat;
     
     Pose conj_state;
     conj_state.pos = state.pos;
@@ -215,7 +227,8 @@ double Utilities::PositionScore(const Vector3d& pos, const Vector3d& posHat)
 {
     Vector3d posErrVec = pos - posHat;
 
-    double pos_score = posErrVec.squaredNorm()/pos.squaredNorm();
+    //double pos_score = posErrVec.squaredNorm()/pos.squaredNorm();
+    double pos_score = posErrVec.norm();
     return pos_score;
 }
 
@@ -226,7 +239,7 @@ double Utilities::PositionScore(const Vector3d& pos, const Vector3d& posHat)
  */
 double Utilities::AttitudeScore(const Quaterniond& quat, const Quaterniond& quatHat)
 {
-    Quaterniond dqVec = quat.normalized()*quatHat.normalized().inverse();
+    Quaterniond dqVec = (quat.normalized())*(quatHat.normalized().conjugate());
 
     double att_score = 2*acos( std::abs( dqVec.w() ) );
     return att_score;

@@ -74,16 +74,16 @@ class MeasResidCostFunctorQuat
                     T* residuals) const
     {
 
-        /*Eigen::Matrix<T, 3, 1> posVec;
+        Eigen::Matrix<T, 3, 1> posVec;
         posVec(0) = posArr[0];
         posVec(1) = posArr[1];
-        posVec(2) = posArr[2];*/
+        posVec(2) = posArr[2];
 
-        // Map T* array to Eigen Vector3 with correct Scalar type
-        Eigen::Matrix<T,3,1> posVec = Eigen::Map<const Eigen::Matrix<T,3,1>>(posArr);
-
-        // Map T* array to Eigen Quaternion with correct Scalar type
-        Eigen::Quaternion<T> quat = Eigen::Map<const Eigen::Quaternion<T>>(quatArr);
+        Eigen::Quaternion<T> quat;
+        quat.w() = quatArr[0];
+        quat.x() = quatArr[1];
+        quat.y() = quatArr[2];
+        quat.z() = quatArr[3];
         quat.normalize();
 
         int numPts = rFeaMat_.rows();

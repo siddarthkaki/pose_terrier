@@ -45,7 +45,8 @@ PoseSolution PoseSolver::SolvePose(const Pose& state0, const VectorXd& yVec, con
     ceres::Solver::Options options;
     options.minimizer_type = ceres::TRUST_REGION;
     options.trust_region_strategy_type = ceres::LEVENBERG_MARQUARDT;
-    options.linear_solver_type = ceres::DENSE_QR;
+    //options.linear_solver_type = ceres::DENSE_QR;
+    options.linear_solver_type = ceres::SPARSE_NORMAL_CHOLESKY;
     options.use_nonmonotonic_steps = true;
     options.num_threads = 1;
     options.use_inner_iterations = false;
@@ -80,7 +81,7 @@ PoseSolution PoseSolver::SolvePoseReinit(const Pose& state0, const VectorXd& yVe
     for (unsigned int init_idx = 0; init_idx < num_init; init_idx++)
     {
         Pose state0i = state0;
-        state0i.quat = Utilities::UniformRandomAttitude();
+        state0i.quat = Quaterniond::UnitRandom();//UniformRandomAttitude();
         PoseSolution posSoli = SolvePose(state0i, yVec, rCamVec, rFeaMat);   
     
         double curr_cost = posSoli.summary.final_cost;

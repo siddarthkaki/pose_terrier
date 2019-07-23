@@ -75,7 +75,7 @@ int main(int argc, char** argv)
     // true state information
     double posArr [3] = {0.5377, 1.8339, 18.2235};
     //double quatArr [4] = {0.6937, -0.6773, 0.0642, 0.2365};
-    double quatArr [4] = {0.6443,   -0.6230,    0.4369,    0.0767};
+    double quatArr [4] = {1.2340,   -1.5971,    0.7174,    -0.2721};
     
     // convert true state information from double arrays to Eigen
     Pose stateTrue;
@@ -107,7 +107,8 @@ int main(int argc, char** argv)
     // solve for pose with ceres (via wrapper)
     PoseSolution poseSol = PoseSolver::SolvePose(state0, yVecNoise, rCamVec, rFeaMat);
 
-    Pose conj_state = Utilities::ConjugatePose(poseSol.state);
+    Pose conj_state_temp = Utilities::ConjugatePose(poseSol.state);
+    Pose conj_state = PoseSolver::SolvePose(conj_state_temp, yVecNoise, rCamVec, rFeaMat).state;
 
     // timing
     std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
@@ -132,10 +133,10 @@ int main(int argc, char** argv)
     std::cout << "\t->\t";
     std::cout << poseSol.state.pos.transpose() << " [m]" << std::endl;
 
-    std::cout << "attVec :\t" << state0.quat.coeffs().transpose();
+    std::cout << "attVec :\t" << state0.quat.w() << " " << state0.quat.vec().transpose();
     std::cout << "\t\t->\t";
-    std::cout << poseSol.state.quat.coeffs().transpose() << std::endl;
-    std::cout << "\t\t\t\t\t" << conj_state.quat.coeffs().transpose() << std::endl;
+    std::cout << poseSol.state.quat.w() << " " << poseSol.state.quat.vec().transpose() << std::endl;
+    std::cout << "\t\t\t\t\t" << conj_state.quat.w() << " " << conj_state.quat.vec().transpose() << std::endl;
     
 
     std::cout << "pos_score :\t\t" << pos_score << " [m]" << std::endl;
