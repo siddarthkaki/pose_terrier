@@ -1,7 +1,7 @@
 {
     "rCamVec": [0.0, 0.0, 0.0],
     "focal_length": 0.0055,
-    "meas_std_deg": 2.0, 
+    "meas_std_deg": 1.0, 
     "rFeaMat":
     [
         {"fea1": [0.0, 0.0, 0.5]},
