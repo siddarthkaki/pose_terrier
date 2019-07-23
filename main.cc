@@ -107,8 +107,8 @@ int main(int argc, char** argv)
     // solve for pose with ceres (via wrapper)
     PoseSolution poseSol = PoseSolver::SolvePose(state0, yVecNoise, rCamVec, rFeaMat);
 
-    Pose conj_state_temp = Utilities::ConjugatePose(poseSol.state);
-    Pose conj_state = PoseSolver::SolvePose(conj_state_temp, yVecNoise, rCamVec, rFeaMat).state;
+    Pose conj_state = Utilities::ConjugatePose(poseSol.state);
+    //Pose conj_state = PoseSolver::SolvePose(conj_state_temp, yVecNoise, rCamVec, rFeaMat).state;
 
     // timing
     std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();

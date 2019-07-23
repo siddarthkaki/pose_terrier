@@ -162,34 +162,30 @@ VectorXd Utilities::AddGaussianNoiseToVector(const VectorXd& vec, const double& 
  */
 Pose Utilities::ConjugatePose(const Pose& state)
 {
-    /*
-    Vector3d p0 = state.quat*Vector3d::Zero();
-    Vector3d p1 = state.quat*Vector3d::UnitZ();
-    Vector3d p2 = state.quat*Vector3d::UnitY();
-
-    Vector3d p01 = p1 - p0;
-    Vector3d p02 = p2 - p0;
-    Vector3d n = p01.cross(p02);
-    
-    if ( n(2) < 0 ) { n = -n; }
-    */
-   //Vector3d n = state.quat*Vector3d::UnitZ();
+    Quaterniond UnitYQuat;
+    UnitYQuat.w() = 0.0;
+    UnitYQuat.vec() = Vector3d::UnitY();
 
     Quaterniond UnitZQuat;
     UnitZQuat.w() = 0.0;
     UnitZQuat.vec() = Vector3d::UnitZ();
 
-    Vector3d n = ( (state.quat)*UnitZQuat*(state.quat.conjugate()) ).vec();
+    Vector3d p1 = (state.quat*UnitZQuat*state.quat.conjugate()).vec();
+    Vector3d p2 = (state.quat*UnitYQuat*state.quat.conjugate()).vec();
 
-    double phi  = acos( n.dot(Vector3d::UnitZ())/n.norm() );
-    Vector3d aHat = n.cross(Vector3d::UnitZ()).normalized();
+    Vector3d n = p1.cross(p2);
+    if (n(2) < 0) { n = -n; }
 
-    Quaterniond conj_quat;
-    conj_quat = AngleAxisd( 2*phi, aHat );
-    conj_quat = conj_quat.conjugate()*state.quat;
-    
-    Pose conj_state;
-    conj_state.pos = state.pos;
+    double phi = acos(n.dot(Vector3d::UnitZ())/n.norm());
+    Vector3d aHat = n.cross(Vector3d::UnitZ());
+    aHat.normalize();
+
+    Quaterniond quat_peterb;
+    quat_peterb = Eigen::AngleAxisd(-2*phi, aHat);
+
+    Quaterniond conj_quat = quat_peterb.conjugate()*state.quat;
+
+    Pose conj_state = state;
     conj_state.quat = conj_quat;
 
     return conj_state;
