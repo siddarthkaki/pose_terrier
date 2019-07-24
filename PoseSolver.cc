@@ -94,3 +94,22 @@ PoseSolution PoseSolver::SolvePoseReinit(const Pose& state0, const VectorXd& yVe
 
     return posSolOptimal;
 }
+
+/**
+ * @function TwoPointDiffTwistEstimator
+ * @brief Estimates Twist (velocity + angular velocity) from Pose at current
+ *        time j and Pose at time i = j - T, where T is the sampling period 
+ * @return Twist struct
+ */
+Twist PoseSolver::TwoPointDiffTwistEstimator(const Pose& statei, const Pose& statej, const double& T)
+{
+    Twist twist_j;
+
+    twist_j.vel =  (statej.pos - statei.pos) / T;
+
+    Quaterniond dqdt = (statei.quat.conjugate()*statej.quat);
+    dqdt.w() /= T;
+    dqdt.vec() /= T;
+
+    twist_j.ang_vel = 2*( dqdt*statej.quat.conjugate() ).vec();
+}
