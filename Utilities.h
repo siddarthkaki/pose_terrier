@@ -4,6 +4,7 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <random>
+#include <algorithm>
 #include <math.h>
 
 #include "ceres/ceres.h"
@@ -29,6 +30,12 @@ struct PoseSolution
     ceres::Solver::Summary summary;
 };
 
+struct Twist
+{
+    Vector3d vel;
+    Vector3d ang_vel;
+};
+
 class Utilities
 {
     public:
@@ -41,6 +48,8 @@ class Utilities
         static Pose ConjugatePose(const Pose& state);
         static double   PositionScore(const Vector3d& pos, const Vector3d& posHat);
         static double   AttitudeScore(const Quaterniond& quat, const Quaterniond& quatHat);
+        static double StdVectorMean(const std::vector<double>& vec);
+        static double StdVectorVar(const std::vector<double>& vec);
 
         static constexpr double DEG2RAD = M_PI/180.0;
         static constexpr double RAD2DEG = 180.0/M_PI;

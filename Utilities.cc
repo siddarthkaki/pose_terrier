@@ -200,8 +200,8 @@ double Utilities::PositionScore(const Vector3d& pos, const Vector3d& posHat)
 {
     Vector3d posErrVec = pos - posHat;
 
-    //double pos_score = posErrVec.squaredNorm()/pos.squaredNorm();
-    double pos_score = posErrVec.norm();
+    double pos_score = posErrVec.squaredNorm()/pos.squaredNorm();
+    //double pos_score = posErrVec.norm();
     return pos_score;
 }
 
@@ -216,4 +216,30 @@ double Utilities::AttitudeScore(const Quaterniond& quat, const Quaterniond& quat
 
     double att_score = 2*acos( std::abs( dqVec.w() ) );
     return att_score;
+}
+
+/**
+ * @function StdVectorMean
+ * @brief computes the mean of doubles provided in an std::vector
+ * @return mean as double
+ */
+double Utilities::StdVectorMean(const std::vector<double>& vec)
+{
+    double pos_score_mean = std::accumulate(vec.begin(), vec.end(), 0.0)/vec.size();
+    return pos_score_mean;
+}
+
+/**
+ * @function StdVectorVar
+ * @brief computes the variance of doubles provided in an std::vector
+ * @return variance as double
+ */
+double Utilities::StdVectorVar(const std::vector<double>& vec)
+{
+    double mean = StdVectorMean(vec);
+    double var = 0;
+    for(unsigned int n = 0; n < vec.size(); n++)
+    { var += pow( (vec.at(n) - mean), 2 ); }
+    var /= vec.size();
+    return var;
 }
