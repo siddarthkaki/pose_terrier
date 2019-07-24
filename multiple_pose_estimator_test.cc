@@ -171,8 +171,8 @@ int main(int argc, char** argv)
     std::cout << "pos_score_mean :\t" << pos_score_mean << /*" [m]" <<*/ std::endl;
     std::cout << "pos_score_std  :\t" << pos_score_std  << /*" [m]" <<*/ std::endl << std::endl;
 
-    std::cout << "att_score_mean :\t" << att_score_mean << " [rad]" << std::endl;
-    std::cout << "att_score_std  :\t" << att_score_std  << " [rad]" << std::endl << std::endl;
+    std::cout << "att_score_mean :\t" << att_score_mean*Utilities::RAD2DEG << " [deg]" << std::endl;
+    std::cout << "att_score_std  :\t" << att_score_std*Utilities::RAD2DEG  << " [deg]" << std::endl << std::endl;
 
     std::cout << "mean_time  :\t" << solution_times_mean << " [ms]" << std::endl;
     std::cout << "total_time :\t" << solution_times_mean*num_poses_test << " [ms]" << std::endl;

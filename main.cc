@@ -139,7 +139,7 @@ int main(int argc, char** argv)
     std::cout << "\t\t\t\t\t" << conj_state.quat.w() << " " << conj_state.quat.vec().transpose() << std::endl;
     
 
-    std::cout << "pos_score :\t\t" << pos_score << " [m]" << std::endl;
+    std::cout << "pos_score :\t\t" << pos_score << /*" [m]" <<*/ std::endl;
     std::cout << "att_score :\t\t" << att_score*Utilities::RAD2DEG << " [deg]"<< std::endl;
     std::cout << "conj_att_score :\t" << conj_att_score*Utilities::RAD2DEG << " [deg]"<< std::endl;
 

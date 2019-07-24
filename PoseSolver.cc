@@ -45,12 +45,12 @@ PoseSolution PoseSolver::SolvePose(const Pose& state0, const VectorXd& yVec, con
     ceres::Solver::Options options;
     options.minimizer_type = ceres::TRUST_REGION;
     options.trust_region_strategy_type = ceres::LEVENBERG_MARQUARDT;
-    //options.linear_solver_type = ceres::DENSE_QR;
-    options.linear_solver_type = ceres::SPARSE_NORMAL_CHOLESKY;
+    options.linear_solver_type = ceres::DENSE_QR;
+    //options.linear_solver_type = ceres::SPARSE_NORMAL_CHOLESKY;
     options.use_nonmonotonic_steps = true;
     options.num_threads = 1;
     options.use_inner_iterations = false;
-    options.minimizer_progress_to_stdout = true;
+    options.minimizer_progress_to_stdout = false;
     ceres::Solve(options, &problem, &poseSol.summary);
 
     // convert estimated state information from double arrays to Eigen

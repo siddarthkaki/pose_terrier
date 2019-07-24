@@ -232,7 +232,7 @@ double Utilities::StdVectorMean(const std::vector<double>& vec)
 /**
  * @function StdVectorVar
  * @brief computes the variance of doubles provided in an std::vector
- * @return variance as double
+ * @return variance as doublem
  */
 double Utilities::StdVectorVar(const std::vector<double>& vec)
 {
