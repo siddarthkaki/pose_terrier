@@ -60,15 +60,15 @@ int main(int argc, char** argv)
     double quatArr0[4] = {1.0, 0.0, 0.0, 0.0}; // w,x,y,z
 
     // convert initial state information from double arrays to Eigen
-    Pose state0;
-    state0.pos(0) = posArr0[0];
-    state0.pos(1) = posArr0[1];
-    state0.pos(2) = posArr0[2];
-    state0.quat.w() = quatArr0[0];
-    state0.quat.x() = quatArr0[1];
-    state0.quat.y() = quatArr0[2];
-    state0.quat.z() = quatArr0[3]; 
-    state0.quat.normalize();
+    Pose pose0;
+    pose0.pos(0) = posArr0[0];
+    pose0.pos(1) = posArr0[1];
+    pose0.pos(2) = posArr0[2];
+    pose0.quat.w() = quatArr0[0];
+    pose0.quat.x() = quatArr0[1];
+    pose0.quat.y() = quatArr0[2];
+    pose0.quat.z() = quatArr0[3]; 
+    pose0.quat.normalize();
 
     //-- Simulate Measurements -----------------------------------------------/
 
@@ -78,18 +78,18 @@ int main(int argc, char** argv)
     double quatArr [4] = {1.2340,   -1.5971,    0.7174,    -0.2721};
     
     // convert true state information from double arrays to Eigen
-    Pose stateTrue;
-    stateTrue.pos(0) = posArr[0];
-    stateTrue.pos(1) = posArr[1];
-    stateTrue.pos(2) = posArr[2];
-    stateTrue.quat.w() = quatArr[0];
-    stateTrue.quat.x() = quatArr[1];
-    stateTrue.quat.y() = quatArr[2];
-    stateTrue.quat.z() = quatArr[3]; 
-    stateTrue.quat.normalize();
+    Pose poseTrue;
+    poseTrue.pos(0) = posArr[0];
+    poseTrue.pos(1) = posArr[1];
+    poseTrue.pos(2) = posArr[2];
+    poseTrue.quat.w() = quatArr[0];
+    poseTrue.quat.x() = quatArr[1];
+    poseTrue.quat.y() = quatArr[2];
+    poseTrue.quat.z() = quatArr[3]; 
+    poseTrue.quat.normalize();
 
     // express feature points in chaser frame at the specified pose
-    MatrixXd rMat = Utilities::FeaPointsTargetToChaser(stateTrue, rCamVec, rFeaMat);
+    MatrixXd rMat = Utilities::FeaPointsTargetToChaser(poseTrue, rCamVec, rFeaMat);
 
     // generate simulated measurements
     VectorXd yVec = Utilities::SimulateMeasurements(rMat, focal_length);
@@ -105,10 +105,10 @@ int main(int argc, char** argv)
     std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
 
     // solve for pose with ceres (via wrapper)
-    PoseSolution poseSol = PoseSolver::SolvePoseReinit(state0, yVecNoise, rCamVec, rFeaMat);
+    PoseSolution poseSol = PoseSolver::SolvePoseReinit(pose0, yVecNoise, rCamVec, rFeaMat);
 
-    Pose conj_state_temp = Utilities::ConjugatePose(poseSol.state);
-    Pose conj_state = PoseSolver::SolvePose(conj_state_temp, yVecNoise, rCamVec, rFeaMat).state;
+    Pose conj_pose_temp = Utilities::ConjugatePose(poseSol.pose);
+    Pose conj_pose = PoseSolver::SolvePose(conj_pose_temp, yVecNoise, rCamVec, rFeaMat).pose;
 
     // timing
     std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
@@ -120,23 +120,23 @@ int main(int argc, char** argv)
     //-- Performance Metrics & Outputs ---------------------------------------/
 
     // compute position and attitude scores
-    double      pos_score = Utilities::PositionScore(stateTrue.pos , poseSol.state.pos );
-    double      att_score = Utilities::AttitudeScore(stateTrue.quat, poseSol.state.quat);
-    double conj_att_score = Utilities::AttitudeScore(stateTrue.quat,    conj_state.quat);
+    double      pos_score = Utilities::PositionScore(poseTrue.pos , poseSol.pose.pos );
+    double      att_score = Utilities::AttitudeScore(poseTrue.quat, poseSol.pose.quat);
+    double conj_att_score = Utilities::AttitudeScore(poseTrue.quat,    conj_pose.quat);
 
     // print to command line
     std::cout << poseSol.summary.BriefReport() << "\n";
     //std::cout << poseSol.summary.FullReport() << "\n";
     
     
-    std::cout << "posVec :\t" << state0.pos.transpose();
+    std::cout << "posVec :\t" << pose0.pos.transpose();
     std::cout << "\t->\t";
-    std::cout << poseSol.state.pos.transpose() << " [m]" << std::endl;
+    std::cout << poseSol.pose.pos.transpose() << " [m]" << std::endl;
 
-    std::cout << "attVec :\t" << state0.quat.w() << " " << state0.quat.vec().transpose();
+    std::cout << "attVec :\t" << pose0.quat.w() << " " << pose0.quat.vec().transpose();
     std::cout << "\t\t->\t";
-    std::cout << poseSol.state.quat.w() << " " << poseSol.state.quat.vec().transpose() << std::endl;
-    std::cout << "\t\t\t\t\t" << conj_state.quat.w() << " " << conj_state.quat.vec().transpose() << std::endl;
+    std::cout << poseSol.pose.quat.w() << " " << poseSol.pose.quat.vec().transpose() << std::endl;
+    std::cout << "\t\t\t\t\t" << conj_pose.quat.w() << " " << conj_pose.quat.vec().transpose() << std::endl;
     
 
     std::cout << "pos_score :\t\t" << pos_score << /*" [m]" <<*/ std::endl;

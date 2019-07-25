@@ -7,13 +7,13 @@
  *        2D-3D Correspondences A-Priori
  * @return VectorXd of estimate state (pose)
  */
-PoseSolution PoseSolver::SolvePose(const Pose& state0, const VectorXd& yVec, const Vector3d& rCamVec, const MatrixXd& rFeaMat)
+PoseSolution PoseSolver::SolvePose(const Pose& pose0, const VectorXd& yVec, const Vector3d& rCamVec, const MatrixXd& rFeaMat)
 {
     PoseSolution poseSol;
 
-    Vector3d  posHatVec = state0.pos;
+    Vector3d  posHatVec = pose0.pos;
     VectorXd quatHatVec(4); 
-    quatHatVec << state0.quat.w(), state0.quat.x(), state0.quat.y(), state0.quat.z();
+    quatHatVec << pose0.quat.w(), pose0.quat.x(), pose0.quat.y(), pose0.quat.z();
 
     // The variables to solve for with initial values.
     // The variables will be mutated in place by the solver.
@@ -54,11 +54,11 @@ PoseSolution PoseSolver::SolvePose(const Pose& state0, const VectorXd& yVec, con
     ceres::Solve(options, &problem, &poseSol.summary);
 
     // convert estimated state information from double arrays to Eigen
-    poseSol.state.pos  = posHatVec;
-    poseSol.state.quat.w() = quatHatVec(0);
-    poseSol.state.quat.x() = quatHatVec(1);
-    poseSol.state.quat.y() = quatHatVec(2);
-    poseSol.state.quat.z() = quatHatVec(3);
+    poseSol.pose.pos  = posHatVec;
+    poseSol.pose.quat.w() = quatHatVec(0);
+    poseSol.pose.quat.x() = quatHatVec(1);
+    poseSol.pose.quat.y() = quatHatVec(2);
+    poseSol.pose.quat.z() = quatHatVec(3);
 
     return poseSol;
 }
@@ -71,7 +71,7 @@ PoseSolution PoseSolver::SolvePose(const Pose& state0, const VectorXd& yVec, con
  *        Correspondences 
  * @return VectorXd of estimate state (pose)
  */
-PoseSolution PoseSolver::SolvePoseReinit(const Pose& state0, const VectorXd& yVec, const Vector3d& rCamVec, const MatrixXd& rFeaMat)
+PoseSolution PoseSolver::SolvePoseReinit(const Pose& pose0, const VectorXd& yVec, const Vector3d& rCamVec, const MatrixXd& rFeaMat)
 {
     unsigned int num_init = 5;
 
@@ -80,9 +80,9 @@ PoseSolution PoseSolver::SolvePoseReinit(const Pose& state0, const VectorXd& yVe
 
     for (unsigned int init_idx = 0; init_idx < num_init; init_idx++)
     {
-        Pose state0i = state0;
-        state0i.quat = Quaterniond::UnitRandom();//UniformRandomAttitude();
-        PoseSolution posSoli = SolvePose(state0i, yVec, rCamVec, rFeaMat);   
+        Pose pose0i = pose0;
+        pose0i.quat = Quaterniond::UnitRandom();//UniformRandomAttitude();
+        PoseSolution posSoli = SolvePose(pose0i, yVec, rCamVec, rFeaMat);   
     
         double curr_cost = posSoli.summary.final_cost;
         if (curr_cost < min_cost)
@@ -101,15 +101,15 @@ PoseSolution PoseSolver::SolvePoseReinit(const Pose& state0, const VectorXd& yVe
  *        time j and Pose at time i = j - T, where T is the sampling period 
  * @return Twist struct
  */
-Twist PoseSolver::TwoPointDiffTwistEstimator(const Pose& statei, const Pose& statej, const double& T)
+Twist PoseSolver::TwoPointDiffTwistEstimator(const Pose& posei, const Pose& posej, const double& T)
 {
     Twist twist_j;
 
-    twist_j.vel =  (statej.pos - statei.pos) / T;
+    twist_j.vel =  (posej.pos - posei.pos) / T;
 
-    Quaterniond dqdt = (statei.quat.conjugate()*statej.quat);
+    Quaterniond dqdt = (posei.quat.conjugate()*posej.quat);
     dqdt.w() /= T;
     dqdt.vec() /= T;
 
-    twist_j.ang_vel = 2*( dqdt*statej.quat.conjugate() ).vec();
+    twist_j.ang_vel = 2*( dqdt*posej.quat.conjugate() ).vec();
 }

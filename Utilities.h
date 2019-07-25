@@ -26,7 +26,7 @@ struct Pose
 
 struct PoseSolution
 {
-    Pose state;
+    Pose pose;
     ceres::Solver::Summary summary;
 };
 

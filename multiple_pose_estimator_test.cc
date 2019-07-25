@@ -81,10 +81,10 @@ int main(int argc, char** argv)
     //------------------------------------------------------------------------/
 
     // initial state guess
-    Pose state0;
-    state0.pos <<  0.0, 0.0, 25.0;
-    state0.quat.w() = 1.0;
-    state0.quat.vec() = Vector3d::Zero();
+    Pose pose0;
+    pose0.pos <<  0.0, 0.0, 25.0;
+    pose0.quat.w() = 1.0;
+    pose0.quat.vec() = Vector3d::Zero();
 
     //-- Loop ----------------------------------------------------------------/
 
@@ -105,14 +105,14 @@ int main(int argc, char** argv)
         //-- Simulate Measurements -------------------------------------------/
 
         // generate true state values for ith run
-        Pose stateTrue;
-        stateTrue.pos << 0.0, 0.0, 25.0;
-        stateTrue.pos.head(2) = Utilities::AddGaussianNoiseToVector(stateTrue.pos.head(2), 1);
-        stateTrue.pos.tail(1) = Utilities::AddGaussianNoiseToVector(stateTrue.pos, 3).tail(1);
-        stateTrue.quat = Quaterniond::UnitRandom();
+        Pose poseTrue;
+        poseTrue.pos << 0.0, 0.0, 25.0;
+        poseTrue.pos.head(2) = Utilities::AddGaussianNoiseToVector(poseTrue.pos.head(2), 1);
+        poseTrue.pos.tail(1) = Utilities::AddGaussianNoiseToVector(poseTrue.pos, 3).tail(1);
+        poseTrue.quat = Quaterniond::UnitRandom();
 
         // express feature points in chaser frame at the specified pose
-        MatrixXd rMat = Utilities::FeaPointsTargetToChaser(stateTrue, rCamVec, rFeaMat);
+        MatrixXd rMat = Utilities::FeaPointsTargetToChaser(poseTrue, rCamVec, rFeaMat);
 
         // generate simulated measurements
         VectorXd yVec = Utilities::SimulateMeasurements(rMat, focal_length);
@@ -128,10 +128,10 @@ int main(int argc, char** argv)
         std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
 
         // solve for pose with ceres (via wrapper)
-        PoseSolution poseSol = PoseSolver::SolvePoseReinit(state0, yVecNoise, rCamVec, rFeaMat);
+        PoseSolution poseSol = PoseSolver::SolvePoseReinit(pose0, yVecNoise, rCamVec, rFeaMat);
 
-        Pose conj_state_temp = Utilities::ConjugatePose(poseSol.state);
-        Pose conj_state = PoseSolver::SolvePose(conj_state_temp, yVecNoise, rCamVec, rFeaMat).state;
+        Pose conj_pose_temp = Utilities::ConjugatePose(poseSol.pose);
+        Pose conj_pose = PoseSolver::SolvePose(conj_pose_temp, yVecNoise, rCamVec, rFeaMat).pose;
 
         // timing
         std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
@@ -143,13 +143,13 @@ int main(int argc, char** argv)
         //-- Performance Metrics & Storage -----------------------------------/
 
         // compute position and attitude scores
-        double      pos_score = Utilities::PositionScore(stateTrue.pos , poseSol.state.pos );
-        double      att_score = Utilities::AttitudeScore(stateTrue.quat, poseSol.state.quat);
-        double conj_att_score = Utilities::AttitudeScore(stateTrue.quat,    conj_state.quat);
+        double      pos_score = Utilities::PositionScore(poseTrue.pos , poseSol.pose.pos );
+        double      att_score = Utilities::AttitudeScore(poseTrue.quat, poseSol.pose.quat);
+        double conj_att_score = Utilities::AttitudeScore(poseTrue.quat,    conj_pose.quat);
 
         // store info from ith run
-        solved_poses.push_back( poseSol.state );
-        solved_poses_conj.push_back( conj_state );
+        solved_poses.push_back( poseSol.pose );
+        solved_poses_conj.push_back( conj_pose );
         solution_times.push_back( (double)duration );
         pos_scores.push_back( pos_score );
         att_scores.push_back( std::min(att_score,conj_att_score) );

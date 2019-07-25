@@ -19,9 +19,9 @@ using Eigen::Quaterniond;
 class PoseSolver
 {
     public:
-        static PoseSolution SolvePose(const Pose& state0, const VectorXd& yVec, const Vector3d& rCamVec, const MatrixXd& rFeaMat);
-        static PoseSolution SolvePoseReinit(const Pose& state0, const VectorXd& yVec, const Vector3d& rCamVec, const MatrixXd& rFeaMat);
-        static Twist TwoPointDiffTwistEstimator(const Pose& statei, const Pose& statej, const double& T);
+        static PoseSolution SolvePose(const Pose& pose0, const VectorXd& yVec, const Vector3d& rCamVec, const MatrixXd& rFeaMat);
+        static PoseSolution SolvePoseReinit(const Pose& pose0, const VectorXd& yVec, const Vector3d& rCamVec, const MatrixXd& rFeaMat);
+        static Twist TwoPointDiffTwistEstimator(const Pose& posei, const Pose& posej, const double& T);
 };
 
 #endif // POSESOLVER_H_
