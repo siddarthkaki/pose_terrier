@@ -13,7 +13,7 @@
 
 #include "third_party/json.hpp"
 #include "third_party/KalmanFilter/KalmanFilter.h"
-#include "third_party/matplotlibcpp/matplotlibcpp.h"
+//#include "third_party/matplotlibcpp/matplotlibcpp.h"
 
 using Eigen::Vector3d;
 using Eigen::MatrixXd;
@@ -23,7 +23,8 @@ using Eigen::Quaterniond;
 using Eigen::AngleAxisd;
 using nlohmann::json;
 
-void PlotPoseTrajectory(const std::vector<Pose>& poses, const double& dt);
+#define GET_VARIABLE_NAME(Variable) (#Variable)
+//void PlotPoseTrajectory(const std::vector<Pose>& poses, const double& dt);
 
 /**
  * @function main
@@ -83,41 +84,39 @@ int main(int argc, char** argv)
     kf.SetInitialStateAndCovar(state0, covar0);
     //-------------//
 
-    std::vector<Pose> solved_poses;
-    std::vector<Pose> solved_poses_conj;
-    std::vector<Pose> true_poses;
+    std::vector<Pose> true_poses, solved_poses, solved_poses_conj, filtered_poses;
     std::vector<double> solution_times; // [ms]
     std::vector<double> pos_scores;
     std::vector<double> att_scores;
 
+    true_poses.reserve(num_poses_test);
     solved_poses.reserve(num_poses_test);
     solved_poses_conj.reserve(num_poses_test);
-    true_poses.reserve(num_poses_test);
+    filtered_poses.reserve(num_poses_test);
     solution_times.reserve(num_poses_test);
     pos_scores.reserve(num_poses_test);
     att_scores.reserve(num_poses_test);
 
-    Pose poseTrue;
-    poseTrue.pos << 0.0, 0.0, 25.0;
-    poseTrue.quat = Quaterniond::UnitRandom();
-    true_poses.push_back(poseTrue);
-    //poseTrue.quat.w() = 1.0;
-    //poseTrue.quat.vec() = Vector3d::Zero();
+    Pose pose_true;
+    pose_true.pos << 0.0, 0.0, 25.0;
+    pose_true.quat = Quaterniond::UnitRandom();
+    //true_poses.push_back(pose_true);
+    //pose_true.quat.w() = 1.0;
+    //pose_true.quat.vec() = Vector3d::Zero();
 
     for (unsigned int pose_idx = 0; pose_idx < num_poses_test; pose_idx++)
     {
         //-- Simulate Measurements -------------------------------------------/
 
         // generate true pose values for ith run
-        poseTrue.pos += Vector3d::Ones()*0.5;
+        pose_true.pos += Vector3d::Ones()*0.05;
         Quaterniond quat_step = AngleAxisd( 0.01, Vector3d::UnitX() )*
                                 AngleAxisd( 0.01, Vector3d::UnitY() )*
                                 AngleAxisd( 0.01, Vector3d::UnitZ() );
-        poseTrue.quat = poseTrue.quat*quat_step;
-        true_poses.push_back(poseTrue);
+        pose_true.quat = pose_true.quat*quat_step;
 
         // express feature points in chaser frame at the specified pose
-        MatrixXd rMat = Utilities::FeaPointsTargetToChaser(poseTrue, rCamVec, rFeaMat);
+        MatrixXd rMat = Utilities::FeaPointsTargetToChaser(pose_true, rCamVec, rFeaMat);
 
         // generate simulated measurements
         VectorXd yVec = Utilities::SimulateMeasurements(rMat, focal_length);
@@ -133,22 +132,22 @@ int main(int argc, char** argv)
         std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
 
         // solve for pose with ceres (via wrapper)
-        PoseSolution poseSol = PoseSolver::SolvePoseReinit(pose0, yVecNoise, rCamVec, rFeaMat);
+        PoseSolution pose_sol = PoseSolver::SolvePoseReinit(pose0, yVecNoise, rCamVec, rFeaMat);
 
-        Pose conj_pose_temp = Utilities::ConjugatePose(poseSol.pose);
+        Pose conj_pose_temp = Utilities::ConjugatePose(pose_sol.pose);
         Pose conj_pose = PoseSolver::SolvePose(conj_pose_temp, yVecNoise, rCamVec, rFeaMat).pose;
 
         // KF tracking
         VectorXd pose_meas_wrapper(6);
-        pose_meas_wrapper.head(3) = poseSol.pose.pos;
-        pose_meas_wrapper.tail(3) = poseSol.pose.quat.toRotationMatrix().eulerAngles(0, 1, 2);
+        pose_meas_wrapper.head(3) = pose_sol.pose.pos;
+        pose_meas_wrapper.tail(3) = pose_sol.pose.quat.toRotationMatrix().eulerAngles(0, 1, 2);
         kf.KFStep(pose_meas_wrapper);
         VectorXd pose_filt_wrapper = kf.states.back().head(6);
-        Pose poseFiltered;
-        poseFiltered.pos  = pose_filt_wrapper.head(3);
-        poseFiltered.quat = AngleAxisd(pose_filt_wrapper(3), Vector3d::UnitX())*
-                            AngleAxisd(pose_filt_wrapper(4), Vector3d::UnitY())*
-                            AngleAxisd(pose_filt_wrapper(5), Vector3d::UnitZ());
+        Pose pose_filtered;
+        pose_filtered.pos  = pose_filt_wrapper.head(3);
+        pose_filtered.quat = AngleAxisd(pose_filt_wrapper(3), Vector3d::UnitX())*
+                             AngleAxisd(pose_filt_wrapper(4), Vector3d::UnitY())*
+                             AngleAxisd(pose_filt_wrapper(5), Vector3d::UnitZ());
 
         // timing
         std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
@@ -160,13 +159,15 @@ int main(int argc, char** argv)
         //-- Performance Metrics & Storage -----------------------------------/
 
         // compute position and attitude scores
-        double      pos_score = Utilities::PositionScore(poseTrue.pos , poseFiltered.pos );
-        double      att_score = Utilities::AttitudeScore(poseTrue.quat, poseFiltered.quat);
-        //double conj_att_score = Utilities::AttitudeScore(poseTrue.quat,    conj_pose.quat);
+        double      pos_score = Utilities::PositionScore(pose_true.pos , pose_filtered.pos );
+        double      att_score = Utilities::AttitudeScore(pose_true.quat, pose_filtered.quat);
+        //double conj_att_score = Utilities::AttitudeScore(pose_true.quat,    conj_pose.quat);
 
         // store info from ith run
-        solved_poses.push_back( poseFiltered );
-        //solved_poses_conj.push_back( conj_pose );
+        true_poses.push_back( pose_true );
+        solved_poses.push_back( pose_sol.pose );
+        solved_poses_conj.push_back( conj_pose );
+        filtered_poses.push_back( pose_filtered );
         solution_times.push_back( (double)duration );
         pos_scores.push_back( pos_score );
         att_scores.push_back( att_score ); //std::min(att_score,conj_att_score) );
@@ -175,7 +176,13 @@ int main(int argc, char** argv)
 
     //-- Performance Metric Stats & Output -----------------------------------/
 
-    PlotPoseTrajectory(solved_poses, kf_dt);
+    //PlotPoseTrajectory(solved_poses, kf_dt);
+
+    // write to csv file
+    Utilities::WritePosesToCSV(true_poses, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(true_poses))));
+    Utilities::WritePosesToCSV(solved_poses, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(solved_poses))));
+    Utilities::WritePosesToCSV(filtered_poses, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(filtered_poses))));
+
 
     double pos_score_mean = Utilities::StdVectorMean(pos_scores);
     double att_score_mean = Utilities::StdVectorMean(att_scores);
@@ -201,7 +208,7 @@ int main(int argc, char** argv)
 }
 
 
-
+/*
 void PlotPoseTrajectory(const std::vector<Pose>& poses, const double& dt)
 {
     unsigned int num_poses = poses.size();
@@ -228,14 +235,18 @@ void PlotPoseTrajectory(const std::vector<Pose>& poses, const double& dt)
         time.push_back( time.back() + dt );
     }
 
+    time.pop_back();
+
     namespace plt = matplotlibcpp;
     
     
     plt::figure_size(1200, 780);
     
-    plt::named_plot("x", time, x);
+    plt::named_plot("x", time, x, "b");
+    plt::named_plot("y", time, y, "r");
+    plt::named_plot("z", time, z, "g");
     // Set x-axis to interval [0,1000000]
-    plt::xlim(0, (int)(dt*num_poses));
+    plt::xlim(0.0, time.back()+dt);
     // Add graph title
     plt::title("Sample figure");
     // Enable legend.
@@ -243,3 +254,4 @@ void PlotPoseTrajectory(const std::vector<Pose>& poses, const double& dt)
     // Save the image (file format is determined by the extension)
     plt::save("./basic.png");
 }
+*/

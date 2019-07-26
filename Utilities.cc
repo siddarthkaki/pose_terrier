@@ -3,6 +3,8 @@
 using Eigen::AngleAxisd;
 using Eigen::Quaterniond;
 
+#define GET_VARIABLE_NAME(Variable) (#Variable)
+
 /**
  * @function Euler2DCM_312
  * @brief Converts euler angles phi, theta, psi (RPY) to DCM with 3-1-2 rotation
@@ -242,4 +244,40 @@ double Utilities::StdVectorVar(const std::vector<double>& vec)
     { var += pow( (vec.at(n) - mean), 2 ); }
     var /= vec.size();
     return var;
+}
+
+/**
+ * @function WrapVarToPath
+ * @brief TODO
+ * @return TODO
+ */
+std::string Utilities::WrapVarToPath(std::string varname)
+{
+    std::string path = "../data/" + varname + ".csv";
+    return path;
+}
+
+/**
+ * @function WritePosesToCSV
+ * @brief TODO
+ * @return TODO
+ */
+void Utilities::WritePosesToCSV(const std::vector<Pose>& vec, const std::string& filename)
+{
+    try
+    {
+        csvfile csv(filename); // throws exceptions!
+        // header
+        // csv << "X" << "VALUE" << endrow;
+        // data
+        for (Pose pose : vec)
+        {
+            csv << pose.pos(0) << pose.pos(1) << pose.pos(2);
+            csv << pose.quat.w() << pose.quat.x() << pose.quat.y() << pose.quat.z() << endrow;
+        }
+    }
+    catch (const std::exception &ex)
+    {
+        std::cout << "Exception was thrown: " << ex.what() << std::endl;
+    }
 }
