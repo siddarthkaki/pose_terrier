@@ -128,6 +128,9 @@ int main(int argc, char** argv)
 
         //-- Solve for pose --------------------------------------------------/
 
+        if (!filtered_poses.empty())
+        { pose0 = filtered_poses.back(); }
+
         // timing
         std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
 
