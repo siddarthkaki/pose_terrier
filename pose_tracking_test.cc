@@ -10,9 +10,9 @@
 #include "cost_functor.h"
 #include "Utilities.h"
 #include "PoseSolver.h"
+#include "KalmanFilter.h"
 
 #include "third_party/json.hpp"
-#include "third_party/KalmanFilter/KalmanFilter.h"
 //#include "third_party/matplotlibcpp/matplotlibcpp.h"
 
 using Eigen::Vector3d;
@@ -38,9 +38,19 @@ int main(int argc, char** argv)
     //-- Read-in problem geometry and params ---------------------------------/
 
     // read params from JSON file
-    std::ifstream input_stream("../params.json");
+    std::ifstream input_stream("params.json");
     json json_params;
-    input_stream >> json_params;
+    try
+    {
+        input_stream >> json_params;
+    }
+    catch (json::parse_error& e)
+    {
+        // output exception information
+        std::cout << "message: " << e.what() << '\n'
+                  << "exception id: " << e.id << '\n'
+                  << "byte position of error: " << e.byte << std::endl;
+    }
 
     // specify rigid position vector of camera wrt chaser in chaser frame
     Vector3d rCamVec;
@@ -64,25 +74,7 @@ int main(int argc, char** argv)
 
     //------------------------------------------------------------------------/
 
-    // initial pose guess
-    Pose pose0;
-    pose0.pos <<  0.0, 0.0, 25.0;
-    pose0.quat.w() = 1.0;
-    pose0.quat.vec() = Vector3d::Zero();
-
     //-- Loop ----------------------------------------------------------------/
-
-    //-- KF init --//
-    KF::KalmanFilter kf;
-    double kf_process_noise_std = 0.001;
-    double kf_measurement_noise_std = 0.05;
-    double kf_dt = 0.0005;
-    kf.InitLinearPoseTracking(kf_process_noise_std, kf_measurement_noise_std, kf_dt);
-    VectorXd state0 = VectorXd::Zero(kf.num_states_);
-    state0.head(6) << 0.0, 0.0, 25.0, 0.0, 0.0, 0.0;
-    MatrixXd covar0 = MatrixXd::Identity(kf.num_states_, kf.num_states_);
-    kf.SetInitialStateAndCovar(state0, covar0);
-    //-------------//
 
     std::vector<Pose> true_poses, solved_poses, solved_poses_conj, filtered_poses;
     std::vector<double> solution_times; // [ms]
@@ -97,22 +89,32 @@ int main(int argc, char** argv)
     pos_scores.reserve(num_poses_test);
     att_scores.reserve(num_poses_test);
 
+    // Kalman Filter object
+    KF::KalmanFilter kf;
+
+    // initial pose guess
+    Pose pose0;
+
+    // true pose
     Pose pose_true;
     pose_true.pos << 0.0, 0.0, 25.0;
-    pose_true.quat = Quaterniond::UnitRandom();
-    //true_poses.push_back(pose_true);
-    //pose_true.quat.w() = 1.0;
-    //pose_true.quat.vec() = Vector3d::Zero();
+    //pose_true.quat = Quaterniond::UnitRandom();
+    pose_true.quat.w() = 1.0;
+    pose_true.quat.vec() = Vector3d::Zero();
+
+    bool first_run = true;
 
     for (unsigned int pose_idx = 0; pose_idx < num_poses_test; pose_idx++)
     {
         //-- Simulate Measurements -------------------------------------------/
 
         // generate true pose values for ith run
-        pose_true.pos += Vector3d::Ones()*0.05;
-        Quaterniond quat_step = AngleAxisd( 0.01, Vector3d::UnitX() )*
-                                AngleAxisd( 0.01, Vector3d::UnitY() )*
-                                AngleAxisd( 0.01, Vector3d::UnitZ() );
+        pose_true.pos(0) += 0.0005;
+        pose_true.pos(1) -= 0.0005;
+        pose_true.pos(2) += 0.005;
+        Quaterniond quat_step = AngleAxisd( 0.0001, Vector3d::UnitX() )*
+                                AngleAxisd(-0.0001, Vector3d::UnitY() )*
+                                AngleAxisd( 0.0001, Vector3d::UnitZ() );
         pose_true.quat = pose_true.quat*quat_step;
 
         // express feature points in chaser frame at the specified pose
@@ -128,11 +130,20 @@ int main(int argc, char** argv)
 
         //-- Solve for pose --------------------------------------------------/
 
-        if (!filtered_poses.empty())
-        { pose0 = filtered_poses.back(); }
-
         // timing
         std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
+
+        // if first timestep, set NLS initial guess to default
+        if (first_run)
+        {
+            pose0.pos <<  0.0, 0.0, 25.0;
+            pose0.quat.w() = 1.0;
+            pose0.quat.vec() = Vector3d::Zero();
+        }
+        else // else, set NLS initial guess to last filtered estimate
+        {
+            pose0 = filtered_poses.back();
+        }
 
         // solve for pose with ceres (via wrapper)
         PoseSolution pose_sol = PoseSolver::SolvePoseReinit(pose0, yVecNoise, rCamVec, rFeaMat);
@@ -140,22 +151,74 @@ int main(int argc, char** argv)
         Pose conj_pose_temp = Utilities::ConjugatePose(pose_sol.pose);
         Pose conj_pose = PoseSolver::SolvePose(conj_pose_temp, yVecNoise, rCamVec, rFeaMat).pose;
 
-        // KF tracking
-        VectorXd pose_meas_wrapper(6);
-        pose_meas_wrapper.head(3) = pose_sol.pose.pos;
-        pose_meas_wrapper.tail(3) = pose_sol.pose.quat.toRotationMatrix().eulerAngles(0, 1, 2);
-        kf.KFStep(pose_meas_wrapper);
-        VectorXd pose_filt_wrapper = kf.states.back().head(6);
         Pose pose_filtered;
-        pose_filtered.pos  = pose_filt_wrapper.head(3);
-        pose_filtered.quat = AngleAxisd(pose_filt_wrapper(3), Vector3d::UnitX())*
-                             AngleAxisd(pose_filt_wrapper(4), Vector3d::UnitY())*
-                             AngleAxisd(pose_filt_wrapper(5), Vector3d::UnitZ());
+
+        // if first timestep, set KF prior to first NLS solution
+        if (first_run)
+        {
+            double kf_process_noise_std = 0.001;
+            double kf_measurement_noise_std = 0.05;
+            double kf_dt = 0.5;
+
+            kf.InitLinearPoseTracking(kf_process_noise_std, kf_measurement_noise_std, kf_dt);
+            VectorXd state0 = VectorXd::Zero(kf.num_states_);
+            state0.head(3) = pose_sol.pose.pos;
+            state0.segment(3,3) = pose_sol.pose.quat.toRotationMatrix().eulerAngles(0, 1, 2);
+            MatrixXd covar0 = 10.0*MatrixXd::Identity(kf.num_states_, kf.num_states_);
+            covar0(0,0) = 1.0;
+            covar0(1,1) = 1.0;
+            covar0(2,2) = 3.0;
+            covar0(3,3) = 10.0*Utilities::DEG2RAD;
+            covar0(4,4) = 10.0*Utilities::DEG2RAD;
+            covar0(5,5) = 10.0*Utilities::DEG2RAD;
+            kf.SetInitialStateAndCovar(state0, covar0);
+
+            kf.R_(0,0) = 1.0;
+            kf.R_(1,1) = 1.0;
+            kf.R_(2,2) = 3.0;
+            kf.R_(3,3) = 10.0*Utilities::DEG2RAD;
+            kf.R_(4,4) = 10.0*Utilities::DEG2RAD;
+            kf.R_(5,5) = 10.0*Utilities::DEG2RAD;
+
+            pose_filtered.pos = pose_sol.pose.pos;
+            pose_filtered.quat = pose_sol.pose.quat;
+        }
+        else // else, perform KF tracking
+        {
+            // prediction step
+            kf.Predict(VectorXd::Zero(kf.num_inputs_));
+
+            // wrap NLS pose solution as KF measurement
+            VectorXd pose_meas_wrapper(6);
+            pose_meas_wrapper.head(3) = pose_sol.pose.pos;
+            pose_meas_wrapper.tail(3) = pose_sol.pose.quat.toRotationMatrix().eulerAngles(0, 1, 2);
+
+            // wrap NLS conjugate pose solution as KF measurement
+            VectorXd conj_pose_meas_wrapper(6);
+            conj_pose_meas_wrapper.head(3) = conj_pose.pos;
+            conj_pose_meas_wrapper.tail(3) = conj_pose.quat.toRotationMatrix().eulerAngles(0, 1, 2);
+
+            // choose as measurement whichever pose produces the smallest measurement residual norm
+            double      pose_meas_norm = (      pose_meas_wrapper - kf.H_*kf.statek1k_).norm();
+            double conj_pose_meas_norm = ( conj_pose_meas_wrapper - kf.H_*kf.statek1k_).norm();            
+            if ( pose_meas_norm < conj_pose_meas_norm )
+            { kf.Update(pose_meas_wrapper); }
+            else
+            { kf.Update(conj_pose_meas_wrapper); }
+            kf.StoreAndClean();
+            
+            VectorXd pose_filt_wrapper = kf.states.back().head(6);
+            pose_filtered.pos  = pose_filt_wrapper.head(3);
+            pose_filtered.quat = AngleAxisd(pose_filt_wrapper(3), Vector3d::UnitX())*
+                                 AngleAxisd(pose_filt_wrapper(4), Vector3d::UnitY())*
+                                 AngleAxisd(pose_filt_wrapper(5), Vector3d::UnitZ());
+            //pose_filtered.quat = pose_filtered.quat.conjugate();
+        }
 
         // timing
         std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
         
-        // time taken to perform NLS solution
+        // time taken to perform pose solution
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>( t2 - t1 ).count();
         //--------------------------------------------------------------------/
 
@@ -164,7 +227,7 @@ int main(int argc, char** argv)
         // compute position and attitude scores
         double      pos_score = Utilities::PositionScore(pose_true.pos , pose_filtered.pos );
         double      att_score = Utilities::AttitudeScore(pose_true.quat, pose_filtered.quat);
-        //double conj_att_score = Utilities::AttitudeScore(pose_true.quat,    conj_pose.quat);
+        //double conj_att_score = Utilities::AttitudeScore(pose_true.quat,     conj_pose.quat);
 
         // store info from ith run
         true_poses.push_back( pose_true );
@@ -175,6 +238,7 @@ int main(int argc, char** argv)
         pos_scores.push_back( pos_score );
         att_scores.push_back( att_score ); //std::min(att_score,conj_att_score) );
 
+        if (first_run) { first_run = false; }
     }
 
     //-- Performance Metric Stats & Output -----------------------------------/

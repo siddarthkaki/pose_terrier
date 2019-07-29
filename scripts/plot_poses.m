@@ -13,6 +13,38 @@ filteredPosesMat = f_read_poses("../data/filtered_poses.csv");
 dt = 0.0005;
 tVec = 0:dt:(num_poses-1)*dt;
 
+%% compute position score
+
+possScoreVec = 100*ones(num_poses,1);
+
+% for idx = 1:num_poses,
+% 
+%     quat    = angle2quat(     truePosesMat(idx,4),     truePosesMat(idx,5),     truePosesMat(idx,6) );
+%     quatHat = angle2quat( filteredPosesMat(idx,4), filteredPosesMat(idx,5), filteredPosesMat(idx,6) );
+%     
+%     dquat = quatmultiply( quatnormalize(quat), quatconj(quatnormalize(quatHat)) );
+%     %dqVec = (quat.normalized())*(quatHat.normalized().conjugate());
+% 
+%     attScoreVec(idx) = 2*acosd( abs( dquat(1) ) ); % deg
+% end
+
+%% compute attitude score
+
+attScoreVec = 1000*ones(num_poses,1);
+
+for idx = 1:num_poses,
+
+    quat    = angle2quat(     truePosesMat(idx,4),     truePosesMat(idx,5),     truePosesMat(idx,6) );
+    quatHat = angle2quat( filteredPosesMat(idx,4), filteredPosesMat(idx,5), filteredPosesMat(idx,6) );
+    %quatHat = angle2quat( solvedPosesMat(idx,4), solvedPosesMat(idx,5), solvedPosesMat(idx,6) );
+    
+    dquat = quatmultiply( quatnormalize(quat), quatconj(quatnormalize(quatHat)) );
+    %dqVec = (quat.normalized())*(quatHat.normalized().conjugate());
+
+    attScoreVec(idx) = 2*acos( abs( dquat(1) ) ); % rad
+end
+
+
 %% plotting position
 figure(1)
 subplot(3,1,1)
@@ -44,10 +76,11 @@ grid on
 legend('true','LS','KF','Location','Northwest')
 xlabel('time [s]')
 ylabel('z [m]')
+ylim([0,50])
 
 %% plotting attitude
 figure(2)
-subplot(3,1,1)
+subplot(4,1,1)
 plot(tVec, truePosesMat(:,4))
 hold on
 plot(tVec, solvedPosesMat(:,4))
@@ -57,7 +90,7 @@ legend('true','LS','KF','Location','Northwest')
 xlabel('time [s]')
 ylabel('\phi [rad]')
 
-subplot(3,1,2)
+subplot(4,1,2)
 plot(tVec, truePosesMat(:,5))
 hold on
 plot(tVec, solvedPosesMat(:,5))
@@ -67,7 +100,7 @@ legend('true','LS','KF','Location','Northwest')
 xlabel('time [s]')
 ylabel('\theta [rad]')
 
-subplot(3,1,3)
+subplot(4,1,3)
 plot(tVec, truePosesMat(:,6))
 hold on
 plot(tVec, solvedPosesMat(:,6))
@@ -76,3 +109,9 @@ grid on
 legend('true','LS','KF','Location','Northwest')
 xlabel('time [s]')
 ylabel('\psi [rad]')
+
+subplot(4,1,4)
+plot(tVec, attScoreVec)
+grid on
+xlabel('time [s]')
+ylabel('att\_score [rad]')

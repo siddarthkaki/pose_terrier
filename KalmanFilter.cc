@@ -89,6 +89,9 @@ namespace KF {
     {
         statek1k_ = F_*statekk_ + G_*input;
         covark1k_ = F_*covarkk_*F_.transpose() + Q_;
+
+        statekk_ = statek1k_;
+        covarkk_ = covark1k_;
     }
 
     void KalmanFilter::Update(const VectorXd &measurement)
