@@ -81,7 +81,8 @@ PoseSolution PoseSolver::SolvePoseReinit(const Pose& pose0, const VectorXd& yVec
     for (unsigned int init_idx = 0; init_idx < num_init; init_idx++)
     {
         Pose pose0i = pose0;
-        pose0i.quat = Quaterniond::UnitRandom();//UniformRandomAttitude();
+        if (init_idx > 0)
+        { pose0i.quat = Quaterniond::UnitRandom(); }
         PoseSolution posSoli = SolvePose(pose0i, yVec, rCamVec, rFeaMat);   
     
         double curr_cost = posSoli.summary.final_cost;
