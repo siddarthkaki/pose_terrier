@@ -99,6 +99,7 @@ namespace KF {
         MatrixXd K = covark1k_*H_.transpose()*( ( H_*covark1k_*H_.transpose() + R_ ).inverse() );
         
         statek1k1_ = statek1k_ + K*( measurement - H_*statek1k_ );
+        //statek1k1_ = statek1k_ + covark1k_*H_.transpose()*( ( H_*covark1k_*H_.transpose() + R_ ).colPivHouseholderQr().solve(measurement - H_*statek1k_) );
 
         // Update for linear Gaussian systems
         //covark1k1_ = covark1k_ - K*H_*covark1k_;
@@ -136,5 +137,12 @@ namespace KF {
         covark1k1_ = MatrixXd::Zero(num_states_, num_states_);
     }
 
+    void KalmanFilter::PrintModelMatrices()
+    {
+        std::cout << "F:\t" << std::endl << F_ << std::endl << std::endl;
+        std::cout << "Q:\t" << std::endl << Q_ << std::endl << std::endl;
+        std::cout << "H:\t" << std::endl << H_ << std::endl << std::endl;
+        std::cout << "R:\t" << std::endl << R_ << std::endl << std::endl;
+    }
 
 } // end namespace

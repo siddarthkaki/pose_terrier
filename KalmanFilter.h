@@ -4,6 +4,7 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <vector>
+#include <iostream>
 #include <math.h>
 
 using Eigen::VectorXd;
@@ -45,6 +46,8 @@ class KalmanFilter
         void KFStep(const VectorXd &measurement);
         void KFStep(const VectorXd &measurement, const VectorXd &input);
         void StoreAndClean();
+
+        void PrintModelMatrices();
         //static double StdVectorVar(const std::vector<double>& vec);
 };
 

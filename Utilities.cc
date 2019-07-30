@@ -284,3 +284,31 @@ void Utilities::WritePosesToCSV(const std::vector<Pose>& vec, const std::string&
         std::cout << "Exception was thrown: " << ex.what() << std::endl;
     }
 }
+
+/**
+ * @function WriteKFCovarsToCSV
+ * @brief TODO
+ * @return TODO
+ */
+void Utilities::WriteKFCovarsToCSV(const std::vector<MatrixXd>& covars, const std::string& filename)
+{
+    try
+    {
+        csvfile csv(filename); // throws exceptions!
+        // header
+        // csv << "X" << "VALUE" << endrow;
+        // data
+        for (MatrixXd covar_ : covars)
+        {
+            VectorXd diag_ = covar_.diagonal();
+            
+            for (unsigned int idx = 0; idx < diag_.size(); idx++)
+            { csv << diag_(idx); }
+            csv << endrow;
+        }
+    }
+    catch (const std::exception &ex)
+    {
+        std::cout << "Exception was thrown: " << ex.what() << std::endl;
+    }
+}
