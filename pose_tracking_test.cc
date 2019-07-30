@@ -109,9 +109,9 @@ int main(int argc, char** argv)
         //-- Simulate Measurements -------------------------------------------/
 
         // generate true pose values for ith run
-        //pose_true.pos(0) += 0.0005;
-        //pose_true.pos(1) -= 0.0005;
-        //pose_true.pos(2) += 0.0005;
+        pose_true.pos(0) += 0.001;
+        pose_true.pos(1) -= 0.001;
+        pose_true.pos(2) += 0.01;
         Quaterniond quat_step = AngleAxisd( 0.001, Vector3d::UnitX() )*
                                 AngleAxisd(-0.001, Vector3d::UnitY() )*
                                 AngleAxisd( 0.001, Vector3d::UnitZ() );
@@ -184,6 +184,8 @@ int main(int argc, char** argv)
 
             pose_filtered.pos = pose_sol.pose.pos;
             pose_filtered.quat = pose_sol.pose.quat;
+
+            //solved_poses.push_back( pose_sol.pose );
         }
         else // else, perform KF tracking
         {
@@ -207,6 +209,16 @@ int main(int argc, char** argv)
             { kf.Update(pose_meas_wrapper); }
             else
             { kf.Update(conj_pose_meas_wrapper); }
+            
+            /*
+            double      meas_att_score = Utilities::AttitudeScore(pose_true.quat, pose_sol.pose.quat);
+            double conj_meas_att_score = Utilities::AttitudeScore(pose_true.quat, conj_pose.quat);
+            if ( meas_att_score < conj_meas_att_score )
+            { kf.Update(pose_meas_wrapper); solved_poses.push_back( pose_sol.pose ); }
+            else
+            { kf.Update(conj_pose_meas_wrapper); solved_poses.push_back( conj_pose ); }
+            */
+
             kf.StoreAndClean();
             
             VectorXd pose_filt_wrapper = kf.states.back();
