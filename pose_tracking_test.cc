@@ -97,7 +97,7 @@ int main(int argc, char** argv)
 
     // true pose
     Pose pose_true;
-    pose_true.pos << 0.0, 0.0, 25.0;
+    pose_true.pos << 0.5, -0.25, 30.0;
     //pose_true.quat = Quaterniond::UnitRandom();
     pose_true.quat.w() = 1.0;
     pose_true.quat.vec() = Vector3d::Zero();
@@ -109,12 +109,12 @@ int main(int argc, char** argv)
         //-- Simulate Measurements -------------------------------------------/
 
         // generate true pose values for ith run
-        pose_true.pos(0) += 0.0005;
-        pose_true.pos(1) -= 0.0005;
-        pose_true.pos(2) += 0.005;
-        Quaterniond quat_step = AngleAxisd( 0.0001, Vector3d::UnitX() )*
-                                AngleAxisd(-0.0001, Vector3d::UnitY() )*
-                                AngleAxisd( 0.0001, Vector3d::UnitZ() );
+        //pose_true.pos(0) += 0.0005;
+        //pose_true.pos(1) -= 0.0005;
+        //pose_true.pos(2) += 0.0005;
+        Quaterniond quat_step = AngleAxisd( 0.001, Vector3d::UnitX() )*
+                                AngleAxisd(-0.001, Vector3d::UnitY() )*
+                                AngleAxisd( 0.001, Vector3d::UnitZ() );
         pose_true.quat = pose_true.quat*quat_step;
 
         // express feature points in chaser frame at the specified pose
@@ -168,9 +168,9 @@ int main(int argc, char** argv)
             covar0(0,0) = 1.0;
             covar0(1,1) = 1.0;
             covar0(2,2) = 3.0;
-            covar0(3,3) = 10.0*Utilities::DEG2RAD;
-            covar0(4,4) = 10.0*Utilities::DEG2RAD;
-            covar0(5,5) = 10.0*Utilities::DEG2RAD;
+            covar0( 9, 9) = 10.0*Utilities::DEG2RAD;
+            covar0(10,10) = 10.0*Utilities::DEG2RAD;
+            covar0(11,11) = 10.0*Utilities::DEG2RAD;
             kf.SetInitialStateAndCovar(state0, covar0);
 
             kf.R_(0,0) = 1.0;
@@ -179,6 +179,8 @@ int main(int argc, char** argv)
             kf.R_(3,3) = 10.0*Utilities::DEG2RAD;
             kf.R_(4,4) = 10.0*Utilities::DEG2RAD;
             kf.R_(5,5) = 10.0*Utilities::DEG2RAD;
+
+            kf.PrintModelMatrices();
 
             pose_filtered.pos = pose_sol.pose.pos;
             pose_filtered.quat = pose_sol.pose.quat;
@@ -207,12 +209,12 @@ int main(int argc, char** argv)
             { kf.Update(conj_pose_meas_wrapper); }
             kf.StoreAndClean();
             
-            VectorXd pose_filt_wrapper = kf.states.back().head(6);
+            VectorXd pose_filt_wrapper = kf.states.back();
             pose_filtered.pos  = pose_filt_wrapper.head(3);
-            pose_filtered.quat = AngleAxisd(pose_filt_wrapper(3), Vector3d::UnitX())*
-                                 AngleAxisd(pose_filt_wrapper(4), Vector3d::UnitY())*
-                                 AngleAxisd(pose_filt_wrapper(5), Vector3d::UnitZ());
-            //pose_filtered.quat = pose_filtered.quat.conjugate();
+            pose_filtered.quat = AngleAxisd(pose_filt_wrapper(9) , Vector3d::UnitX())*
+                                 AngleAxisd(pose_filt_wrapper(10), Vector3d::UnitY())*
+                                 AngleAxisd(pose_filt_wrapper(11), Vector3d::UnitZ());
+            //pose_filtered.quat = pose_filtered.quat.conjugate(); // TODO KEEP OR REMOVE ?
         }
 
         // timing
@@ -249,7 +251,7 @@ int main(int argc, char** argv)
     Utilities::WritePosesToCSV(true_poses, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(true_poses))));
     Utilities::WritePosesToCSV(solved_poses, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(solved_poses))));
     Utilities::WritePosesToCSV(filtered_poses, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(filtered_poses))));
-
+    Utilities::WriteKFCovarsToCSV(kf.covars, Utilities::WrapVarToPath(std::string("filtered_covars")));
 
     double pos_score_mean = Utilities::StdVectorMean(pos_scores);
     double att_score_mean = Utilities::StdVectorMean(att_scores);
