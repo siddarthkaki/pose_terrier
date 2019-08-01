@@ -9,7 +9,9 @@ solvedPosesMat = f_read_poses("../data/solved_poses.csv");
 
 filteredPosesMat = f_read_poses("../data/filtered_poses.csv");
 
-covarsMat = f_read_covars("../data/filtered_covars.csv");
+statesMat = f_read_covars("../data/kf_states.csv");
+
+covarsMat = f_read_covars("../data/kf_covars.csv");
 
 [num_poses,~] = size(truePosesMat);
 dt = 0.5;
@@ -82,7 +84,7 @@ grid on
 legend('true','LS','KF','Location','Northwest')
 xlabel('time [s]')
 ylabel('z [m]')
-ylim([0,50])
+%ylim([0,50])
 
 %% plotting attitude
 figure(2)

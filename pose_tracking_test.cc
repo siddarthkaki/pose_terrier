@@ -153,10 +153,10 @@ int main(int argc, char** argv)
 
         Pose pose_filtered;
 
-        // if first timestep, set KF prior to first NLS solution
+        // if first time-step, then initialise KF model, and set KF prior to first NLS solution
         if (first_run)
         {
-            double kf_process_noise_std = 0.001;
+            double kf_process_noise_std = 0.01;
             double kf_measurement_noise_std = 0.05;
             double kf_dt = 0.5;
 
@@ -263,7 +263,8 @@ int main(int argc, char** argv)
     Utilities::WritePosesToCSV(true_poses, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(true_poses))));
     Utilities::WritePosesToCSV(solved_poses, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(solved_poses))));
     Utilities::WritePosesToCSV(filtered_poses, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(filtered_poses))));
-    Utilities::WriteKFCovarsToCSV(kf.covars, Utilities::WrapVarToPath(std::string("filtered_covars")));
+    Utilities::WriteKFStatesToCSV(kf.states, Utilities::WrapVarToPath(std::string("kf_states")));
+    Utilities::WriteKFCovarsToCSV(kf.covars, Utilities::WrapVarToPath(std::string("kf_covars")));
 
     double pos_score_mean = Utilities::StdVectorMean(pos_scores);
     double att_score_mean = Utilities::StdVectorMean(att_scores);

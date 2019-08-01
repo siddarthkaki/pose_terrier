@@ -286,6 +286,32 @@ void Utilities::WritePosesToCSV(const std::vector<Pose>& vec, const std::string&
 }
 
 /**
+ * @function WriteKFStatesToCSV
+ * @brief TODO
+ * @return TODO
+ */
+void Utilities::WriteKFStatesToCSV(const std::vector<VectorXd>& states, const std::string& filename)
+{
+    try
+    {
+        csvfile csv(filename); // throws exceptions!
+        // header
+        // csv << "X" << "VALUE" << endrow;
+        // data
+        for (VectorXd state_ : states)
+        {            
+            for (unsigned int idx = 0; idx < state_.size(); idx++)
+            { csv << state_(idx); }
+            csv << endrow;
+        }
+    }
+    catch (const std::exception &ex)
+    {
+        std::cout << "Exception was thrown: " << ex.what() << std::endl;
+    }
+}
+
+/**
  * @function WriteKFCovarsToCSV
  * @brief TODO
  * @return TODO
