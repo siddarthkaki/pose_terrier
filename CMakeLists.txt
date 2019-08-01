@@ -10,3 +10,6 @@ set (CMAKE_CXX_STANDARD 11)
 
 add_executable(pose_tracking_test pose_tracking_test.cc Utilities.cc PoseSolver.cc KalmanFilter.cc)
 target_link_libraries(pose_tracking_test ceres glog)
+
+add_executable(ekf_pose_tracking_test ekf_pose_tracking_test.cc Utilities.cc PoseSolver.cc KalmanFilter.cc)
+target_link_libraries(ekf_pose_tracking_test ceres glog)

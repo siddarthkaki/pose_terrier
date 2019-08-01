@@ -28,8 +28,8 @@ namespace KF {
     // Assumes a discrete Wiener process acceleration model
     void KalmanFilter::InitLinearPoseTracking(const double &process_noise_std, const double &measurement_noise_std, const double &dt)
     {
-        num_states_ = 18; // Pose (x, y, z, phi, theta, psi), PoseDot, PoseDotDot
-        num_measurements_ = 6; // Pose (x, y, z, phi, theta, psi)
+        num_states_ = 18; // pos (x, y, z), posDot, posDotDot, eul (phi, theta, psi), eulDot, eulDotDot
+        num_measurements_ = 6; // pose (x, y, z, phi, theta, psi)
         num_inputs_ = 0;
         dt_ = dt;
 
@@ -107,6 +107,32 @@ namespace KF {
         covark1k1_ = MatrixXd::Zero(num_states_, num_states_);
     }
 
+    void KalmanFilter::InitNonLinearPoseTracking(const double &process_noise_std, const double &measurement_noise_std, const double &dt)
+    {
+        num_states_ = 19; // pos (x,y,z), posDot, posDotDot, quat(4), omega(3), omegaDot(3) 
+        num_measurements_ = 7; // Pose (x, y, z, quat)
+        num_inputs_ = 0;
+        dt_ = dt;
+
+        Q_ = MatrixXd::Identity(num_states_, num_states_)*pow(process_noise_std,2); // process_noise_covariance
+        
+        R_ = MatrixXd::Identity(num_measurements_, num_measurements_)*pow(measurement_noise_std,2); // measurement_noise_covariance
+
+        F_ = MatrixXd::Identity(num_states_, num_states_); // dynamics_model init; MUST EXTERNALLY UPDATE
+
+        G_ = MatrixXd::Zero(num_states_, num_inputs_); // input_model
+
+        H_ = MatrixXd::Zero(num_measurements_, num_states_); // measurement_model init; MUST EXTERNALLY UPDATE
+
+        statekk_   = VectorXd::Zero(num_states_);
+        statek1k_  = VectorXd::Zero(num_states_);
+        statek1k1_ = VectorXd::Zero(num_states_);
+
+        covarkk_   = MatrixXd::Zero(num_states_, num_states_);
+        covark1k_  = MatrixXd::Zero(num_states_, num_states_);
+        covark1k1_ = MatrixXd::Zero(num_states_, num_states_);
+    }
+
     void KalmanFilter::SetInitialStateAndCovar(const VectorXd &state0, MatrixXd &covar0)
     {
         statekk_ = state0;
@@ -116,6 +142,7 @@ namespace KF {
         covars.push_back(covarkk_);
     }
 
+    // Linear prediction step
     void KalmanFilter::Predict(const VectorXd &input)
     {
         statek1k_ = F_*statekk_ + G_*input;
@@ -125,6 +152,18 @@ namespace KF {
         covarkk_ = covark1k_;
     }
 
+    // Non-linear prediction step (takes in pointer to function f that performs nonlinear state propagation)
+    void KalmanFilter::Predict(const VectorXd &input, VectorXd (*f)(VectorXd, double))
+    {
+        // TODO automatically determine F_ for time-step k from (*f)
+        statek1k_ = (*f)(statekk_, dt_) + G_*input;
+        covark1k_ = F_*covarkk_*F_.transpose() + Q_;
+
+        statekk_ = statek1k_;
+        covarkk_ = covark1k_;
+    }
+
+    // Linear update step
     void KalmanFilter::Update(const VectorXd &measurement)
     {
         MatrixXd K = covark1k_*H_.transpose()*( ( H_*covark1k_*H_.transpose() + R_ ).inverse() );
@@ -133,8 +172,17 @@ namespace KF {
         //statek1k1_ = statek1k_ + covark1k_*H_.transpose()*( ( H_*covark1k_*H_.transpose() + R_ ).colPivHouseholderQr().solve(measurement - H_*statek1k_) );
 
         // Update for linear Gaussian systems
-        //covark1k1_ = covark1k_ - K*H_*covark1k_;
+        covark1k1_ = covark1k_ - K*H_*covark1k_;
+    }
+
+    // Non-linear update step (takes in pointer to function h that performs nonlinear measurement update)
+    void KalmanFilter::Update(const VectorXd &measurement, VectorXd (*h)(VectorXd, double))
+    {
+        // TODO automatically determine H_ for time-step k from (*h)
+        MatrixXd K = covark1k_*H_.transpose()*( ( H_*covark1k_*H_.transpose() + R_ ).inverse() );
         
+        statek1k1_ = statek1k_ + K*( measurement - (*h)(statek1k_, dt_) );
+                
         // Joseph update (general)
         MatrixXd I = MatrixXd::Identity(num_states_, num_states_);
         covark1k1_ = (I - K*H_)*covark1k_*((I - K*H_).transpose()) + K*R_*(K.transpose());

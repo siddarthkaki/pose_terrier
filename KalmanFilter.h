@@ -40,9 +40,12 @@ class KalmanFilter
         KalmanFilter();
         KalmanFilter(const unsigned int &num_states, const unsigned int &num_measurements, const unsigned int &num_inputs, const double &dt);
         void InitLinearPoseTracking(const double &process_noise_std, const double &measurement_noise_std, const double &dt);
+        void InitNonLinearPoseTracking(const double &process_noise_std, const double &measurement_noise_std, const double &dt);
         void SetInitialStateAndCovar(const VectorXd &state0, MatrixXd &covar0);
         void Predict(const VectorXd &input);
+        void Predict(const VectorXd &input, VectorXd (*f)(VectorXd, double));
         void Update(const VectorXd &measurement);
+        void Update(const VectorXd &measurement, VectorXd (*h)(VectorXd, double));
         void KFStep(const VectorXd &measurement);
         void KFStep(const VectorXd &measurement, const VectorXd &input);
         void StoreAndClean();
