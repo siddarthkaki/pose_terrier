@@ -13,7 +13,6 @@
 #include "KalmanFilter.h"
 
 #include "third_party/json.hpp"
-//#include "third_party/matplotlibcpp/matplotlibcpp.h"
 
 using Eigen::Vector3d;
 using Eigen::MatrixXd;
@@ -24,7 +23,6 @@ using Eigen::AngleAxisd;
 using nlohmann::json;
 
 #define GET_VARIABLE_NAME(Variable) (#Variable)
-//void PlotPoseTrajectory(const std::vector<Pose>& poses, const double& dt);
 
 /**
  * @function main
@@ -257,8 +255,6 @@ int main(int argc, char** argv)
 
     //-- Performance Metric Stats & Output -----------------------------------/
 
-    //PlotPoseTrajectory(solved_poses, kf_dt);
-
     // write to csv file
     Utilities::WritePosesToCSV(true_poses, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(true_poses))));
     Utilities::WritePosesToCSV(solved_poses, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(solved_poses))));
@@ -288,52 +284,3 @@ int main(int argc, char** argv)
 
     return 0;
 }
-
-
-/*
-void PlotPoseTrajectory(const std::vector<Pose>& poses, const double& dt)
-{
-    unsigned int num_poses = poses.size();
-    std::vector<double> x, y, z, phi, theta, psi, time;
-    x.reserve(num_poses);
-    y.reserve(num_poses);
-    z.reserve(num_poses);
-    phi.reserve(num_poses);
-    theta.reserve(num_poses);
-    psi.reserve(num_poses);
-    time.reserve(num_poses);
-    time.push_back(0.0);
-    
-    for (Pose pose : poses)
-    {
-        Vector3d posVec = pose.pos;
-        Vector3d eulVec = pose.quat.toRotationMatrix().eulerAngles(0, 1, 2);
-        x.push_back(posVec(0));
-        y.push_back(posVec(1));
-        z.push_back(posVec(2));
-        phi.push_back(eulVec(0));
-        theta.push_back(eulVec(1));
-        psi.push_back(eulVec(2));
-        time.push_back( time.back() + dt );
-    }
-
-    time.pop_back();
-
-    namespace plt = matplotlibcpp;
-    
-    
-    plt::figure_size(1200, 780);
-    
-    plt::named_plot("x", time, x, "b");
-    plt::named_plot("y", time, y, "r");
-    plt::named_plot("z", time, z, "g");
-    // Set x-axis to interval [0,1000000]
-    plt::xlim(0.0, time.back()+dt);
-    // Add graph title
-    plt::title("Sample figure");
-    // Enable legend.
-    plt::legend();
-    // Save the image (file format is determined by the extension)
-    plt::save("./basic.png");
-}
-*/
