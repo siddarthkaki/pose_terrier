@@ -25,6 +25,7 @@ namespace KF {
         covark1k1_ = MatrixXd::Zero(num_states_, num_states_);
     }
 
+    // Assumes a discrete Wiener process acceleration model
     void KalmanFilter::InitLinearPoseTracking(const double &process_noise_std, const double &measurement_noise_std, const double &dt)
     {
         num_states_ = 18; // Pose (x, y, z, phi, theta, psi), PoseDot, PoseDotDot
@@ -32,7 +33,37 @@ namespace KF {
         num_inputs_ = 0;
         dt_ = dt;
 
-        Q_ = MatrixXd::Identity(num_states_, num_states_)*pow(process_noise_std,2); // process_noise_covariance
+        Q_ = MatrixXd::Identity(num_states_, num_states_);//*pow(process_noise_std,2); // process_noise_covariance
+        Q_(0,0) = 0.25*pow(dt,4);
+        Q_(1,1) = 0.25*pow(dt,4);
+        Q_(2,2) = 0.25*pow(dt,4);
+        Q_(3,3) = pow(dt,2);
+        Q_(4,4) = pow(dt,2);
+        Q_(5,5) = pow(dt,2);
+        Q_(6,6) = 1.0;
+        Q_(7,7) = 1.0;
+        Q_(8,8) = 1.0;
+        Q_(0,3) = 0.5*pow(dt,3);
+        Q_(1,4) = 0.5*pow(dt,3);
+        Q_(2,5) = 0.5*pow(dt,3);
+        Q_(3,6) = dt;
+        Q_(4,7) = dt;
+        Q_(5,8) = dt;
+        Q_(3,0) = 0.5*pow(dt,3);
+        Q_(4,1) = 0.5*pow(dt,3);
+        Q_(5,2) = 0.5*pow(dt,3);
+        Q_(6,3) = dt;
+        Q_(7,4) = dt;
+        Q_(8,5) = dt;
+        Q_(0,6) =0.5*pow(dt,2);
+        Q_(1,7) =0.5*pow(dt,2);
+        Q_(2,8) =0.5*pow(dt,2);
+        Q_(6,0) =0.5*pow(dt,2);
+        Q_(7,1) =0.5*pow(dt,2);
+        Q_(8,2) =0.5*pow(dt,2);
+        Q_.block(9,9,9,9) = Q_.block(0,0,9,9);
+        Q_ = Q_*pow(process_noise_std,2);
+        
         R_ = MatrixXd::Identity(num_measurements_, num_measurements_)*pow(measurement_noise_std,2); // measurement_noise_covariance
 
         F_ = MatrixXd::Identity(num_states_, num_states_); // dynamics_model
