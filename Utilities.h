@@ -60,6 +60,7 @@ class Utilities
         static void WritePosesToCSV(const std::vector<Pose>& vec, const std::string& filename);
         static void WriteKFStatesToCSV(const std::vector<VectorXd>& states, const std::string& filename);
         static void WriteKFCovarsToCSV(const std::vector<MatrixXd>& covars, const std::string& filename);
+        static MatrixXd ConvertToEigenMatrix(double **data);
 
         static constexpr double DEG2RAD = M_PI/180.0;
         static constexpr double RAD2DEG = 180.0/M_PI;

@@ -61,7 +61,7 @@ hold on
 plot(tVec, solvedPosesMat(:,1))
 plot(tVec, filteredPosesMat(:,1),'color',[0.4940, 0.1840, 0.5560],'LineWidth',2)
 grid on
-legend('true','LS','KF','Location','Northwest')
+legend('true','NLS','KF','Location','Northwest')
 xlabel('time [s]')
 ylabel('x [m]')
 
@@ -71,7 +71,7 @@ hold on
 plot(tVec, solvedPosesMat(:,2))
 plot(tVec, filteredPosesMat(:,2),'color',[0.4940, 0.1840, 0.5560],'LineWidth',2)
 grid on
-legend('true','LS','KF','Location','Southwest')
+legend('true','NLS','KF','Location','Southwest')
 xlabel('time [s]')
 ylabel('y [m]')
 
@@ -81,7 +81,7 @@ hold on
 plot(tVec, solvedPosesMat(:,3))
 plot(tVec, filteredPosesMat(:,3),'color',[0.4940, 0.1840, 0.5560],'LineWidth',2)
 grid on
-legend('true','LS','KF','Location','Northwest')
+legend('true','NLS','KF','Location','Northwest')
 xlabel('time [s]')
 ylabel('z [m]')
 %ylim([0,50])
@@ -95,7 +95,7 @@ hold on
 plot(tVec, rad2deg(solvedPosesMat(:,4)))
 plot(tVec, rad2deg(filteredPosesMat(:,4)),'color',[0.4940, 0.1840, 0.5560],'LineWidth',2)
 grid on
-legend('true','LS','KF','Location','Northwest')
+legend('true','NLS','KF','Location','Northwest')
 xlabel('time [s]')
 ylabel('\phi [deg]')
 
@@ -105,7 +105,7 @@ hold on
 plot(tVec, rad2deg(solvedPosesMat(:,5)))
 plot(tVec, rad2deg(filteredPosesMat(:,5)),'color',[0.4940, 0.1840, 0.5560],'LineWidth',2)
 grid on
-legend('true','LS','KF','Location','Northwest')
+legend('true','NLS','KF','Location','Northwest')
 xlabel('time [s]')
 ylabel('\theta [deg]')
 
@@ -115,7 +115,7 @@ hold on
 plot(tVec, rad2deg(solvedPosesMat(:,6)))
 plot(tVec, rad2deg(filteredPosesMat(:,6)),'color',[0.4940, 0.1840, 0.5560],'LineWidth',2)
 grid on
-legend('true','LS','KF','Location','Northwest')
+legend('true','NLS','KF','Location','Northwest')
 xlabel('time [s]')
 ylabel('\psi [deg]')
 
@@ -124,6 +124,6 @@ plot(tVec, rad2deg(attScoreVec),'color',[0.8500, 0.3250, 0.0980])
 hold on
 plot(tVec, rad2deg(attScoreVecFiltered),'color',[0.4940, 0.1840, 0.5560],'LineWidth',2)
 grid on
-legend('LS','KF')
+legend('NLS','KF')
 xlabel('time [s]')
 ylabel('att\_score [deg]')

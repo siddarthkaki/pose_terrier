@@ -8,6 +8,7 @@
 //#include "glog/logging.h"
 
 #include "cost_functor.h"
+#include "nonlinear_propagation_functor.h"
 #include "Utilities.h"
 #include "PoseSolver.h"
 #include "KalmanFilter.h"
@@ -25,8 +26,8 @@ using nlohmann::json;
 #define GET_VARIABLE_NAME(Variable) (#Variable)
 
 //VectorXd KF_NL_f(VectorXd statekk_, double dt_);
-template <typename T> Eigen::Matrix<T, Eigen::Dynamic, 1> KF_NL_f(Eigen::Matrix<T, Eigen::Dynamic, 1> statekk_ , double dt_);
-template <typename T> Eigen::Matrix<T, Eigen::Dynamic, 1> KF_NL_h(Eigen::Matrix<T, Eigen::Dynamic, 1> statek1k_, double dt_);
+//template <typename T> Eigen::Matrix<T, Eigen::Dynamic, 1> KF_NL_f(Eigen::Matrix<T, Eigen::Dynamic, 1> statekk_ , double dt_);
+//template <typename T> Eigen::Matrix<T, Eigen::Dynamic, 1> KF_NL_h(Eigen::Matrix<T, Eigen::Dynamic, 1> statek1k_, double dt_);
 
 /**
  * @function main
@@ -103,6 +104,13 @@ int main(int argc, char** argv)
     //pose_true.quat = Quaterniond::UnitRandom();
     pose_true.quat.w() = 1.0;
     pose_true.quat.vec() = Vector3d::Zero();
+
+
+    // set-up for Jacobian computation with ceres
+        constexpr unsigned int num_states = 19;
+            // prediction step
+            ceres::CostFunction* nonlinear_propagation_auto_diff_wrapper;
+
 
     bool first_run = true;
 
@@ -190,12 +198,26 @@ int main(int argc, char** argv)
             pose_filtered.pos = pose_sol.pose.pos;
             pose_filtered.quat = pose_sol.pose.quat;
 
-            //solved_poses.push_back( pose_sol.pose );
+            // set-up for Jacobian computation with ceres
+            nonlinear_propagation_auto_diff_wrapper
+                = new ceres::AutoDiffCostFunction<NonLinearPropagationFunctor, num_states, num_states>(
+                    new NonLinearPropagationFunctor(kf.dt_));
         }
         else // else, perform KF tracking
         {
+            // set-up for computing and storing F Jacobian matrix for current time-step
+            double statekkArr[num_states];
+            double *parameters[1] = { statekkArr };
+            double statek1kArr[num_states];
+            double **jacobians;
+            jacobians = new double*[num_states];
+            for (unsigned int idx = 0; idx < num_states; idx++)
+            { jacobians[idx] = new double[num_states]; }
+            //nonlinear_propagation_auto_diff_wrapper->Evaluate(parameters, statek1kArr, jacobians);
+            //kf.F_ = Utilities::ConvertToEigenMatrix(jacobians);
+
             // prediction step
-            kf.Predict(VectorXd::Zero(kf.num_inputs_), KF_NL_f);
+            kf.Predict(VectorXd::Zero(kf.num_inputs_), NonLinearPropagationFunctor::KF_NL_f);
 
             // wrap NLS pose solution as KF measurement
             VectorXd pose_meas_wrapper(6);
@@ -333,46 +355,3 @@ VectorXd KF_NL_f(VectorXd statekk_, double dt_)
 
     return statek1k_;
 }*/
-
-template <typename T> Eigen::Matrix<T, Eigen::Dynamic, 1> KF_NL_f(Eigen::Matrix<T, Eigen::Dynamic, 1> statekk_, double dt_)
-{
-    typedef Eigen::Matrix<T, 3, 1> Vector3T;
-    typedef Eigen::Matrix<T, Eigen::Dynamic, 1> VectorXT;
-    typedef Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> MatrixXT;
-    typedef Eigen::Quaternion<T> QuaternionT;
-
-    VectorXT statek1k_(statekk_.size());
-
-    // position
-    MatrixXT F_pos_ = MatrixXT::Identity(9, 9); // position dynamics_model
-    F_pos_(0,3) = dt_;
-    F_pos_(1,4) = dt_;
-    F_pos_(2,5) = dt_;
-    F_pos_(3,6) = dt_;
-    F_pos_(4,7) = dt_;
-    F_pos_(5,8) = dt_;
-    F_pos_(0,6) = 0.5*pow(dt_,2);
-    F_pos_(1,7) = 0.5*pow(dt_,2);
-    F_pos_(2,8) = 0.5*pow(dt_,2);
-    statek1k_.head(9) = F_pos_*statekk_.head(9);
-
-    // orientation
-    QuaternionT quatk_;
-    quatk_.w() = statekk_(9);
-    quatk_.vec() = statekk_.segment(10,3);
-    quatk_.normalize();
-    QuaternionT dquatk_ =   Eigen::AngleAxis<T>(statekk_(13)*dt_, Vector3T::UnitX())*
-                            Eigen::AngleAxis<T>(statekk_(14)*dt_, Vector3T::UnitY())*
-                            Eigen::AngleAxis<T>(statekk_(15)*dt_, Vector3T::UnitZ());
-    QuaternionT quatk1k_= quatk_*dquatk_;
-    statek1k_(9) = quatk1k_.w();
-    statek1k_.segment(10,3) = quatk1k_.vec();
-    
-    MatrixXT F_att_ = F_pos_.block(0,0, 6,6);
-    statek1k_.tail(6) = F_att_*statekk_.tail(6);
-
-    return statek1k_;
-}
-
-template <typename T> Eigen::Matrix<T, Eigen::Dynamic, 1> KF_NL_h(Eigen::Matrix<T, Eigen::Dynamic, 1>, double dt_)
-{ }

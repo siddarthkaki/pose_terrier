@@ -8,6 +8,8 @@
 using Eigen::AngleAxisd;
 using Eigen::Quaterniond;
 
+#define LEN(arr) ((int) (sizeof (arr) / sizeof (arr)[0]))
+
 #define GET_VARIABLE_NAME(Variable) (#Variable)
 
 /**
@@ -342,4 +344,21 @@ void Utilities::WriteKFCovarsToCSV(const std::vector<MatrixXd>& covars, const st
     {
         std::cout << "Exception was thrown: " << ex.what() << std::endl;
     }
+}
+
+MatrixXd Utilities::ConvertToEigenMatrix(double **data)
+{
+    unsigned int rows = LEN(data);
+    unsigned int cols = LEN(data[0]);
+    Eigen::MatrixXd eig_mat(rows, cols);
+
+    for (unsigned int idx = 0; idx < rows; idx++)
+    {
+        for (unsigned int jdx = 0; jdx < cols; jdx++)
+        {
+            eig_mat(idx,jdx) = data[idx][jdx];
+        }
+    }
+
+    return eig_mat;
 }
