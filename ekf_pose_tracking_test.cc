@@ -24,8 +24,9 @@ using nlohmann::json;
 
 #define GET_VARIABLE_NAME(Variable) (#Variable)
 
-VectorXd KF_NL_f(VectorXd statekk_, double dt_);
-VectorXd KF_NL_h(VectorXd statek1k_, double dt_);
+//VectorXd KF_NL_f(VectorXd statekk_, double dt_);
+template <typename T> Eigen::Matrix<T, Eigen::Dynamic, 1> KF_NL_f(Eigen::Matrix<T, Eigen::Dynamic, 1> statekk_ , double dt_);
+template <typename T> Eigen::Matrix<T, Eigen::Dynamic, 1> KF_NL_h(Eigen::Matrix<T, Eigen::Dynamic, 1> statek1k_, double dt_);
 
 /**
  * @function main
@@ -297,6 +298,7 @@ int main(int argc, char** argv)
  * @brief performs the non-linear pose (pos + quat) propagation for the ekf
  * @return VectorXd of propagated pose state
  */
+/*
 VectorXd KF_NL_f(VectorXd statekk_, double dt_)
 {
     VectorXd statek1k_(statekk_.size());
@@ -330,7 +332,47 @@ VectorXd KF_NL_f(VectorXd statekk_, double dt_)
     statek1k_.tail(6) = F_att_*statekk_.tail(6);
 
     return statek1k_;
+}*/
+
+template <typename T> Eigen::Matrix<T, Eigen::Dynamic, 1> KF_NL_f(Eigen::Matrix<T, Eigen::Dynamic, 1> statekk_, double dt_)
+{
+    typedef Eigen::Matrix<T, 3, 1> Vector3T;
+    typedef Eigen::Matrix<T, Eigen::Dynamic, 1> VectorXT;
+    typedef Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> MatrixXT;
+    typedef Eigen::Quaternion<T> QuaternionT;
+
+    VectorXT statek1k_(statekk_.size());
+
+    // position
+    MatrixXT F_pos_ = MatrixXT::Identity(9, 9); // position dynamics_model
+    F_pos_(0,3) = dt_;
+    F_pos_(1,4) = dt_;
+    F_pos_(2,5) = dt_;
+    F_pos_(3,6) = dt_;
+    F_pos_(4,7) = dt_;
+    F_pos_(5,8) = dt_;
+    F_pos_(0,6) = 0.5*pow(dt_,2);
+    F_pos_(1,7) = 0.5*pow(dt_,2);
+    F_pos_(2,8) = 0.5*pow(dt_,2);
+    statek1k_.head(9) = F_pos_*statekk_.head(9);
+
+    // orientation
+    QuaternionT quatk_;
+    quatk_.w() = statekk_(9);
+    quatk_.vec() = statekk_.segment(10,3);
+    quatk_.normalize();
+    QuaternionT dquatk_ =   Eigen::AngleAxis<T>(statekk_(13)*dt_, Vector3T::UnitX())*
+                            Eigen::AngleAxis<T>(statekk_(14)*dt_, Vector3T::UnitY())*
+                            Eigen::AngleAxis<T>(statekk_(15)*dt_, Vector3T::UnitZ());
+    QuaternionT quatk1k_= quatk_*dquatk_;
+    statek1k_(9) = quatk1k_.w();
+    statek1k_.segment(10,3) = quatk1k_.vec();
+    
+    MatrixXT F_att_ = F_pos_.block(0,0, 6,6);
+    statek1k_.tail(6) = F_att_*statekk_.tail(6);
+
+    return statek1k_;
 }
 
-VectorXd KF_NL_h(VectorXd statek1k_, double dt_)
+template <typename T> Eigen::Matrix<T, Eigen::Dynamic, 1> KF_NL_h(Eigen::Matrix<T, Eigen::Dynamic, 1>, double dt_)
 { }
