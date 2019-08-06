@@ -17,6 +17,17 @@ num_poses = size(truePosesMat)[1];
 dt = 0.5;
 tVec = 0:dt:(num_poses - 1) * dt;
 
+## compute position score
+posScoreVec         = 1000 * ones(num_poses,1);
+posScoreVecFiltered = 1000 * ones(num_poses,1);
+
+for idx = 1:num_poses,
+    posErr         = truePosesMat[idx,1:3] - solvedPosesMat[idx,1:3];
+    posErrFiltered = truePosesMat[idx,1:3] - filteredPosesMat[idx,1:3];
+
+    posScoreVec[idx]         = norm(posErr)/norm(truePosesMat[idx,1:3]);
+    posScoreVecFiltered[idx] = norm(posErrFiltered)/norm(truePosesMat[idx,1:3]);
+end
 
 ## compute attitude score
 attScoreVec         = 1000 * ones(num_poses, 1);
@@ -39,38 +50,60 @@ for idx = 1:num_poses
 end
 
 ## plotting
-plotlyjs(); # Choose a backend
+gr() # Choose a backend
+
+# shared attributes
+xlims_ = (0,maximum(tVec)+dt);
+labels = ["true" "NLS" "KF"];
 
 # plotting position
-labels = ["true" "NLS" "KF"];
 datap1 = [truePosesMat[:,1] solvedPosesMat[:,1] filteredPosesMat[:,1]];
-posp1 = plot(tVec, datap1,  xlims = (0,maximum(tVec)+dt),
-                            ylabel = "x [m]",
-                            label = labels);
+posp1 = plot(tVec, datap1, label = labels, legend = :bottomleft);
+xlims!(xlims_)
+ylabel!("x [m]")
 
 datap2 = [truePosesMat[:,2] solvedPosesMat[:,2] filteredPosesMat[:,2]];
-posp2 = plot(tVec, datap2,  xlims = (0,maximum(tVec)+dt),
-                            ylabel = "y [m]",
-                            label = "");
+posp2 = plot(tVec, datap2, label = labels, legend = :bottomleft);
+xlims!(xlims_)
+ylabel!("y [m]")
 
 datap3 = [truePosesMat[:,3] solvedPosesMat[:,3] filteredPosesMat[:,3]];
-posp3 = plot(tVec, datap3,  xlims = (0,maximum(tVec)+dt),
-                            xlabel = "time [s]",
-                            ylabel = "z [m]",
-                            label = "");
+posp3 = plot(tVec, datap3, label = labels, legend = :bottomleft);
+xlims!(xlims_)
+ylabel!("z [m]")
 
-plot(posp1, posp2, posp3, layout = (3,1))
+datap4 = [posScoreVec posScoreVecFiltered];
+posp4 = plot(tVec, datap4, label = "")
+xlims!(xlims_)
+xlabel!("time [s]")
+ylabel!("pos_score [ ]")
+
+plot(posp1, posp2, posp3, posp4, layout = (4,1))
+
 
 #=
-figure(1)
-subplot(3,1,1)
-plot(tVec, truePosesMat(:,1))
-title('Position')
-hold on
-plot(tVec, solvedPosesMat(:,1))
-plot(tVec, filteredPosesMat(:,1),'color',[0.4940, 0.1840, 0.5560],'LineWidth',2)
-grid on
-legend('true','LS','KF','Location','Northwest')
-xlabel('time [s]')
-ylabel('x [m]')
+# plotting attitude
+labels = ["true" "NLS" "KF"];
+datap5 = (180.0/π)*[truePosesMat[:,4] solvedPosesMat[:,4] filteredPosesMat[:,4]];
+posp5 = plot(tVec, datap5,  xlims = xlims_,
+                            ylabel = "ϕ [deg]",
+                            label = labels);
+
+datap6 = (180.0/π)*[truePosesMat[:,5] solvedPosesMat[:,5] filteredPosesMat[:,5]];
+posp6 = plot(tVec, datap6,  xlims = xlims_,
+                            ylabel = "θ [deg]",
+                            label = "");
+
+datap7 = (180.0/π)*[truePosesMat[:,6] solvedPosesMat[:,6] filteredPosesMat[:,6]];
+posp7 = plot(tVec, datap7,  xlims = xlims_,
+                            ylabel = "ψ [deg]",
+                            label = "");
+
+datap8 = (180.0/π)*[attScoreVec attScoreVecFiltered];
+posp8 = plot(tVec, datap8,  xlims = xlims_,
+                            xlabel = "time [s]",
+                            ylabel = "att_score [ ]",
+                            label = "");
+
+plot(posp5, posp6, posp7, posp8, layout = (4,1))
 =#
