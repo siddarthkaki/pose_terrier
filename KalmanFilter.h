@@ -19,6 +19,9 @@ namespace KF {
 
 class KalmanFilter
 {
+    private:
+        bool processed_measurement_;
+
     public:
         unsigned int num_states_;
         unsigned int num_measurements_;
