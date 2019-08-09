@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package Proto;
+
+message Position
+{
+    double x = 1;
+    double y = 2;
+    double z = 3;
+}
+
+message Attitude
+{
+    double qw = 1;
+    double qx = 2;
+    double qy = 3;
+    double qz = 4;
+}
+
+message Pose
+{
+    Position pos = 1;
+    Attitude att = 2;
+}
