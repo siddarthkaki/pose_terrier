@@ -7,7 +7,11 @@
 
 namespace KF {
 
-    KalmanFilter::KalmanFilter() {}
+    KalmanFilter::KalmanFilter()
+    {
+        processed_measurement_ = false;
+    }
+
     KalmanFilter::KalmanFilter(const unsigned int &num_states, const unsigned int &num_measurements, const unsigned int &num_inputs, const double &dt)
     {
         num_states_ = num_states;
@@ -28,6 +32,8 @@ namespace KF {
         covarkk_   = MatrixXd::Zero(num_states_, num_states_);
         covark1k_  = MatrixXd::Zero(num_states_, num_states_);
         covark1k1_ = MatrixXd::Zero(num_states_, num_states_);
+
+        processed_measurement_ = false;
     }
 
     // Assumes a discrete Wiener process acceleration model
@@ -110,6 +116,8 @@ namespace KF {
         covarkk_   = MatrixXd::Zero(num_states_, num_states_);
         covark1k_  = MatrixXd::Zero(num_states_, num_states_);
         covark1k1_ = MatrixXd::Zero(num_states_, num_states_);
+
+        processed_measurement_ = false;
     }
 
     void KalmanFilter::SetInitialStateAndCovar(const VectorXd &state0, MatrixXd &covar0)
@@ -143,6 +151,8 @@ namespace KF {
         // Joseph update (general)
         MatrixXd I = MatrixXd::Identity(num_states_, num_states_);
         covark1k1_ = (I - K*H_)*covark1k_*((I - K*H_).transpose()) + K*R_*(K.transpose());
+
+        processed_measurement_ = true;
     }
 
     void KalmanFilter::KFStep(const VectorXd &measurement)
@@ -160,11 +170,24 @@ namespace KF {
 
     void KalmanFilter::StoreAndClean()
     {
-        states.push_back(statek1k1_);
-        covars.push_back(covark1k1_);
+        if(processed_measurement_)
+        {
+            states.push_back(statek1k1_);
+            covars.push_back(covark1k1_);
 
-        statekk_ = statek1k1_;
-        covarkk_ = covark1k1_;
+            statekk_ = statek1k1_;
+            covarkk_ = covark1k1_;
+        }
+        else
+        {
+            states.push_back(statek1k_);
+            covars.push_back(covark1k_);
+
+            statekk_ = statek1k_;
+            covarkk_ = covark1k_;
+        }
+        
+        processed_measurement_ = false;
 
         statek1k_  = VectorXd::Zero(num_states_);
         statek1k1_ = VectorXd::Zero(num_states_);
