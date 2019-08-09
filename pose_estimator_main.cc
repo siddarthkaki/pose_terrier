@@ -8,6 +8,7 @@
 #include <iomanip>
 #include <fstream>
 #include <math.h>
+#include <fcntl.h>
 
 #include "ceres/ceres.h"
 //#include "glog/logging.h"
@@ -54,6 +55,9 @@ int main(int argc, char **argv)
                   << "exception id: " << e.id << '\n'
                   << "byte position of error: " << e.byte << std::endl;
     }
+
+    std::string pipe_path_input  = json_params["pipe_path_input"];
+    std::string pipe_path_output = json_params["pipe_path_output"];
 
     // specify rigid position vector of camera wrt chaser in chaser frame
     Vector3d rCamVec;
@@ -119,61 +123,98 @@ int main(int argc, char **argv)
     pose_true.quat.w() = 1.0;
     pose_true.quat.vec() = Vector3d::Zero();
 
-    // TODO: wait for first measurement
+    // initialise pipe
+    int fd_in, rd_in = 0;
+    const char *fifo_path_input = pipe_path_input.c_str();
+    // Open FIFO for read only, with blocking to receive first measurement
+    fd_in = open(fifo_path_input, O_RDONLY);
+
+    // TODO: make measurement protobuf and pipe
+
+    bool received_first_meas = false;
+    while (!received_first_meas)
     {
-        // express feature points in chaser frame at the specified pose
-        MatrixXd rMat = Utilities::FeaPointsTargetToChaser(pose_true, rCamVec, rFeaMat);
-        // generate simulated measurements
-        VectorXd yVec = Utilities::SimulateMeasurements(rMat, focal_length);
-        // add Gaussian noise to simulated measurements
-        VectorXd yVecNoise = Utilities::AddGaussianNoiseToVector(yVec, meas_std);
+        // read byte size of measurement object from pipe
+        size_t size;
+        rd_in = read(fd_in, &size, sizeof(size));
 
-        // solve for pose with ceres (via wrapper)
-        PoseSolution pose_sol = PoseSolver::SolvePoseReinit(pose0, yVecNoise, rCamVec, rFeaMat);
+        if (rd_in == sizeof(size)) // if successfully received size
+        {
+            // allocate sufficient buffer space
+            void *buffer = malloc(size);
 
-        Pose conj_pose_temp = Utilities::ConjugatePose(pose_sol.pose);
-        Pose conj_pose = PoseSolver::SolvePose(conj_pose_temp, yVecNoise, rCamVec, rFeaMat).pose;
+            // read serialised pose object from pipe
+            rd_in = read(fd_in, buffer, size);
 
-        Pose pose_filtered;
+            // TODO: deserialise from buffer array
+            //pose.ParseFromArray(buffer, size);
 
-        double kf_process_noise_std = 0.01;
-        double kf_measurement_noise_std = 0.05;
+            // close pipe
+            close(fd_in);
 
-        kf.InitLinearPoseTracking(kf_process_noise_std, kf_measurement_noise_std, kf_dt);
-        VectorXd state0 = VectorXd::Zero(kf.num_states_);
-        state0.head(3) = pose_sol.pose.pos;
-        state0.segment(3, 3) = pose_sol.pose.quat.toRotationMatrix().eulerAngles(0, 1, 2);
-        MatrixXd covar0 = 10.0 * MatrixXd::Identity(kf.num_states_, kf.num_states_);
-        covar0(0, 0) = 1.0;
-        covar0(1, 1) = 1.0;
-        covar0(2, 2) = 3.0;
-        covar0(9, 9) = 10.0 * Utilities::DEG2RAD;
-        covar0(10, 10) = 10.0 * Utilities::DEG2RAD;
-        covar0(11, 11) = 10.0 * Utilities::DEG2RAD;
-        kf.SetInitialStateAndCovar(state0, covar0);
+            std::cout << "Received first measurement." << std::endl;
+            received_first_meas = true;
 
-        kf.R_(0, 0) = 1.0;
-        kf.R_(1, 1) = 1.0;
-        kf.R_(2, 2) = 3.0;
-        kf.R_(3, 3) = 10.0 * Utilities::DEG2RAD;
-        kf.R_(4, 4) = 10.0 * Utilities::DEG2RAD;
-        kf.R_(5, 5) = 10.0 * Utilities::DEG2RAD;
+            // TODO: remove following, and instead extract measurement from protobuf
+            MatrixXd rMat = Utilities::FeaPointsTargetToChaser(pose_true, rCamVec, rFeaMat);
+            VectorXd yVec = Utilities::SimulateMeasurements(rMat, focal_length);
+            VectorXd yVecNoise = Utilities::AddGaussianNoiseToVector(yVec, meas_std);
 
-        kf.PrintModelMatrices();
+            // solve for pose with ceres (via wrapper)
+            PoseSolution pose_sol = PoseSolver::SolvePoseReinit(pose0, yVecNoise, rCamVec, rFeaMat);
 
-        pose_filtered.pos = pose_sol.pose.pos;
-        pose_filtered.quat = pose_sol.pose.quat;
+            Pose conj_pose_temp = Utilities::ConjugatePose(pose_sol.pose);
+            Pose conj_pose = PoseSolver::SolvePose(conj_pose_temp, yVecNoise, rCamVec, rFeaMat).pose;
+
+            Pose pose_filtered;
+
+            double kf_process_noise_std = 0.01;
+            double kf_measurement_noise_std = 0.05;
+
+            kf.InitLinearPoseTracking(kf_process_noise_std, kf_measurement_noise_std, kf_dt);
+            VectorXd state0 = VectorXd::Zero(kf.num_states_);
+            state0.head(3) = pose_sol.pose.pos;
+            state0.segment(3, 3) = pose_sol.pose.quat.toRotationMatrix().eulerAngles(0, 1, 2);
+            MatrixXd covar0 = 10.0 * MatrixXd::Identity(kf.num_states_, kf.num_states_);
+            covar0(0, 0) = 1.0;
+            covar0(1, 1) = 1.0;
+            covar0(2, 2) = 3.0;
+            covar0(9, 9) = 10.0 * Utilities::DEG2RAD;
+            covar0(10, 10) = 10.0 * Utilities::DEG2RAD;
+            covar0(11, 11) = 10.0 * Utilities::DEG2RAD;
+            kf.SetInitialStateAndCovar(state0, covar0);
+
+            kf.R_(0, 0) = 1.0;
+            kf.R_(1, 1) = 1.0;
+            kf.R_(2, 2) = 3.0;
+            kf.R_(3, 3) = 10.0 * Utilities::DEG2RAD;
+            kf.R_(4, 4) = 10.0 * Utilities::DEG2RAD;
+            kf.R_(5, 5) = 10.0 * Utilities::DEG2RAD;
+
+            kf.PrintModelMatrices();
+
+            pose_filtered.pos = pose_sol.pose.pos;
+            pose_filtered.quat = pose_sol.pose.quat;
+
+            filtered_poses.push_back(pose_filtered);
+            timestamps.push_back(0.0);
+        }
+        else
+        { // if no size message found
+            std::cout << "Awaiting first measurement..." << std::endl;
+        }
     }
 
-    bool first_run = true;
+    // continue once first measurement has been received
 
-    timestamps.push_back(0.0);
+    // Open FIFO for read only, without blocking
+    fd_in = open(fifo_path_input, O_RDONLY | O_NONBLOCK);
+
     auto last_t = std::chrono::high_resolution_clock::now();
     auto curr_t = std::chrono::high_resolution_clock::now();
 
-    // TODO: move first_run code to before loop
-    // TODO: replace finite loop with infinite loop (until break)
-    for (unsigned int pose_idx = 0; pose_idx < num_poses_test; pose_idx++)
+    //-- Main Loop -----------------------------------------------------------/
+    while(true)
     {
         // TIMING : run dynamics at specified kf_dt rate
         double curr_delta_t = 0.0;
@@ -187,17 +228,33 @@ int main(int argc, char **argv)
         // KF prediction step
         kf.Predict(VectorXd::Zero(kf.num_inputs_));
 
+
+        //-- Check for new measurement ---------------------------------------/
+        // read byte size of pose object from pipe
+        size_t size;
+        rd_in = read(fd_in, &size, sizeof(size));
+
+        if (rd_in == sizeof(size)) // if successfully received size
         {
+            // allocate sufficient buffer space
+            void *buffer = malloc(size);
+
+            // read serialised pose object from pipe
+            rd_in= read(fd_in, buffer, size);
+
+            // TODO: deserialise from buffer array
+            //pose.ParseFromArray(buffer, size);
+
             // TODO: replace measurement simulation with real measurement input
-            //-- Simulate Measurements -------------------------------------------/
+            //-- Simulate Measurements ---------------------------------------/
 
             // generate true pose values for ith run
             pose_true.pos(0) += 0.001;
             pose_true.pos(1) -= 0.001;
             pose_true.pos(2) += 0.01;
-            Quaterniond quat_step = AngleAxisd(0.001, Vector3d::UnitX()) *
+            Quaterniond quat_step = AngleAxisd( 0.001, Vector3d::UnitX()) *
                                     AngleAxisd(-0.001, Vector3d::UnitY()) *
-                                    AngleAxisd(0.001, Vector3d::UnitZ());
+                                    AngleAxisd( 0.001, Vector3d::UnitZ());
             pose_true.quat = pose_true.quat * quat_step;
 
             // express feature points in chaser frame at the specified pose
@@ -209,9 +266,9 @@ int main(int argc, char **argv)
             // add Gaussian noise to simulated measurements
             VectorXd yVecNoise = Utilities::AddGaussianNoiseToVector(yVec, meas_std);
 
-            //--------------------------------------------------------------------/
+            //----------------------------------------------------------------/
 
-            //-- Measurement update  ---------------------------------------------/
+            //-- Measurement update ------------------------------------------/
 
             // set NLS initial guess to last filtered estimate
             pose0 = filtered_poses.back();
@@ -244,8 +301,9 @@ int main(int argc, char **argv)
                 kf.Update(conj_pose_meas_wrapper);
             }
         }
+        else
+        { } // if no size message found
 
-        // TODO: UPDATE STORE AND CLEAN FOR ONLY PREDICTION STEPS
         kf.StoreAndClean();
 
         Pose pose_filtered;
@@ -269,10 +327,13 @@ int main(int argc, char **argv)
         pos_scores.push_back(pos_score);
         att_scores.push_back(att_score); //std::min(att_score,conj_att_score) );
         */
+       filtered_poses.push_back(pose_filtered);
     }
 
     //-- Performance Metric Stats & Output -----------------------------------/
-
+    
+    // TODO: write on ctrl-c
+    
     // write to csv file
     Utilities::WritePosesToCSV(true_poses, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(true_poses))));
     Utilities::WritePosesToCSV(solved_poses, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(solved_poses))));
