@@ -3,6 +3,9 @@
     "focal_length": 0.0055,
     "meas_std_deg": 1.0,
     "num_poses_test": 1000,
+    "pipe_path_input": "pipe_dream_meas",
+    "pipe_path_output": "pipe_dream_pose",
+    "kf_dt": 0.5,
     "rFeaMat":
     [
         {"fea1": [0.0, 0.0, 0.5]},
