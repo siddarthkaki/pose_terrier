@@ -58,7 +58,7 @@ void protobuf_AssignDesc_measurement_2eproto() {
   static const int Measurements_offsets_[3] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Measurements, num_feature_points_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Measurements, feature_points_),
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Measurements, measurements_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Measurements, bearings_),
   };
   Measurements_reflection_ =
     ::google::protobuf::internal::GeneratedMessageReflection::NewGeneratedMessageReflection(
@@ -109,11 +109,10 @@ void protobuf_AddDesc_measurement_2eproto() {
   ::Proto::protobuf_AddDesc_pose_2eproto();
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
     "\n\021measurement.proto\022\005Proto\032\npose.proto\"!"
-    "\n\007Bearing\022\n\n\002az\030\001 \001(\001\022\n\n\002el\030\002 \001(\001\"y\n\014Mea"
+    "\n\007Bearing\022\n\n\002az\030\001 \001(\001\022\n\n\002el\030\002 \001(\001\"u\n\014Mea"
     "surements\022\032\n\022num_feature_points\030\001 \001(\r\022\'\n"
-    "\016feature_points\030\002 \003(\0132\017.Proto.Position\022$"
-    "\n\014measurements\030\003 \003(\0132\016.Proto.Bearingb\006pr"
-    "oto3", 204);
+    "\016feature_points\030\002 \003(\0132\017.Proto.Position\022 "
+    "\n\010bearings\030\003 \003(\0132\016.Proto.Bearingb\006proto3", 200);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "measurement.proto", &protobuf_RegisterTypes);
   Bearing::default_instance_ = new Bearing();
@@ -441,7 +440,7 @@ void Bearing::clear_el() {
 #if !defined(_MSC_VER) || _MSC_VER >= 1900
 const int Measurements::kNumFeaturePointsFieldNumber;
 const int Measurements::kFeaturePointsFieldNumber;
-const int Measurements::kMeasurementsFieldNumber;
+const int Measurements::kBearingsFieldNumber;
 #endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
 
 Measurements::Measurements()
@@ -507,7 +506,7 @@ void Measurements::Clear() {
 // @@protoc_insertion_point(message_clear_start:Proto.Measurements)
   num_feature_points_ = 0u;
   feature_points_.Clear();
-  measurements_.Clear();
+  bearings_.Clear();
 }
 
 bool Measurements::MergePartialFromCodedStream(
@@ -546,22 +545,22 @@ bool Measurements::MergePartialFromCodedStream(
           goto handle_unusual;
         }
         if (input->ExpectTag(18)) goto parse_loop_feature_points;
-        if (input->ExpectTag(26)) goto parse_loop_measurements;
+        if (input->ExpectTag(26)) goto parse_loop_bearings;
         input->UnsafeDecrementRecursionDepth();
         break;
       }
 
-      // repeated .Proto.Bearing measurements = 3;
+      // repeated .Proto.Bearing bearings = 3;
       case 3: {
         if (tag == 26) {
           DO_(input->IncrementRecursionDepth());
-         parse_loop_measurements:
+         parse_loop_bearings:
           DO_(::google::protobuf::internal::WireFormatLite::ReadMessageNoVirtualNoRecursionDepth(
-                input, add_measurements()));
+                input, add_bearings()));
         } else {
           goto handle_unusual;
         }
-        if (input->ExpectTag(26)) goto parse_loop_measurements;
+        if (input->ExpectTag(26)) goto parse_loop_bearings;
         input->UnsafeDecrementRecursionDepth();
         if (input->ExpectAtEnd()) goto success;
         break;
@@ -602,10 +601,10 @@ void Measurements::SerializeWithCachedSizes(
       2, this->feature_points(i), output);
   }
 
-  // repeated .Proto.Bearing measurements = 3;
-  for (unsigned int i = 0, n = this->measurements_size(); i < n; i++) {
+  // repeated .Proto.Bearing bearings = 3;
+  for (unsigned int i = 0, n = this->bearings_size(); i < n; i++) {
     ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
-      3, this->measurements(i), output);
+      3, this->bearings(i), output);
   }
 
   // @@protoc_insertion_point(serialize_end:Proto.Measurements)
@@ -626,11 +625,11 @@ void Measurements::SerializeWithCachedSizes(
         2, this->feature_points(i), false, target);
   }
 
-  // repeated .Proto.Bearing measurements = 3;
-  for (unsigned int i = 0, n = this->measurements_size(); i < n; i++) {
+  // repeated .Proto.Bearing bearings = 3;
+  for (unsigned int i = 0, n = this->bearings_size(); i < n; i++) {
     target = ::google::protobuf::internal::WireFormatLite::
       InternalWriteMessageNoVirtualToArray(
-        3, this->measurements(i), false, target);
+        3, this->bearings(i), false, target);
   }
 
   // @@protoc_insertion_point(serialize_to_array_end:Proto.Measurements)
@@ -656,12 +655,12 @@ int Measurements::ByteSize() const {
         this->feature_points(i));
   }
 
-  // repeated .Proto.Bearing measurements = 3;
-  total_size += 1 * this->measurements_size();
-  for (int i = 0; i < this->measurements_size(); i++) {
+  // repeated .Proto.Bearing bearings = 3;
+  total_size += 1 * this->bearings_size();
+  for (int i = 0; i < this->bearings_size(); i++) {
     total_size +=
       ::google::protobuf::internal::WireFormatLite::MessageSizeNoVirtual(
-        this->measurements(i));
+        this->bearings(i));
   }
 
   GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
@@ -693,7 +692,7 @@ void Measurements::MergeFrom(const Measurements& from) {
     ::google::protobuf::internal::MergeFromFail(__FILE__, __LINE__);
   }
   feature_points_.MergeFrom(from.feature_points_);
-  measurements_.MergeFrom(from.measurements_);
+  bearings_.MergeFrom(from.bearings_);
   if (from.num_feature_points() != 0) {
     set_num_feature_points(from.num_feature_points());
   }
@@ -725,7 +724,7 @@ void Measurements::Swap(Measurements* other) {
 void Measurements::InternalSwap(Measurements* other) {
   std::swap(num_feature_points_, other->num_feature_points_);
   feature_points_.UnsafeArenaSwap(&other->feature_points_);
-  measurements_.UnsafeArenaSwap(&other->measurements_);
+  bearings_.UnsafeArenaSwap(&other->bearings_);
   _internal_metadata_.Swap(&other->_internal_metadata_);
   std::swap(_cached_size_, other->_cached_size_);
 }
@@ -785,34 +784,34 @@ Measurements::feature_points() const {
   return feature_points_;
 }
 
-// repeated .Proto.Bearing measurements = 3;
-int Measurements::measurements_size() const {
-  return measurements_.size();
+// repeated .Proto.Bearing bearings = 3;
+int Measurements::bearings_size() const {
+  return bearings_.size();
 }
-void Measurements::clear_measurements() {
-  measurements_.Clear();
+void Measurements::clear_bearings() {
+  bearings_.Clear();
 }
-const ::Proto::Bearing& Measurements::measurements(int index) const {
-  // @@protoc_insertion_point(field_get:Proto.Measurements.measurements)
-  return measurements_.Get(index);
+const ::Proto::Bearing& Measurements::bearings(int index) const {
+  // @@protoc_insertion_point(field_get:Proto.Measurements.bearings)
+  return bearings_.Get(index);
 }
-::Proto::Bearing* Measurements::mutable_measurements(int index) {
-  // @@protoc_insertion_point(field_mutable:Proto.Measurements.measurements)
-  return measurements_.Mutable(index);
+::Proto::Bearing* Measurements::mutable_bearings(int index) {
+  // @@protoc_insertion_point(field_mutable:Proto.Measurements.bearings)
+  return bearings_.Mutable(index);
 }
-::Proto::Bearing* Measurements::add_measurements() {
-  // @@protoc_insertion_point(field_add:Proto.Measurements.measurements)
-  return measurements_.Add();
+::Proto::Bearing* Measurements::add_bearings() {
+  // @@protoc_insertion_point(field_add:Proto.Measurements.bearings)
+  return bearings_.Add();
 }
 ::google::protobuf::RepeatedPtrField< ::Proto::Bearing >*
-Measurements::mutable_measurements() {
-  // @@protoc_insertion_point(field_mutable_list:Proto.Measurements.measurements)
-  return &measurements_;
+Measurements::mutable_bearings() {
+  // @@protoc_insertion_point(field_mutable_list:Proto.Measurements.bearings)
+  return &bearings_;
 }
 const ::google::protobuf::RepeatedPtrField< ::Proto::Bearing >&
-Measurements::measurements() const {
-  // @@protoc_insertion_point(field_list:Proto.Measurements.measurements)
-  return measurements_;
+Measurements::bearings() const {
+  // @@protoc_insertion_point(field_list:Proto.Measurements.bearings)
+  return bearings_;
 }
 
 #endif  // PROTOBUF_INLINE_NOT_IN_HEADERS
