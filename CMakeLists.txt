@@ -14,7 +14,7 @@ find_package(Protobuf REQUIRED)
 add_executable(pose_tracking_test pose_tracking_test.cc Utilities.cc PoseSolver.cc KalmanFilter.cc)
 target_link_libraries(pose_tracking_test ceres glog)
 
-add_executable(pose_estimator_main pose_estimator_main.cc Utilities.cc PoseSolver.cc KalmanFilter.cc pose.pb.cc)
+add_executable(pose_estimator_main pose_estimator_main.cc Utilities.cc PoseSolver.cc KalmanFilter.cc pose.pb.cc measurement.pb.cc)
 target_include_directories(pose_estimator_main PUBLIC ${PROTOBUF_INCLUDE_DIR})
 target_link_libraries(pose_estimator_main ceres ${PROTOBUF_LIBRARY})
 
