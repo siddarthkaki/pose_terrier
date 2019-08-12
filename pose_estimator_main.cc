@@ -18,6 +18,7 @@
 #include "PoseSolver.h"
 #include "KalmanFilter.h"
 #include "pose.pb.h"
+#include "measurement.pb.h"
 
 #include "third_party/json.hpp"
 
@@ -73,6 +74,7 @@ int main(int argc, char **argv)
     double meas_std = double(json_params["meas_std_deg"]) * Utilities::DEG2RAD;
 
     // specify rigid position vector of feature points wrt target in target frame
+    /*
     unsigned int num_features = json_params["rFeaMat"].size();
     MatrixXd rFeaMat(num_features, 3);
     for (unsigned int idx = 0; idx < num_features; idx++)
@@ -82,6 +84,7 @@ int main(int argc, char **argv)
             rFeaMat(idx, jdx) = json_params["rFeaMat"][idx]["fea" + std::to_string(idx + 1)][jdx];
         }
     }
+    */
 
     unsigned int num_poses_test = json_params["num_poses_test"];
 
@@ -143,11 +146,12 @@ int main(int argc, char **argv)
             // allocate sufficient buffer space
             void *buffer = malloc(size);
 
-            // read serialised pose object from pipe
+            // read serialised measurement object from pipe
             rd_in = read(fd_in, buffer, size);
 
-            // TODO: deserialise from buffer array
-            //pose.ParseFromArray(buffer, size);
+            // deserialise from buffer array
+            Proto::Measurements measurements;
+            measurements.ParseFromArray(buffer, size);
 
             // close pipe
             close(fd_in);
@@ -155,18 +159,30 @@ int main(int argc, char **argv)
             std::cout << "Received first measurement." << std::endl;
             received_first_meas = true;
 
-            // TODO: remove following, and instead extract measurement from protobuf
-            MatrixXd rMat = Utilities::FeaPointsTargetToChaser(pose_true, rCamVec, rFeaMat);
-            VectorXd yVec = Utilities::SimulateMeasurements(rMat, focal_length);
-            VectorXd yVecNoise = Utilities::AddGaussianNoiseToVector(yVec, meas_std);
+            unsigned int num_feature_points = measurements.num_feature_points();
+
+            // Construct Eigen::MatrixXd out of feature point locations
+            MatrixXd rFeaMat(num_feature_points, 3);
+            for (unsigned int idx = 0; idx < num_feature_points; idx++)
+            {
+                rFeaMat(idx,0) = measurements.feature_points(idx).x();
+                rFeaMat(idx,1) = measurements.feature_points(idx).y();
+                rFeaMat(idx,2) = measurements.feature_points(idx).z();
+            }
+            
+            // Construct Eigen::VectorXd out of measurements
+            VectorXd yVec(2*num_feature_points);
+            for (unsigned int idx = 0; idx < num_feature_points; idx++)
+            {
+                yVec(2*idx+0) = measurements.bearings(idx).az();
+                yVec(2*idx+1) = measurements.bearings(idx).el();
+            }
 
             // solve for pose with ceres (via wrapper)
-            PoseSolution pose_sol = PoseSolver::SolvePoseReinit(pose0, yVecNoise, rCamVec, rFeaMat);
+            PoseSolution pose_sol = PoseSolver::SolvePoseReinit(pose0, yVec, rCamVec, rFeaMat);
 
             Pose conj_pose_temp = Utilities::ConjugatePose(pose_sol.pose);
-            Pose conj_pose = PoseSolver::SolvePose(conj_pose_temp, yVecNoise, rCamVec, rFeaMat).pose;
-
-            Pose pose_filtered;
+            Pose conj_pose = PoseSolver::SolvePose(conj_pose_temp, yVec, rCamVec, rFeaMat).pose;
 
             double kf_process_noise_std = 0.01;
             double kf_measurement_noise_std = 0.05;
@@ -193,10 +209,7 @@ int main(int argc, char **argv)
 
             kf.PrintModelMatrices();
 
-            pose_filtered.pos = pose_sol.pose.pos;
-            pose_filtered.quat = pose_sol.pose.quat;
-
-            filtered_poses.push_back(pose_filtered);
+            filtered_poses.push_back(pose_sol.pose);
             timestamps.push_back(0.0);
         }
         else
@@ -205,6 +218,8 @@ int main(int argc, char **argv)
         }
     }
 
+    //------------------------------------------------------------------------/
+
     // continue once first measurement has been received
 
     // Open FIFO for read only, without blocking
@@ -212,6 +227,7 @@ int main(int argc, char **argv)
 
     auto last_t = std::chrono::high_resolution_clock::now();
     auto curr_t = std::chrono::high_resolution_clock::now();
+
 
     //-- Main Loop -----------------------------------------------------------/
     while(true)
@@ -230,7 +246,7 @@ int main(int argc, char **argv)
 
 
         //-- Check for new measurement ---------------------------------------/
-        // read byte size of pose object from pipe
+        // read byte size of measurement object from pipe
         size_t size;
         rd_in = read(fd_in, &size, sizeof(size));
 
@@ -242,31 +258,28 @@ int main(int argc, char **argv)
             // read serialised pose object from pipe
             rd_in= read(fd_in, buffer, size);
 
-            // TODO: deserialise from buffer array
-            //pose.ParseFromArray(buffer, size);
+            // deserialise from buffer array
+            Proto::Measurements measurements;
+            measurements.ParseFromArray(buffer, size);
 
-            // TODO: replace measurement simulation with real measurement input
-            //-- Simulate Measurements ---------------------------------------/
+            unsigned int num_feature_points = measurements.num_feature_points();
 
-            // generate true pose values for ith run
-            pose_true.pos(0) += 0.001;
-            pose_true.pos(1) -= 0.001;
-            pose_true.pos(2) += 0.01;
-            Quaterniond quat_step = AngleAxisd( 0.001, Vector3d::UnitX()) *
-                                    AngleAxisd(-0.001, Vector3d::UnitY()) *
-                                    AngleAxisd( 0.001, Vector3d::UnitZ());
-            pose_true.quat = pose_true.quat * quat_step;
-
-            // express feature points in chaser frame at the specified pose
-            MatrixXd rMat = Utilities::FeaPointsTargetToChaser(pose_true, rCamVec, rFeaMat);
-
-            // generate simulated measurements
-            VectorXd yVec = Utilities::SimulateMeasurements(rMat, focal_length);
-
-            // add Gaussian noise to simulated measurements
-            VectorXd yVecNoise = Utilities::AddGaussianNoiseToVector(yVec, meas_std);
-
-            //----------------------------------------------------------------/
+            // Construct Eigen::MatrixXd out of feature point locations
+            MatrixXd rFeaMat(num_feature_points, 3);
+            for (unsigned int idx = 0; idx < num_feature_points; idx++)
+            {
+                rFeaMat(idx,0) = measurements.feature_points(idx).x();
+                rFeaMat(idx,1) = measurements.feature_points(idx).y();
+                rFeaMat(idx,2) = measurements.feature_points(idx).z();
+            }
+            
+            // Construct Eigen::VectorXd out of measurements
+            VectorXd yVec(2*num_feature_points);
+            for (unsigned int idx = 0; idx < num_feature_points; idx++)
+            {
+                yVec(2*idx+0) = measurements.bearings(idx).az();
+                yVec(2*idx+1) = measurements.bearings(idx).el();
+            }
 
             //-- Measurement update ------------------------------------------/
 
@@ -274,10 +287,10 @@ int main(int argc, char **argv)
             pose0 = filtered_poses.back();
 
             // solve for pose with ceres (via wrapper)
-            PoseSolution pose_sol = PoseSolver::SolvePoseReinit(pose0, yVecNoise, rCamVec, rFeaMat);
+            PoseSolution pose_sol = PoseSolver::SolvePoseReinit(pose0, yVec, rCamVec, rFeaMat);
 
             Pose conj_pose_temp = Utilities::ConjugatePose(pose_sol.pose);
-            Pose conj_pose = PoseSolver::SolvePose(conj_pose_temp, yVecNoise, rCamVec, rFeaMat).pose;
+            Pose conj_pose = PoseSolver::SolvePose(conj_pose_temp, yVec, rCamVec, rFeaMat).pose;
 
             // wrap NLS pose solution as KF measurement
             VectorXd pose_meas_wrapper(6);
@@ -302,7 +315,7 @@ int main(int argc, char **argv)
             }
         }
         else
-        { } // if no size message found
+        { } // if no size message found, skip measurement update
 
         kf.StoreAndClean();
 
@@ -330,7 +343,7 @@ int main(int argc, char **argv)
        filtered_poses.push_back(pose_filtered);
     }
 
-    //-- Performance Metric Stats & Output -----------------------------------/
+    //-- Performance Metrics Output ------------------------------------------/
     
     // TODO: write on ctrl-c
     
