@@ -5,6 +5,7 @@
     "num_poses_test": 1000,
     "pipe_path_input": "pipe_dream_meas",
     "pipe_path_output": "pipe_dream_pose",
+    "log2file_append_mode": false,
     "kf_dt": 0.01,
     "rFeaMat":
     [

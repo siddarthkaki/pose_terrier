@@ -87,6 +87,8 @@ int main(int argc, char **argv)
     // specify expected number of time-steps for memory pre-allocation
     unsigned int num_poses_test = json_params["num_poses_test"];
 
+    bool log2file_append_mode = json_params["log2file_append_mode"];
+
     double kf_dt = json_params["kf_dt"];
 
     //------------------------------------------------------------------------/
@@ -339,14 +341,14 @@ int main(int argc, char **argv)
         solved_poses.push_back(pose_sol.pose);
         filtered_poses.push_back(pose_filtered);
 
-        //-- Handling for program exit ---------------------------------------/
+        //-- Handling for Program Exit ---------------------------------------/
         if (finished)
         {
             // write to csv file
-            Utilities::WritePosesToCSV(solved_poses, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(solved_poses))));
-            Utilities::WritePosesToCSV(filtered_poses, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(filtered_poses))));
-            Utilities::WriteKFStatesToCSV(kf.states, Utilities::WrapVarToPath(std::string("kf_states")));
-            Utilities::WriteKFCovarsToCSV(kf.covars, Utilities::WrapVarToPath(std::string("kf_covars")));
+            Utilities::WritePosesToCSV(solved_poses, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(solved_poses))), log2file_append_mode);
+            Utilities::WritePosesToCSV(filtered_poses, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(filtered_poses))), log2file_append_mode);
+            Utilities::WriteKFStatesToCSV(kf.states, Utilities::WrapVarToPath(std::string("kf_states")), log2file_append_mode);
+            Utilities::WriteKFCovarsToCSV(kf.covars, Utilities::WrapVarToPath(std::string("kf_covars")), log2file_append_mode);
             printf("Logged data to file.\nExiting....\n");
             exit(1);
         }

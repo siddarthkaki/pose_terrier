@@ -267,11 +267,11 @@ std::string Utilities::WrapVarToPath(std::string varname)
  * @brief TODO
  * @return TODO
  */
-void Utilities::WritePosesToCSV(const std::vector<Pose>& vec, const std::string& filename)
+void Utilities::WritePosesToCSV(const std::vector<Pose>& vec, const std::string& filename, const bool& append_mode)
 {
     try
     {
-        csvfile csv(filename); // throws exceptions!
+        csvfile csv(filename, append_mode); // throws exceptions!
         // header
         // csv << "X" << "VALUE" << endrow;
         // data
@@ -295,11 +295,11 @@ void Utilities::WritePosesToCSV(const std::vector<Pose>& vec, const std::string&
  * @brief TODO
  * @return TODO
  */
-void Utilities::WriteKFStatesToCSV(const std::vector<VectorXd>& states, const std::string& filename)
+void Utilities::WriteKFStatesToCSV(const std::vector<VectorXd>& states, const std::string& filename, const bool& append_mode)
 {
     try
     {
-        csvfile csv(filename); // throws exceptions!
+        csvfile csv(filename, append_mode); // throws exceptions!
         // header
         // csv << "X" << "VALUE" << endrow;
         // data
@@ -321,11 +321,11 @@ void Utilities::WriteKFStatesToCSV(const std::vector<VectorXd>& states, const st
  * @brief TODO
  * @return TODO
  */
-void Utilities::WriteKFCovarsToCSV(const std::vector<MatrixXd>& covars, const std::string& filename)
+void Utilities::WriteKFCovarsToCSV(const std::vector<MatrixXd>& covars, const std::string& filename, const bool& append_mode)
 {
     try
     {
-        csvfile csv(filename); // throws exceptions!
+        csvfile csv(filename, append_mode); // throws exceptions!
         // header
         // csv << "X" << "VALUE" << endrow;
         // data
