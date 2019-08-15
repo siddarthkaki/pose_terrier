@@ -12,7 +12,7 @@ statesMat = f_read_covars("../data/kf_states.csv");
 covarsMat = f_read_covars("../data/kf_covars.csv");
 
 [num_poses,~] = size(filteredPosesMat);
-dt = 0.5;
+dt = 0.01;
 tVec = 0:dt:(num_poses-1)*dt;
 
 %% plotting position

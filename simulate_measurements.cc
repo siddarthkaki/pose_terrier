@@ -162,8 +162,8 @@ int main(int argc, char **argv)
         // write to console
         std::cout << "Sent new measurement." << std::endl;
 
-        // sleep for 1 sec
-        usleep(1000000);
+        // sleep for 0.1 sec
+        usleep(100000);
     }
 
     return 0;

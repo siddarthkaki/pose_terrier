@@ -80,8 +80,6 @@ int main(int argc, char **argv)
 
     unsigned int num_poses_test = json_params["num_poses_test"];
 
-    bool log2file_append_mode = json_params["log2file_append_mode"];
-
     //------------------------------------------------------------------------/
 
     //-- Loop ----------------------------------------------------------------/
@@ -275,11 +273,11 @@ int main(int argc, char **argv)
     //-- Performance Metric Stats & Output -----------------------------------/
 
     // write to csv file
-    Utilities::WritePosesToCSV(true_poses, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(true_poses))), log2file_append_mode);
-    Utilities::WritePosesToCSV(solved_poses, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(solved_poses))), log2file_append_mode);
-    Utilities::WritePosesToCSV(filtered_poses, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(filtered_poses))), log2file_append_mode);
-    Utilities::WriteKFStatesToCSV(kf.states, Utilities::WrapVarToPath(std::string("kf_states")), log2file_append_mode);
-    Utilities::WriteKFCovarsToCSV(kf.covars, Utilities::WrapVarToPath(std::string("kf_covars")), log2file_append_mode);
+    Utilities::WritePosesToCSV(true_poses, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(true_poses))), false);
+    Utilities::WritePosesToCSV(solved_poses, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(solved_poses))), false);
+    Utilities::WritePosesToCSV(filtered_poses, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(filtered_poses))), false);
+    Utilities::WriteKFStatesToCSV(kf.states, Utilities::WrapVarToPath(std::string("kf_states")), false);
+    Utilities::WriteKFCovarsToCSV(kf.covars, Utilities::WrapVarToPath(std::string("kf_covars")), false);
 
     double pos_score_mean = Utilities::StdVectorMean(pos_scores);
     double att_score_mean = Utilities::StdVectorMean(att_scores);

@@ -68,7 +68,7 @@ int main(int argc, char **argv)
                   << "byte position of error: " << e.byte << std::endl;
     }
 
-    std::string pipe_path_input  = json_params["pipe_path_input"];
+    std::string pipe_path_input = json_params["pipe_path_input"];
     std::string pipe_path_output = json_params["pipe_path_output"];
 
     // specify rigid position vector of camera wrt chaser in chaser frame
@@ -87,7 +87,9 @@ int main(int argc, char **argv)
     // specify expected number of time-steps for memory pre-allocation
     unsigned int num_poses_test = json_params["num_poses_test"];
 
-    bool log2file_append_mode = json_params["log2file_append_mode"];
+    bool log_to_file = json_params["log_to_file"];
+    bool log_periodically = json_params["log_periodically"];
+    unsigned int vector_reserve_size = json_params["vector_reserve_size"];
 
     double kf_dt = json_params["kf_dt"];
 
@@ -96,15 +98,14 @@ int main(int argc, char **argv)
     //-- Init sequence -------------------------------------------------------/
 
     // declare vectors for storage
-    std::vector<Pose> solved_poses, solved_poses_conj, filtered_poses;
+    std::vector<Pose> solved_poses, filtered_poses;
     std::vector<double> solution_times, timestamps; // [ms]
 
     // pre-allocate memory
-    solved_poses.reserve(num_poses_test);
-    solved_poses_conj.reserve(num_poses_test);
-    filtered_poses.reserve(num_poses_test);
-    solution_times.reserve(num_poses_test);
-    timestamps.reserve(num_poses_test);
+    solved_poses.reserve(vector_reserve_size);
+    filtered_poses.reserve(vector_reserve_size);
+    solution_times.reserve(vector_reserve_size);
+    timestamps.reserve(vector_reserve_size);
 
     // Kalman Filter object
     KF::KalmanFilter kf;
@@ -156,17 +157,17 @@ int main(int argc, char **argv)
             MatrixXd rFeaMat(num_feature_points, 3);
             for (unsigned int idx = 0; idx < num_feature_points; idx++)
             {
-                rFeaMat(idx,0) = measurements.feature_points(idx).x();
-                rFeaMat(idx,1) = measurements.feature_points(idx).y();
-                rFeaMat(idx,2) = measurements.feature_points(idx).z();
+                rFeaMat(idx, 0) = measurements.feature_points(idx).x();
+                rFeaMat(idx, 1) = measurements.feature_points(idx).y();
+                rFeaMat(idx, 2) = measurements.feature_points(idx).z();
             }
-            
+
             // Construct Eigen::VectorXd out of measurements
-            VectorXd yVec(2*num_feature_points);
+            VectorXd yVec(2 * num_feature_points);
             for (unsigned int idx = 0; idx < num_feature_points; idx++)
             {
-                yVec(2*idx+0) = measurements.bearings(idx).az();
-                yVec(2*idx+1) = measurements.bearings(idx).el();
+                yVec(2 * idx + 0) = measurements.bearings(idx).az();
+                yVec(2 * idx + 1) = measurements.bearings(idx).el();
             }
 
             // solve for pose with ceres (via wrapper)
@@ -223,13 +224,11 @@ int main(int argc, char **argv)
     sigIntHandler.sa_flags = 0;
     sigaction(SIGINT, &sigIntHandler, NULL);
 
-
     // Open FIFO for read only, without blocking
     fd_in = open(fifo_path_input, O_RDONLY | O_NONBLOCK);
 
     auto last_t = std::chrono::high_resolution_clock::now();
     auto curr_t = std::chrono::high_resolution_clock::now();
-
 
     //-- Main Loop -----------------------------------------------------------/
     while (true)
@@ -240,7 +239,7 @@ int main(int argc, char **argv)
         {
             curr_t = std::chrono::high_resolution_clock::now();
             curr_delta_t = (double)std::chrono::duration_cast<std::chrono::nanoseconds>(curr_t - last_t).count();
-            curr_delta_t *= pow(10.0,-9.0);
+            curr_delta_t *= pow(10.0, -9.0);
         }
         //std::cout << "Predict." << std::endl;
         last_t = curr_t;
@@ -261,7 +260,7 @@ int main(int argc, char **argv)
             void *buffer = malloc(size);
 
             // read serialised pose object from pipe
-            rd_in= read(fd_in, buffer, size);
+            rd_in = read(fd_in, buffer, size);
 
             // deserialise from buffer array
             ProtoMeas::Measurements measurements;
@@ -275,23 +274,23 @@ int main(int argc, char **argv)
             MatrixXd rFeaMat(num_feature_points, 3);
             for (unsigned int idx = 0; idx < num_feature_points; idx++)
             {
-                rFeaMat(idx,0) = measurements.feature_points(idx).x();
-                rFeaMat(idx,1) = measurements.feature_points(idx).y();
-                rFeaMat(idx,2) = measurements.feature_points(idx).z();
+                rFeaMat(idx, 0) = measurements.feature_points(idx).x();
+                rFeaMat(idx, 1) = measurements.feature_points(idx).y();
+                rFeaMat(idx, 2) = measurements.feature_points(idx).z();
             }
-            
+
             // Construct Eigen::VectorXd out of measurements
-            VectorXd yVec(2*num_feature_points);
+            VectorXd yVec(2 * num_feature_points);
             for (unsigned int idx = 0; idx < num_feature_points; idx++)
             {
-                yVec(2*idx+0) = measurements.bearings(idx).az();
-                yVec(2*idx+1) = measurements.bearings(idx).el();
+                yVec(2 * idx + 0) = measurements.bearings(idx).az();
+                yVec(2 * idx + 1) = measurements.bearings(idx).el();
             }
 
             //-- Measurement update ------------------------------------------/
 
-            // set NLS initial guess to last filtered estimate
-            pose0 = filtered_poses.back();
+            // Note: NLS initial guess for this time-step (pose0) is set to
+            //       the last filtered estimate by this point
 
             // solve for pose with ceres (via wrapper)
             pose_sol = PoseSolver::SolvePoseReinit(pose0, yVec, rCamVec, rFeaMat);
@@ -331,7 +330,7 @@ int main(int argc, char **argv)
         Pose pose_filtered;
         VectorXd pose_filt_wrapper = kf.states.back();
         pose_filtered.pos = pose_filt_wrapper.head(3);
-        pose_filtered.quat = AngleAxisd(pose_filt_wrapper( 9), Vector3d::UnitX()) *
+        pose_filtered.quat = AngleAxisd(pose_filt_wrapper(9) , Vector3d::UnitX()) *
                              AngleAxisd(pose_filt_wrapper(10), Vector3d::UnitY()) *
                              AngleAxisd(pose_filt_wrapper(11), Vector3d::UnitZ());
 
@@ -341,15 +340,51 @@ int main(int argc, char **argv)
         solved_poses.push_back(pose_sol.pose);
         filtered_poses.push_back(pose_filtered);
 
+        // set NLS initial guess for next time-step to latest filtered estimate
+        pose0 = filtered_poses.back();
+
+        //-- Handling for Periodic Logging -----------------------------------/
+        if (log_to_file && log_periodically && filtered_poses.size() == vector_reserve_size)
+        {
+            // write to csv files
+            bool append_mode = true;
+            // TODO TIMESTAMP FILENAME
+            Utilities::WritePosesToCSV(solved_poses, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(solved_poses))), append_mode);
+            Utilities::WritePosesToCSV(filtered_poses, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(filtered_poses))), append_mode);
+            Utilities::WriteKFStatesToCSV(kf.states, Utilities::WrapVarToPath(std::string("kf_states")), append_mode);
+            Utilities::WriteKFCovarsToCSV(kf.covars, Utilities::WrapVarToPath(std::string("kf_covars")), append_mode);
+
+            // clear vectors
+            solved_poses.clear();
+            filtered_poses.clear();
+            // TODO CLEAR kf states
+        }
+
         //-- Handling for Program Exit ---------------------------------------/
         if (finished)
         {
-            // write to csv file
-            Utilities::WritePosesToCSV(solved_poses, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(solved_poses))), log2file_append_mode);
-            Utilities::WritePosesToCSV(filtered_poses, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(filtered_poses))), log2file_append_mode);
-            Utilities::WriteKFStatesToCSV(kf.states, Utilities::WrapVarToPath(std::string("kf_states")), log2file_append_mode);
-            Utilities::WriteKFCovarsToCSV(kf.covars, Utilities::WrapVarToPath(std::string("kf_covars")), log2file_append_mode);
-            printf("Logged data to file.\nExiting....\n");
+            if (log_to_file)
+            {
+                bool append_mode;
+
+                if (log_periodically)
+                {
+                    append_mode = true;
+                }
+                else
+                {
+                    append_mode = false;
+                }
+
+                // write to csv files
+                Utilities::WritePosesToCSV(solved_poses, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(solved_poses))), append_mode);
+                Utilities::WritePosesToCSV(filtered_poses, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(filtered_poses))), append_mode);
+                Utilities::WriteKFStatesToCSV(kf.states, Utilities::WrapVarToPath(std::string("kf_states")), append_mode);
+                Utilities::WriteKFCovarsToCSV(kf.covars, Utilities::WrapVarToPath(std::string("kf_covars")), append_mode);
+                printf("Logged data to file.\n");
+            }
+
+            printf("Exiting....\n");
             exit(1);
         }
         //--------------------------------------------------------------------/
