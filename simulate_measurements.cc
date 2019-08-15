@@ -166,6 +166,9 @@ int main(int argc, char **argv)
         // close FIFO
         close(fd);
 
+        // write to console
+        std::cout << "Sent new measurement." << std::endl;
+
         // sleep for 1 sec
         usleep(1000000);
     }

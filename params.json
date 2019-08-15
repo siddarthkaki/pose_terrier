@@ -5,7 +5,7 @@
     "num_poses_test": 1000,
     "pipe_path_input": "pipe_dream_meas",
     "pipe_path_output": "pipe_dream_pose",
-    "kf_dt": 0.5,
+    "kf_dt": 0.01,
     "rFeaMat":
     [
         {"fea1": [0.0, 0.0, 0.5]},
