@@ -9,14 +9,7 @@
 #include <fstream>
 #include <fcntl.h> 
 #include <math.h>
-
-#include "ceres/ceres.h"
-//#include "glog/logging.h"
-
-#include "cost_functor.h"
 #include "Utilities.h"
-#include "PoseSolver.h"
-#include "KalmanFilter.h"
 #include "measurement.pb.h"
 
 #include "third_party/json.hpp"
