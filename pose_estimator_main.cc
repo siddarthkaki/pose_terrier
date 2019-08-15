@@ -11,7 +11,7 @@
 #include <fcntl.h>
 
 #include "ceres/ceres.h"
-//#include "glog/logging.h"
+#include "glog/logging.h"
 
 #include "cost_functor.h"
 #include "Utilities.h"
@@ -79,10 +79,10 @@ int main(int argc, char **argv)
     }
 
     // specify camera focal length
-    double focal_length = json_params["focal_length"]; //5.5*pow(10,-3);
+    //double focal_length = json_params["focal_length"]; //5.5*pow(10,-3);
 
     // specify measurement noise standard deviation (rad)
-    double meas_std = double(json_params["meas_std_deg"]) * Utilities::DEG2RAD;
+    //double meas_std = double(json_params["meas_std_deg"]) * Utilities::DEG2RAD;
 
     // specify expected number of time-steps for memory pre-allocation
     unsigned int num_poses_test = json_params["num_poses_test"];
@@ -237,8 +237,10 @@ int main(int argc, char **argv)
         while (curr_delta_t < kf_dt)
         {
             curr_t = std::chrono::high_resolution_clock::now();
-            curr_delta_t = (double)std::chrono::duration_cast<std::chrono::seconds>(curr_t - last_t).count();
+            curr_delta_t = (double)std::chrono::duration_cast<std::chrono::nanoseconds>(curr_t - last_t).count();
+            curr_delta_t *= pow(10.0,-9.0);
         }
+        //std::cout << "Predict." << std::endl;
         last_t = curr_t;
 
         // KF prediction step
@@ -318,7 +320,9 @@ int main(int argc, char **argv)
             }
         }
         else
-        { } // if no size message found, skip measurement update
+        {
+            // if no size message found, skip measurement update
+        }
 
         kf.StoreAndClean();
 
