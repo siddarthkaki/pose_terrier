@@ -114,6 +114,8 @@ int main(int argc, char **argv)
     pose0.quat.w() = 1.0;
     pose0.quat.vec() = Vector3d::Zero();
 
+    std::cout << "Waiting for first measurement." << std::endl;
+
     // initialise pipe
     int fd_in, rd_in = 0;
     const char *fifo_path_input = pipe_path_input.c_str();
@@ -137,7 +139,7 @@ int main(int argc, char **argv)
             rd_in = read(fd_in, buffer, size);
 
             // deserialise from buffer array
-            Proto::Measurements measurements;
+            ProtoMeas::Measurements measurements;
             measurements.ParseFromArray(buffer, size);
 
             // close pipe
@@ -258,7 +260,7 @@ int main(int argc, char **argv)
             rd_in= read(fd_in, buffer, size);
 
             // deserialise from buffer array
-            Proto::Measurements measurements;
+            ProtoMeas::Measurements measurements;
             measurements.ParseFromArray(buffer, size);
 
             std::cout << "Received new measurement." << std::endl;

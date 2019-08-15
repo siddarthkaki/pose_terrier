@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package Proto;
+package ProtoPose;
 
 message Position
 {
@@ -21,4 +21,5 @@ message Pose
 {
     Position pos = 1;
     Attitude att = 2;
+    double time_stamp = 3;
 }

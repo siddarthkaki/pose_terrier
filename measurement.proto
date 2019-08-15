@@ -1,8 +1,13 @@
 syntax = "proto3";
 
-import "pose.proto";
+package ProtoMeas;
 
-package Proto;
+message Position
+{
+    double x = 1;
+    double y = 2;
+    double z = 3;
+}
 
 message Bearing
 {

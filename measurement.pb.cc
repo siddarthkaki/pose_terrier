@@ -17,10 +17,13 @@
 #include <google/protobuf/wire_format.h>
 // @@protoc_insertion_point(includes)
 
-namespace Proto {
+namespace ProtoMeas {
 
 namespace {
 
+const ::google::protobuf::Descriptor* Position_descriptor_ = NULL;
+const ::google::protobuf::internal::GeneratedMessageReflection*
+  Position_reflection_ = NULL;
 const ::google::protobuf::Descriptor* Bearing_descriptor_ = NULL;
 const ::google::protobuf::internal::GeneratedMessageReflection*
   Bearing_reflection_ = NULL;
@@ -38,7 +41,24 @@ void protobuf_AssignDesc_measurement_2eproto() {
     ::google::protobuf::DescriptorPool::generated_pool()->FindFileByName(
       "measurement.proto");
   GOOGLE_CHECK(file != NULL);
-  Bearing_descriptor_ = file->message_type(0);
+  Position_descriptor_ = file->message_type(0);
+  static const int Position_offsets_[3] = {
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Position, x_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Position, y_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Position, z_),
+  };
+  Position_reflection_ =
+    ::google::protobuf::internal::GeneratedMessageReflection::NewGeneratedMessageReflection(
+      Position_descriptor_,
+      Position::default_instance_,
+      Position_offsets_,
+      -1,
+      -1,
+      -1,
+      sizeof(Position),
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Position, _internal_metadata_),
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Position, _is_default_instance_));
+  Bearing_descriptor_ = file->message_type(1);
   static const int Bearing_offsets_[2] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Bearing, az_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Bearing, el_),
@@ -54,7 +74,7 @@ void protobuf_AssignDesc_measurement_2eproto() {
       sizeof(Bearing),
       GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Bearing, _internal_metadata_),
       GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Bearing, _is_default_instance_));
-  Measurements_descriptor_ = file->message_type(1);
+  Measurements_descriptor_ = file->message_type(2);
   static const int Measurements_offsets_[3] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Measurements, num_feature_points_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Measurements, feature_points_),
@@ -85,6 +105,8 @@ void protobuf_RegisterTypes(const ::std::string&) GOOGLE_ATTRIBUTE_COLD;
 void protobuf_RegisterTypes(const ::std::string&) {
   protobuf_AssignDescriptorsOnce();
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
+      Position_descriptor_, &Position::default_instance());
+  ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
       Bearing_descriptor_, &Bearing::default_instance());
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
       Measurements_descriptor_, &Measurements::default_instance());
@@ -93,6 +115,8 @@ void protobuf_RegisterTypes(const ::std::string&) {
 }  // namespace
 
 void protobuf_ShutdownFile_measurement_2eproto() {
+  delete Position::default_instance_;
+  delete Position_reflection_;
   delete Bearing::default_instance_;
   delete Bearing_reflection_;
   delete Measurements::default_instance_;
@@ -106,17 +130,20 @@ void protobuf_AddDesc_measurement_2eproto() {
   already_here = true;
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
-  ::Proto::protobuf_AddDesc_pose_2eproto();
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
-    "\n\021measurement.proto\022\005Proto\032\npose.proto\"!"
-    "\n\007Bearing\022\n\n\002az\030\001 \001(\001\022\n\n\002el\030\002 \001(\001\"u\n\014Mea"
-    "surements\022\032\n\022num_feature_points\030\001 \001(\r\022\'\n"
-    "\016feature_points\030\002 \003(\0132\017.Proto.Position\022 "
-    "\n\010bearings\030\003 \003(\0132\016.Proto.Bearingb\006proto3", 200);
+    "\n\021measurement.proto\022\tProtoMeas\"+\n\010Positi"
+    "on\022\t\n\001x\030\001 \001(\001\022\t\n\001y\030\002 \001(\001\022\t\n\001z\030\003 \001(\001\"!\n\007B"
+    "earing\022\n\n\002az\030\001 \001(\001\022\n\n\002el\030\002 \001(\001\"}\n\014Measur"
+    "ements\022\032\n\022num_feature_points\030\001 \001(\r\022+\n\016fe"
+    "ature_points\030\002 \003(\0132\023.ProtoMeas.Position\022"
+    "$\n\010bearings\030\003 \003(\0132\022.ProtoMeas.Bearingb\006p"
+    "roto3", 245);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "measurement.proto", &protobuf_RegisterTypes);
+  Position::default_instance_ = new Position();
   Bearing::default_instance_ = new Bearing();
   Measurements::default_instance_ = new Measurements();
+  Position::default_instance_->InitAsDefaultInstance();
   Bearing::default_instance_->InitAsDefaultInstance();
   Measurements::default_instance_->InitAsDefaultInstance();
   ::google::protobuf::internal::OnShutdown(&protobuf_ShutdownFile_measurement_2eproto);
@@ -132,6 +159,362 @@ struct StaticDescriptorInitializer_measurement_2eproto {
 // ===================================================================
 
 #if !defined(_MSC_VER) || _MSC_VER >= 1900
+const int Position::kXFieldNumber;
+const int Position::kYFieldNumber;
+const int Position::kZFieldNumber;
+#endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
+
+Position::Position()
+  : ::google::protobuf::Message(), _internal_metadata_(NULL) {
+  SharedCtor();
+  // @@protoc_insertion_point(constructor:ProtoMeas.Position)
+}
+
+void Position::InitAsDefaultInstance() {
+  _is_default_instance_ = true;
+}
+
+Position::Position(const Position& from)
+  : ::google::protobuf::Message(),
+    _internal_metadata_(NULL) {
+  SharedCtor();
+  MergeFrom(from);
+  // @@protoc_insertion_point(copy_constructor:ProtoMeas.Position)
+}
+
+void Position::SharedCtor() {
+    _is_default_instance_ = false;
+  _cached_size_ = 0;
+  x_ = 0;
+  y_ = 0;
+  z_ = 0;
+}
+
+Position::~Position() {
+  // @@protoc_insertion_point(destructor:ProtoMeas.Position)
+  SharedDtor();
+}
+
+void Position::SharedDtor() {
+  if (this != default_instance_) {
+  }
+}
+
+void Position::SetCachedSize(int size) const {
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+}
+const ::google::protobuf::Descriptor* Position::descriptor() {
+  protobuf_AssignDescriptorsOnce();
+  return Position_descriptor_;
+}
+
+const Position& Position::default_instance() {
+  if (default_instance_ == NULL) protobuf_AddDesc_measurement_2eproto();
+  return *default_instance_;
+}
+
+Position* Position::default_instance_ = NULL;
+
+Position* Position::New(::google::protobuf::Arena* arena) const {
+  Position* n = new Position;
+  if (arena != NULL) {
+    arena->Own(n);
+  }
+  return n;
+}
+
+void Position::Clear() {
+// @@protoc_insertion_point(message_clear_start:ProtoMeas.Position)
+#if defined(__clang__)
+#define ZR_HELPER_(f) \
+  _Pragma("clang diagnostic push") \
+  _Pragma("clang diagnostic ignored \"-Winvalid-offsetof\"") \
+  __builtin_offsetof(Position, f) \
+  _Pragma("clang diagnostic pop")
+#else
+#define ZR_HELPER_(f) reinterpret_cast<char*>(\
+  &reinterpret_cast<Position*>(16)->f)
+#endif
+
+#define ZR_(first, last) do {\
+  ::memset(&first, 0,\
+           ZR_HELPER_(last) - ZR_HELPER_(first) + sizeof(last));\
+} while (0)
+
+  ZR_(x_, z_);
+
+#undef ZR_HELPER_
+#undef ZR_
+
+}
+
+bool Position::MergePartialFromCodedStream(
+    ::google::protobuf::io::CodedInputStream* input) {
+#define DO_(EXPRESSION) if (!GOOGLE_PREDICT_TRUE(EXPRESSION)) goto failure
+  ::google::protobuf::uint32 tag;
+  // @@protoc_insertion_point(parse_start:ProtoMeas.Position)
+  for (;;) {
+    ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoff(127);
+    tag = p.first;
+    if (!p.second) goto handle_unusual;
+    switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
+      // optional double x = 1;
+      case 1: {
+        if (tag == 9) {
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   double, ::google::protobuf::internal::WireFormatLite::TYPE_DOUBLE>(
+                 input, &x_)));
+
+        } else {
+          goto handle_unusual;
+        }
+        if (input->ExpectTag(17)) goto parse_y;
+        break;
+      }
+
+      // optional double y = 2;
+      case 2: {
+        if (tag == 17) {
+         parse_y:
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   double, ::google::protobuf::internal::WireFormatLite::TYPE_DOUBLE>(
+                 input, &y_)));
+
+        } else {
+          goto handle_unusual;
+        }
+        if (input->ExpectTag(25)) goto parse_z;
+        break;
+      }
+
+      // optional double z = 3;
+      case 3: {
+        if (tag == 25) {
+         parse_z:
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   double, ::google::protobuf::internal::WireFormatLite::TYPE_DOUBLE>(
+                 input, &z_)));
+
+        } else {
+          goto handle_unusual;
+        }
+        if (input->ExpectAtEnd()) goto success;
+        break;
+      }
+
+      default: {
+      handle_unusual:
+        if (tag == 0 ||
+            ::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_END_GROUP) {
+          goto success;
+        }
+        DO_(::google::protobuf::internal::WireFormatLite::SkipField(input, tag));
+        break;
+      }
+    }
+  }
+success:
+  // @@protoc_insertion_point(parse_success:ProtoMeas.Position)
+  return true;
+failure:
+  // @@protoc_insertion_point(parse_failure:ProtoMeas.Position)
+  return false;
+#undef DO_
+}
+
+void Position::SerializeWithCachedSizes(
+    ::google::protobuf::io::CodedOutputStream* output) const {
+  // @@protoc_insertion_point(serialize_start:ProtoMeas.Position)
+  // optional double x = 1;
+  if (this->x() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteDouble(1, this->x(), output);
+  }
+
+  // optional double y = 2;
+  if (this->y() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteDouble(2, this->y(), output);
+  }
+
+  // optional double z = 3;
+  if (this->z() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteDouble(3, this->z(), output);
+  }
+
+  // @@protoc_insertion_point(serialize_end:ProtoMeas.Position)
+}
+
+::google::protobuf::uint8* Position::InternalSerializeWithCachedSizesToArray(
+    bool deterministic, ::google::protobuf::uint8* target) const {
+  // @@protoc_insertion_point(serialize_to_array_start:ProtoMeas.Position)
+  // optional double x = 1;
+  if (this->x() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteDoubleToArray(1, this->x(), target);
+  }
+
+  // optional double y = 2;
+  if (this->y() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteDoubleToArray(2, this->y(), target);
+  }
+
+  // optional double z = 3;
+  if (this->z() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteDoubleToArray(3, this->z(), target);
+  }
+
+  // @@protoc_insertion_point(serialize_to_array_end:ProtoMeas.Position)
+  return target;
+}
+
+int Position::ByteSize() const {
+// @@protoc_insertion_point(message_byte_size_start:ProtoMeas.Position)
+  int total_size = 0;
+
+  // optional double x = 1;
+  if (this->x() != 0) {
+    total_size += 1 + 8;
+  }
+
+  // optional double y = 2;
+  if (this->y() != 0) {
+    total_size += 1 + 8;
+  }
+
+  // optional double z = 3;
+  if (this->z() != 0) {
+    total_size += 1 + 8;
+  }
+
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = total_size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  return total_size;
+}
+
+void Position::MergeFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_merge_from_start:ProtoMeas.Position)
+  if (GOOGLE_PREDICT_FALSE(&from == this)) {
+    ::google::protobuf::internal::MergeFromFail(__FILE__, __LINE__);
+  }
+  const Position* source = 
+      ::google::protobuf::internal::DynamicCastToGenerated<const Position>(
+          &from);
+  if (source == NULL) {
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:ProtoMeas.Position)
+    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+  } else {
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:ProtoMeas.Position)
+    MergeFrom(*source);
+  }
+}
+
+void Position::MergeFrom(const Position& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:ProtoMeas.Position)
+  if (GOOGLE_PREDICT_FALSE(&from == this)) {
+    ::google::protobuf::internal::MergeFromFail(__FILE__, __LINE__);
+  }
+  if (from.x() != 0) {
+    set_x(from.x());
+  }
+  if (from.y() != 0) {
+    set_y(from.y());
+  }
+  if (from.z() != 0) {
+    set_z(from.z());
+  }
+}
+
+void Position::CopyFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_copy_from_start:ProtoMeas.Position)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void Position::CopyFrom(const Position& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:ProtoMeas.Position)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool Position::IsInitialized() const {
+
+  return true;
+}
+
+void Position::Swap(Position* other) {
+  if (other == this) return;
+  InternalSwap(other);
+}
+void Position::InternalSwap(Position* other) {
+  std::swap(x_, other->x_);
+  std::swap(y_, other->y_);
+  std::swap(z_, other->z_);
+  _internal_metadata_.Swap(&other->_internal_metadata_);
+  std::swap(_cached_size_, other->_cached_size_);
+}
+
+::google::protobuf::Metadata Position::GetMetadata() const {
+  protobuf_AssignDescriptorsOnce();
+  ::google::protobuf::Metadata metadata;
+  metadata.descriptor = Position_descriptor_;
+  metadata.reflection = Position_reflection_;
+  return metadata;
+}
+
+#if PROTOBUF_INLINE_NOT_IN_HEADERS
+// Position
+
+// optional double x = 1;
+void Position::clear_x() {
+  x_ = 0;
+}
+ double Position::x() const {
+  // @@protoc_insertion_point(field_get:ProtoMeas.Position.x)
+  return x_;
+}
+ void Position::set_x(double value) {
+  
+  x_ = value;
+  // @@protoc_insertion_point(field_set:ProtoMeas.Position.x)
+}
+
+// optional double y = 2;
+void Position::clear_y() {
+  y_ = 0;
+}
+ double Position::y() const {
+  // @@protoc_insertion_point(field_get:ProtoMeas.Position.y)
+  return y_;
+}
+ void Position::set_y(double value) {
+  
+  y_ = value;
+  // @@protoc_insertion_point(field_set:ProtoMeas.Position.y)
+}
+
+// optional double z = 3;
+void Position::clear_z() {
+  z_ = 0;
+}
+ double Position::z() const {
+  // @@protoc_insertion_point(field_get:ProtoMeas.Position.z)
+  return z_;
+}
+ void Position::set_z(double value) {
+  
+  z_ = value;
+  // @@protoc_insertion_point(field_set:ProtoMeas.Position.z)
+}
+
+#endif  // PROTOBUF_INLINE_NOT_IN_HEADERS
+
+// ===================================================================
+
+#if !defined(_MSC_VER) || _MSC_VER >= 1900
 const int Bearing::kAzFieldNumber;
 const int Bearing::kElFieldNumber;
 #endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
@@ -139,7 +522,7 @@ const int Bearing::kElFieldNumber;
 Bearing::Bearing()
   : ::google::protobuf::Message(), _internal_metadata_(NULL) {
   SharedCtor();
-  // @@protoc_insertion_point(constructor:Proto.Bearing)
+  // @@protoc_insertion_point(constructor:ProtoMeas.Bearing)
 }
 
 void Bearing::InitAsDefaultInstance() {
@@ -151,7 +534,7 @@ Bearing::Bearing(const Bearing& from)
     _internal_metadata_(NULL) {
   SharedCtor();
   MergeFrom(from);
-  // @@protoc_insertion_point(copy_constructor:Proto.Bearing)
+  // @@protoc_insertion_point(copy_constructor:ProtoMeas.Bearing)
 }
 
 void Bearing::SharedCtor() {
@@ -162,7 +545,7 @@ void Bearing::SharedCtor() {
 }
 
 Bearing::~Bearing() {
-  // @@protoc_insertion_point(destructor:Proto.Bearing)
+  // @@protoc_insertion_point(destructor:ProtoMeas.Bearing)
   SharedDtor();
 }
 
@@ -197,7 +580,7 @@ Bearing* Bearing::New(::google::protobuf::Arena* arena) const {
 }
 
 void Bearing::Clear() {
-// @@protoc_insertion_point(message_clear_start:Proto.Bearing)
+// @@protoc_insertion_point(message_clear_start:ProtoMeas.Bearing)
 #if defined(__clang__)
 #define ZR_HELPER_(f) \
   _Pragma("clang diagnostic push") \
@@ -225,7 +608,7 @@ bool Bearing::MergePartialFromCodedStream(
     ::google::protobuf::io::CodedInputStream* input) {
 #define DO_(EXPRESSION) if (!GOOGLE_PREDICT_TRUE(EXPRESSION)) goto failure
   ::google::protobuf::uint32 tag;
-  // @@protoc_insertion_point(parse_start:Proto.Bearing)
+  // @@protoc_insertion_point(parse_start:ProtoMeas.Bearing)
   for (;;) {
     ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoff(127);
     tag = p.first;
@@ -273,17 +656,17 @@ bool Bearing::MergePartialFromCodedStream(
     }
   }
 success:
-  // @@protoc_insertion_point(parse_success:Proto.Bearing)
+  // @@protoc_insertion_point(parse_success:ProtoMeas.Bearing)
   return true;
 failure:
-  // @@protoc_insertion_point(parse_failure:Proto.Bearing)
+  // @@protoc_insertion_point(parse_failure:ProtoMeas.Bearing)
   return false;
 #undef DO_
 }
 
 void Bearing::SerializeWithCachedSizes(
     ::google::protobuf::io::CodedOutputStream* output) const {
-  // @@protoc_insertion_point(serialize_start:Proto.Bearing)
+  // @@protoc_insertion_point(serialize_start:ProtoMeas.Bearing)
   // optional double az = 1;
   if (this->az() != 0) {
     ::google::protobuf::internal::WireFormatLite::WriteDouble(1, this->az(), output);
@@ -294,12 +677,12 @@ void Bearing::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormatLite::WriteDouble(2, this->el(), output);
   }
 
-  // @@protoc_insertion_point(serialize_end:Proto.Bearing)
+  // @@protoc_insertion_point(serialize_end:ProtoMeas.Bearing)
 }
 
 ::google::protobuf::uint8* Bearing::InternalSerializeWithCachedSizesToArray(
     bool deterministic, ::google::protobuf::uint8* target) const {
-  // @@protoc_insertion_point(serialize_to_array_start:Proto.Bearing)
+  // @@protoc_insertion_point(serialize_to_array_start:ProtoMeas.Bearing)
   // optional double az = 1;
   if (this->az() != 0) {
     target = ::google::protobuf::internal::WireFormatLite::WriteDoubleToArray(1, this->az(), target);
@@ -310,12 +693,12 @@ void Bearing::SerializeWithCachedSizes(
     target = ::google::protobuf::internal::WireFormatLite::WriteDoubleToArray(2, this->el(), target);
   }
 
-  // @@protoc_insertion_point(serialize_to_array_end:Proto.Bearing)
+  // @@protoc_insertion_point(serialize_to_array_end:ProtoMeas.Bearing)
   return target;
 }
 
 int Bearing::ByteSize() const {
-// @@protoc_insertion_point(message_byte_size_start:Proto.Bearing)
+// @@protoc_insertion_point(message_byte_size_start:ProtoMeas.Bearing)
   int total_size = 0;
 
   // optional double az = 1;
@@ -335,7 +718,7 @@ int Bearing::ByteSize() const {
 }
 
 void Bearing::MergeFrom(const ::google::protobuf::Message& from) {
-// @@protoc_insertion_point(generalized_merge_from_start:Proto.Bearing)
+// @@protoc_insertion_point(generalized_merge_from_start:ProtoMeas.Bearing)
   if (GOOGLE_PREDICT_FALSE(&from == this)) {
     ::google::protobuf::internal::MergeFromFail(__FILE__, __LINE__);
   }
@@ -343,16 +726,16 @@ void Bearing::MergeFrom(const ::google::protobuf::Message& from) {
       ::google::protobuf::internal::DynamicCastToGenerated<const Bearing>(
           &from);
   if (source == NULL) {
-  // @@protoc_insertion_point(generalized_merge_from_cast_fail:Proto.Bearing)
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:ProtoMeas.Bearing)
     ::google::protobuf::internal::ReflectionOps::Merge(from, this);
   } else {
-  // @@protoc_insertion_point(generalized_merge_from_cast_success:Proto.Bearing)
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:ProtoMeas.Bearing)
     MergeFrom(*source);
   }
 }
 
 void Bearing::MergeFrom(const Bearing& from) {
-// @@protoc_insertion_point(class_specific_merge_from_start:Proto.Bearing)
+// @@protoc_insertion_point(class_specific_merge_from_start:ProtoMeas.Bearing)
   if (GOOGLE_PREDICT_FALSE(&from == this)) {
     ::google::protobuf::internal::MergeFromFail(__FILE__, __LINE__);
   }
@@ -365,14 +748,14 @@ void Bearing::MergeFrom(const Bearing& from) {
 }
 
 void Bearing::CopyFrom(const ::google::protobuf::Message& from) {
-// @@protoc_insertion_point(generalized_copy_from_start:Proto.Bearing)
+// @@protoc_insertion_point(generalized_copy_from_start:ProtoMeas.Bearing)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
 }
 
 void Bearing::CopyFrom(const Bearing& from) {
-// @@protoc_insertion_point(class_specific_copy_from_start:Proto.Bearing)
+// @@protoc_insertion_point(class_specific_copy_from_start:ProtoMeas.Bearing)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
@@ -410,13 +793,13 @@ void Bearing::clear_az() {
   az_ = 0;
 }
  double Bearing::az() const {
-  // @@protoc_insertion_point(field_get:Proto.Bearing.az)
+  // @@protoc_insertion_point(field_get:ProtoMeas.Bearing.az)
   return az_;
 }
  void Bearing::set_az(double value) {
   
   az_ = value;
-  // @@protoc_insertion_point(field_set:Proto.Bearing.az)
+  // @@protoc_insertion_point(field_set:ProtoMeas.Bearing.az)
 }
 
 // optional double el = 2;
@@ -424,13 +807,13 @@ void Bearing::clear_el() {
   el_ = 0;
 }
  double Bearing::el() const {
-  // @@protoc_insertion_point(field_get:Proto.Bearing.el)
+  // @@protoc_insertion_point(field_get:ProtoMeas.Bearing.el)
   return el_;
 }
  void Bearing::set_el(double value) {
   
   el_ = value;
-  // @@protoc_insertion_point(field_set:Proto.Bearing.el)
+  // @@protoc_insertion_point(field_set:ProtoMeas.Bearing.el)
 }
 
 #endif  // PROTOBUF_INLINE_NOT_IN_HEADERS
@@ -446,7 +829,7 @@ const int Measurements::kBearingsFieldNumber;
 Measurements::Measurements()
   : ::google::protobuf::Message(), _internal_metadata_(NULL) {
   SharedCtor();
-  // @@protoc_insertion_point(constructor:Proto.Measurements)
+  // @@protoc_insertion_point(constructor:ProtoMeas.Measurements)
 }
 
 void Measurements::InitAsDefaultInstance() {
@@ -458,7 +841,7 @@ Measurements::Measurements(const Measurements& from)
     _internal_metadata_(NULL) {
   SharedCtor();
   MergeFrom(from);
-  // @@protoc_insertion_point(copy_constructor:Proto.Measurements)
+  // @@protoc_insertion_point(copy_constructor:ProtoMeas.Measurements)
 }
 
 void Measurements::SharedCtor() {
@@ -468,7 +851,7 @@ void Measurements::SharedCtor() {
 }
 
 Measurements::~Measurements() {
-  // @@protoc_insertion_point(destructor:Proto.Measurements)
+  // @@protoc_insertion_point(destructor:ProtoMeas.Measurements)
   SharedDtor();
 }
 
@@ -503,7 +886,7 @@ Measurements* Measurements::New(::google::protobuf::Arena* arena) const {
 }
 
 void Measurements::Clear() {
-// @@protoc_insertion_point(message_clear_start:Proto.Measurements)
+// @@protoc_insertion_point(message_clear_start:ProtoMeas.Measurements)
   num_feature_points_ = 0u;
   feature_points_.Clear();
   bearings_.Clear();
@@ -513,7 +896,7 @@ bool Measurements::MergePartialFromCodedStream(
     ::google::protobuf::io::CodedInputStream* input) {
 #define DO_(EXPRESSION) if (!GOOGLE_PREDICT_TRUE(EXPRESSION)) goto failure
   ::google::protobuf::uint32 tag;
-  // @@protoc_insertion_point(parse_start:Proto.Measurements)
+  // @@protoc_insertion_point(parse_start:ProtoMeas.Measurements)
   for (;;) {
     ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoff(127);
     tag = p.first;
@@ -533,7 +916,7 @@ bool Measurements::MergePartialFromCodedStream(
         break;
       }
 
-      // repeated .Proto.Position feature_points = 2;
+      // repeated .ProtoMeas.Position feature_points = 2;
       case 2: {
         if (tag == 18) {
          parse_feature_points:
@@ -550,7 +933,7 @@ bool Measurements::MergePartialFromCodedStream(
         break;
       }
 
-      // repeated .Proto.Bearing bearings = 3;
+      // repeated .ProtoMeas.Bearing bearings = 3;
       case 3: {
         if (tag == 26) {
           DO_(input->IncrementRecursionDepth());
@@ -579,65 +962,65 @@ bool Measurements::MergePartialFromCodedStream(
     }
   }
 success:
-  // @@protoc_insertion_point(parse_success:Proto.Measurements)
+  // @@protoc_insertion_point(parse_success:ProtoMeas.Measurements)
   return true;
 failure:
-  // @@protoc_insertion_point(parse_failure:Proto.Measurements)
+  // @@protoc_insertion_point(parse_failure:ProtoMeas.Measurements)
   return false;
 #undef DO_
 }
 
 void Measurements::SerializeWithCachedSizes(
     ::google::protobuf::io::CodedOutputStream* output) const {
-  // @@protoc_insertion_point(serialize_start:Proto.Measurements)
+  // @@protoc_insertion_point(serialize_start:ProtoMeas.Measurements)
   // optional uint32 num_feature_points = 1;
   if (this->num_feature_points() != 0) {
     ::google::protobuf::internal::WireFormatLite::WriteUInt32(1, this->num_feature_points(), output);
   }
 
-  // repeated .Proto.Position feature_points = 2;
+  // repeated .ProtoMeas.Position feature_points = 2;
   for (unsigned int i = 0, n = this->feature_points_size(); i < n; i++) {
     ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
       2, this->feature_points(i), output);
   }
 
-  // repeated .Proto.Bearing bearings = 3;
+  // repeated .ProtoMeas.Bearing bearings = 3;
   for (unsigned int i = 0, n = this->bearings_size(); i < n; i++) {
     ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
       3, this->bearings(i), output);
   }
 
-  // @@protoc_insertion_point(serialize_end:Proto.Measurements)
+  // @@protoc_insertion_point(serialize_end:ProtoMeas.Measurements)
 }
 
 ::google::protobuf::uint8* Measurements::InternalSerializeWithCachedSizesToArray(
     bool deterministic, ::google::protobuf::uint8* target) const {
-  // @@protoc_insertion_point(serialize_to_array_start:Proto.Measurements)
+  // @@protoc_insertion_point(serialize_to_array_start:ProtoMeas.Measurements)
   // optional uint32 num_feature_points = 1;
   if (this->num_feature_points() != 0) {
     target = ::google::protobuf::internal::WireFormatLite::WriteUInt32ToArray(1, this->num_feature_points(), target);
   }
 
-  // repeated .Proto.Position feature_points = 2;
+  // repeated .ProtoMeas.Position feature_points = 2;
   for (unsigned int i = 0, n = this->feature_points_size(); i < n; i++) {
     target = ::google::protobuf::internal::WireFormatLite::
       InternalWriteMessageNoVirtualToArray(
         2, this->feature_points(i), false, target);
   }
 
-  // repeated .Proto.Bearing bearings = 3;
+  // repeated .ProtoMeas.Bearing bearings = 3;
   for (unsigned int i = 0, n = this->bearings_size(); i < n; i++) {
     target = ::google::protobuf::internal::WireFormatLite::
       InternalWriteMessageNoVirtualToArray(
         3, this->bearings(i), false, target);
   }
 
-  // @@protoc_insertion_point(serialize_to_array_end:Proto.Measurements)
+  // @@protoc_insertion_point(serialize_to_array_end:ProtoMeas.Measurements)
   return target;
 }
 
 int Measurements::ByteSize() const {
-// @@protoc_insertion_point(message_byte_size_start:Proto.Measurements)
+// @@protoc_insertion_point(message_byte_size_start:ProtoMeas.Measurements)
   int total_size = 0;
 
   // optional uint32 num_feature_points = 1;
@@ -647,7 +1030,7 @@ int Measurements::ByteSize() const {
         this->num_feature_points());
   }
 
-  // repeated .Proto.Position feature_points = 2;
+  // repeated .ProtoMeas.Position feature_points = 2;
   total_size += 1 * this->feature_points_size();
   for (int i = 0; i < this->feature_points_size(); i++) {
     total_size +=
@@ -655,7 +1038,7 @@ int Measurements::ByteSize() const {
         this->feature_points(i));
   }
 
-  // repeated .Proto.Bearing bearings = 3;
+  // repeated .ProtoMeas.Bearing bearings = 3;
   total_size += 1 * this->bearings_size();
   for (int i = 0; i < this->bearings_size(); i++) {
     total_size +=
@@ -670,7 +1053,7 @@ int Measurements::ByteSize() const {
 }
 
 void Measurements::MergeFrom(const ::google::protobuf::Message& from) {
-// @@protoc_insertion_point(generalized_merge_from_start:Proto.Measurements)
+// @@protoc_insertion_point(generalized_merge_from_start:ProtoMeas.Measurements)
   if (GOOGLE_PREDICT_FALSE(&from == this)) {
     ::google::protobuf::internal::MergeFromFail(__FILE__, __LINE__);
   }
@@ -678,16 +1061,16 @@ void Measurements::MergeFrom(const ::google::protobuf::Message& from) {
       ::google::protobuf::internal::DynamicCastToGenerated<const Measurements>(
           &from);
   if (source == NULL) {
-  // @@protoc_insertion_point(generalized_merge_from_cast_fail:Proto.Measurements)
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:ProtoMeas.Measurements)
     ::google::protobuf::internal::ReflectionOps::Merge(from, this);
   } else {
-  // @@protoc_insertion_point(generalized_merge_from_cast_success:Proto.Measurements)
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:ProtoMeas.Measurements)
     MergeFrom(*source);
   }
 }
 
 void Measurements::MergeFrom(const Measurements& from) {
-// @@protoc_insertion_point(class_specific_merge_from_start:Proto.Measurements)
+// @@protoc_insertion_point(class_specific_merge_from_start:ProtoMeas.Measurements)
   if (GOOGLE_PREDICT_FALSE(&from == this)) {
     ::google::protobuf::internal::MergeFromFail(__FILE__, __LINE__);
   }
@@ -699,14 +1082,14 @@ void Measurements::MergeFrom(const Measurements& from) {
 }
 
 void Measurements::CopyFrom(const ::google::protobuf::Message& from) {
-// @@protoc_insertion_point(generalized_copy_from_start:Proto.Measurements)
+// @@protoc_insertion_point(generalized_copy_from_start:ProtoMeas.Measurements)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
 }
 
 void Measurements::CopyFrom(const Measurements& from) {
-// @@protoc_insertion_point(class_specific_copy_from_start:Proto.Measurements)
+// @@protoc_insertion_point(class_specific_copy_from_start:ProtoMeas.Measurements)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
@@ -745,72 +1128,72 @@ void Measurements::clear_num_feature_points() {
   num_feature_points_ = 0u;
 }
  ::google::protobuf::uint32 Measurements::num_feature_points() const {
-  // @@protoc_insertion_point(field_get:Proto.Measurements.num_feature_points)
+  // @@protoc_insertion_point(field_get:ProtoMeas.Measurements.num_feature_points)
   return num_feature_points_;
 }
  void Measurements::set_num_feature_points(::google::protobuf::uint32 value) {
   
   num_feature_points_ = value;
-  // @@protoc_insertion_point(field_set:Proto.Measurements.num_feature_points)
+  // @@protoc_insertion_point(field_set:ProtoMeas.Measurements.num_feature_points)
 }
 
-// repeated .Proto.Position feature_points = 2;
+// repeated .ProtoMeas.Position feature_points = 2;
 int Measurements::feature_points_size() const {
   return feature_points_.size();
 }
 void Measurements::clear_feature_points() {
   feature_points_.Clear();
 }
-const ::Proto::Position& Measurements::feature_points(int index) const {
-  // @@protoc_insertion_point(field_get:Proto.Measurements.feature_points)
+const ::ProtoMeas::Position& Measurements::feature_points(int index) const {
+  // @@protoc_insertion_point(field_get:ProtoMeas.Measurements.feature_points)
   return feature_points_.Get(index);
 }
-::Proto::Position* Measurements::mutable_feature_points(int index) {
-  // @@protoc_insertion_point(field_mutable:Proto.Measurements.feature_points)
+::ProtoMeas::Position* Measurements::mutable_feature_points(int index) {
+  // @@protoc_insertion_point(field_mutable:ProtoMeas.Measurements.feature_points)
   return feature_points_.Mutable(index);
 }
-::Proto::Position* Measurements::add_feature_points() {
-  // @@protoc_insertion_point(field_add:Proto.Measurements.feature_points)
+::ProtoMeas::Position* Measurements::add_feature_points() {
+  // @@protoc_insertion_point(field_add:ProtoMeas.Measurements.feature_points)
   return feature_points_.Add();
 }
-::google::protobuf::RepeatedPtrField< ::Proto::Position >*
+::google::protobuf::RepeatedPtrField< ::ProtoMeas::Position >*
 Measurements::mutable_feature_points() {
-  // @@protoc_insertion_point(field_mutable_list:Proto.Measurements.feature_points)
+  // @@protoc_insertion_point(field_mutable_list:ProtoMeas.Measurements.feature_points)
   return &feature_points_;
 }
-const ::google::protobuf::RepeatedPtrField< ::Proto::Position >&
+const ::google::protobuf::RepeatedPtrField< ::ProtoMeas::Position >&
 Measurements::feature_points() const {
-  // @@protoc_insertion_point(field_list:Proto.Measurements.feature_points)
+  // @@protoc_insertion_point(field_list:ProtoMeas.Measurements.feature_points)
   return feature_points_;
 }
 
-// repeated .Proto.Bearing bearings = 3;
+// repeated .ProtoMeas.Bearing bearings = 3;
 int Measurements::bearings_size() const {
   return bearings_.size();
 }
 void Measurements::clear_bearings() {
   bearings_.Clear();
 }
-const ::Proto::Bearing& Measurements::bearings(int index) const {
-  // @@protoc_insertion_point(field_get:Proto.Measurements.bearings)
+const ::ProtoMeas::Bearing& Measurements::bearings(int index) const {
+  // @@protoc_insertion_point(field_get:ProtoMeas.Measurements.bearings)
   return bearings_.Get(index);
 }
-::Proto::Bearing* Measurements::mutable_bearings(int index) {
-  // @@protoc_insertion_point(field_mutable:Proto.Measurements.bearings)
+::ProtoMeas::Bearing* Measurements::mutable_bearings(int index) {
+  // @@protoc_insertion_point(field_mutable:ProtoMeas.Measurements.bearings)
   return bearings_.Mutable(index);
 }
-::Proto::Bearing* Measurements::add_bearings() {
-  // @@protoc_insertion_point(field_add:Proto.Measurements.bearings)
+::ProtoMeas::Bearing* Measurements::add_bearings() {
+  // @@protoc_insertion_point(field_add:ProtoMeas.Measurements.bearings)
   return bearings_.Add();
 }
-::google::protobuf::RepeatedPtrField< ::Proto::Bearing >*
+::google::protobuf::RepeatedPtrField< ::ProtoMeas::Bearing >*
 Measurements::mutable_bearings() {
-  // @@protoc_insertion_point(field_mutable_list:Proto.Measurements.bearings)
+  // @@protoc_insertion_point(field_mutable_list:ProtoMeas.Measurements.bearings)
   return &bearings_;
 }
-const ::google::protobuf::RepeatedPtrField< ::Proto::Bearing >&
+const ::google::protobuf::RepeatedPtrField< ::ProtoMeas::Bearing >&
 Measurements::bearings() const {
-  // @@protoc_insertion_point(field_list:Proto.Measurements.bearings)
+  // @@protoc_insertion_point(field_list:ProtoMeas.Measurements.bearings)
   return bearings_;
 }
 
@@ -818,6 +1201,6 @@ Measurements::bearings() const {
 
 // @@protoc_insertion_point(namespace_scope)
 
-}  // namespace Proto
+}  // namespace ProtoMeas
 
 // @@protoc_insertion_point(global_scope)

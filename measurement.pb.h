@@ -27,10 +27,9 @@
 #include <google/protobuf/repeated_field.h>
 #include <google/protobuf/extension_set.h>
 #include <google/protobuf/unknown_field_set.h>
-#include "pose.pb.h"
 // @@protoc_insertion_point(includes)
 
-namespace Proto {
+namespace ProtoMeas {
 
 // Internal implementation detail -- do not call these.
 void protobuf_AddDesc_measurement_2eproto();
@@ -39,10 +38,107 @@ void protobuf_ShutdownFile_measurement_2eproto();
 
 class Bearing;
 class Measurements;
+class Position;
 
 // ===================================================================
 
-class Bearing : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:Proto.Bearing) */ {
+class Position : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:ProtoMeas.Position) */ {
+ public:
+  Position();
+  virtual ~Position();
+
+  Position(const Position& from);
+
+  inline Position& operator=(const Position& from) {
+    CopyFrom(from);
+    return *this;
+  }
+
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const Position& default_instance();
+
+  void Swap(Position* other);
+
+  // implements Message ----------------------------------------------
+
+  inline Position* New() const { return New(NULL); }
+
+  Position* New(::google::protobuf::Arena* arena) const;
+  void CopyFrom(const ::google::protobuf::Message& from);
+  void MergeFrom(const ::google::protobuf::Message& from);
+  void CopyFrom(const Position& from);
+  void MergeFrom(const Position& from);
+  void Clear();
+  bool IsInitialized() const;
+
+  int ByteSize() const;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input);
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* output) const;
+  ::google::protobuf::uint8* SerializeWithCachedSizesToArray(::google::protobuf::uint8* output) const {
+    return InternalSerializeWithCachedSizesToArray(false, output);
+  }
+  int GetCachedSize() const { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const;
+  void InternalSwap(Position* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return _internal_metadata_.arena();
+  }
+  inline void* MaybeArenaPtr() const {
+    return _internal_metadata_.raw_arena_ptr();
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // optional double x = 1;
+  void clear_x();
+  static const int kXFieldNumber = 1;
+  double x() const;
+  void set_x(double value);
+
+  // optional double y = 2;
+  void clear_y();
+  static const int kYFieldNumber = 2;
+  double y() const;
+  void set_y(double value);
+
+  // optional double z = 3;
+  void clear_z();
+  static const int kZFieldNumber = 3;
+  double z() const;
+  void set_z(double value);
+
+  // @@protoc_insertion_point(class_scope:ProtoMeas.Position)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  bool _is_default_instance_;
+  double x_;
+  double y_;
+  double z_;
+  mutable int _cached_size_;
+  friend void  protobuf_AddDesc_measurement_2eproto();
+  friend void protobuf_AssignDesc_measurement_2eproto();
+  friend void protobuf_ShutdownFile_measurement_2eproto();
+
+  void InitAsDefaultInstance();
+  static Position* default_instance_;
+};
+// -------------------------------------------------------------------
+
+class Bearing : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:ProtoMeas.Bearing) */ {
  public:
   Bearing();
   virtual ~Bearing();
@@ -114,7 +210,7 @@ class Bearing : public ::google::protobuf::Message /* @@protoc_insertion_point(c
   double el() const;
   void set_el(double value);
 
-  // @@protoc_insertion_point(class_scope:Proto.Bearing)
+  // @@protoc_insertion_point(class_scope:ProtoMeas.Bearing)
  private:
 
   ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
@@ -131,7 +227,7 @@ class Bearing : public ::google::protobuf::Message /* @@protoc_insertion_point(c
 };
 // -------------------------------------------------------------------
 
-class Measurements : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:Proto.Measurements) */ {
+class Measurements : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:ProtoMeas.Measurements) */ {
  public:
   Measurements();
   virtual ~Measurements();
@@ -197,37 +293,37 @@ class Measurements : public ::google::protobuf::Message /* @@protoc_insertion_po
   ::google::protobuf::uint32 num_feature_points() const;
   void set_num_feature_points(::google::protobuf::uint32 value);
 
-  // repeated .Proto.Position feature_points = 2;
+  // repeated .ProtoMeas.Position feature_points = 2;
   int feature_points_size() const;
   void clear_feature_points();
   static const int kFeaturePointsFieldNumber = 2;
-  const ::Proto::Position& feature_points(int index) const;
-  ::Proto::Position* mutable_feature_points(int index);
-  ::Proto::Position* add_feature_points();
-  ::google::protobuf::RepeatedPtrField< ::Proto::Position >*
+  const ::ProtoMeas::Position& feature_points(int index) const;
+  ::ProtoMeas::Position* mutable_feature_points(int index);
+  ::ProtoMeas::Position* add_feature_points();
+  ::google::protobuf::RepeatedPtrField< ::ProtoMeas::Position >*
       mutable_feature_points();
-  const ::google::protobuf::RepeatedPtrField< ::Proto::Position >&
+  const ::google::protobuf::RepeatedPtrField< ::ProtoMeas::Position >&
       feature_points() const;
 
-  // repeated .Proto.Bearing bearings = 3;
+  // repeated .ProtoMeas.Bearing bearings = 3;
   int bearings_size() const;
   void clear_bearings();
   static const int kBearingsFieldNumber = 3;
-  const ::Proto::Bearing& bearings(int index) const;
-  ::Proto::Bearing* mutable_bearings(int index);
-  ::Proto::Bearing* add_bearings();
-  ::google::protobuf::RepeatedPtrField< ::Proto::Bearing >*
+  const ::ProtoMeas::Bearing& bearings(int index) const;
+  ::ProtoMeas::Bearing* mutable_bearings(int index);
+  ::ProtoMeas::Bearing* add_bearings();
+  ::google::protobuf::RepeatedPtrField< ::ProtoMeas::Bearing >*
       mutable_bearings();
-  const ::google::protobuf::RepeatedPtrField< ::Proto::Bearing >&
+  const ::google::protobuf::RepeatedPtrField< ::ProtoMeas::Bearing >&
       bearings() const;
 
-  // @@protoc_insertion_point(class_scope:Proto.Measurements)
+  // @@protoc_insertion_point(class_scope:ProtoMeas.Measurements)
  private:
 
   ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
   bool _is_default_instance_;
-  ::google::protobuf::RepeatedPtrField< ::Proto::Position > feature_points_;
-  ::google::protobuf::RepeatedPtrField< ::Proto::Bearing > bearings_;
+  ::google::protobuf::RepeatedPtrField< ::ProtoMeas::Position > feature_points_;
+  ::google::protobuf::RepeatedPtrField< ::ProtoMeas::Bearing > bearings_;
   ::google::protobuf::uint32 num_feature_points_;
   mutable int _cached_size_;
   friend void  protobuf_AddDesc_measurement_2eproto();
@@ -243,6 +339,52 @@ class Measurements : public ::google::protobuf::Message /* @@protoc_insertion_po
 // ===================================================================
 
 #if !PROTOBUF_INLINE_NOT_IN_HEADERS
+// Position
+
+// optional double x = 1;
+inline void Position::clear_x() {
+  x_ = 0;
+}
+inline double Position::x() const {
+  // @@protoc_insertion_point(field_get:ProtoMeas.Position.x)
+  return x_;
+}
+inline void Position::set_x(double value) {
+  
+  x_ = value;
+  // @@protoc_insertion_point(field_set:ProtoMeas.Position.x)
+}
+
+// optional double y = 2;
+inline void Position::clear_y() {
+  y_ = 0;
+}
+inline double Position::y() const {
+  // @@protoc_insertion_point(field_get:ProtoMeas.Position.y)
+  return y_;
+}
+inline void Position::set_y(double value) {
+  
+  y_ = value;
+  // @@protoc_insertion_point(field_set:ProtoMeas.Position.y)
+}
+
+// optional double z = 3;
+inline void Position::clear_z() {
+  z_ = 0;
+}
+inline double Position::z() const {
+  // @@protoc_insertion_point(field_get:ProtoMeas.Position.z)
+  return z_;
+}
+inline void Position::set_z(double value) {
+  
+  z_ = value;
+  // @@protoc_insertion_point(field_set:ProtoMeas.Position.z)
+}
+
+// -------------------------------------------------------------------
+
 // Bearing
 
 // optional double az = 1;
@@ -250,13 +392,13 @@ inline void Bearing::clear_az() {
   az_ = 0;
 }
 inline double Bearing::az() const {
-  // @@protoc_insertion_point(field_get:Proto.Bearing.az)
+  // @@protoc_insertion_point(field_get:ProtoMeas.Bearing.az)
   return az_;
 }
 inline void Bearing::set_az(double value) {
   
   az_ = value;
-  // @@protoc_insertion_point(field_set:Proto.Bearing.az)
+  // @@protoc_insertion_point(field_set:ProtoMeas.Bearing.az)
 }
 
 // optional double el = 2;
@@ -264,13 +406,13 @@ inline void Bearing::clear_el() {
   el_ = 0;
 }
 inline double Bearing::el() const {
-  // @@protoc_insertion_point(field_get:Proto.Bearing.el)
+  // @@protoc_insertion_point(field_get:ProtoMeas.Bearing.el)
   return el_;
 }
 inline void Bearing::set_el(double value) {
   
   el_ = value;
-  // @@protoc_insertion_point(field_set:Proto.Bearing.el)
+  // @@protoc_insertion_point(field_set:ProtoMeas.Bearing.el)
 }
 
 // -------------------------------------------------------------------
@@ -282,82 +424,84 @@ inline void Measurements::clear_num_feature_points() {
   num_feature_points_ = 0u;
 }
 inline ::google::protobuf::uint32 Measurements::num_feature_points() const {
-  // @@protoc_insertion_point(field_get:Proto.Measurements.num_feature_points)
+  // @@protoc_insertion_point(field_get:ProtoMeas.Measurements.num_feature_points)
   return num_feature_points_;
 }
 inline void Measurements::set_num_feature_points(::google::protobuf::uint32 value) {
   
   num_feature_points_ = value;
-  // @@protoc_insertion_point(field_set:Proto.Measurements.num_feature_points)
+  // @@protoc_insertion_point(field_set:ProtoMeas.Measurements.num_feature_points)
 }
 
-// repeated .Proto.Position feature_points = 2;
+// repeated .ProtoMeas.Position feature_points = 2;
 inline int Measurements::feature_points_size() const {
   return feature_points_.size();
 }
 inline void Measurements::clear_feature_points() {
   feature_points_.Clear();
 }
-inline const ::Proto::Position& Measurements::feature_points(int index) const {
-  // @@protoc_insertion_point(field_get:Proto.Measurements.feature_points)
+inline const ::ProtoMeas::Position& Measurements::feature_points(int index) const {
+  // @@protoc_insertion_point(field_get:ProtoMeas.Measurements.feature_points)
   return feature_points_.Get(index);
 }
-inline ::Proto::Position* Measurements::mutable_feature_points(int index) {
-  // @@protoc_insertion_point(field_mutable:Proto.Measurements.feature_points)
+inline ::ProtoMeas::Position* Measurements::mutable_feature_points(int index) {
+  // @@protoc_insertion_point(field_mutable:ProtoMeas.Measurements.feature_points)
   return feature_points_.Mutable(index);
 }
-inline ::Proto::Position* Measurements::add_feature_points() {
-  // @@protoc_insertion_point(field_add:Proto.Measurements.feature_points)
+inline ::ProtoMeas::Position* Measurements::add_feature_points() {
+  // @@protoc_insertion_point(field_add:ProtoMeas.Measurements.feature_points)
   return feature_points_.Add();
 }
-inline ::google::protobuf::RepeatedPtrField< ::Proto::Position >*
+inline ::google::protobuf::RepeatedPtrField< ::ProtoMeas::Position >*
 Measurements::mutable_feature_points() {
-  // @@protoc_insertion_point(field_mutable_list:Proto.Measurements.feature_points)
+  // @@protoc_insertion_point(field_mutable_list:ProtoMeas.Measurements.feature_points)
   return &feature_points_;
 }
-inline const ::google::protobuf::RepeatedPtrField< ::Proto::Position >&
+inline const ::google::protobuf::RepeatedPtrField< ::ProtoMeas::Position >&
 Measurements::feature_points() const {
-  // @@protoc_insertion_point(field_list:Proto.Measurements.feature_points)
+  // @@protoc_insertion_point(field_list:ProtoMeas.Measurements.feature_points)
   return feature_points_;
 }
 
-// repeated .Proto.Bearing bearings = 3;
+// repeated .ProtoMeas.Bearing bearings = 3;
 inline int Measurements::bearings_size() const {
   return bearings_.size();
 }
 inline void Measurements::clear_bearings() {
   bearings_.Clear();
 }
-inline const ::Proto::Bearing& Measurements::bearings(int index) const {
-  // @@protoc_insertion_point(field_get:Proto.Measurements.bearings)
+inline const ::ProtoMeas::Bearing& Measurements::bearings(int index) const {
+  // @@protoc_insertion_point(field_get:ProtoMeas.Measurements.bearings)
   return bearings_.Get(index);
 }
-inline ::Proto::Bearing* Measurements::mutable_bearings(int index) {
-  // @@protoc_insertion_point(field_mutable:Proto.Measurements.bearings)
+inline ::ProtoMeas::Bearing* Measurements::mutable_bearings(int index) {
+  // @@protoc_insertion_point(field_mutable:ProtoMeas.Measurements.bearings)
   return bearings_.Mutable(index);
 }
-inline ::Proto::Bearing* Measurements::add_bearings() {
-  // @@protoc_insertion_point(field_add:Proto.Measurements.bearings)
+inline ::ProtoMeas::Bearing* Measurements::add_bearings() {
+  // @@protoc_insertion_point(field_add:ProtoMeas.Measurements.bearings)
   return bearings_.Add();
 }
-inline ::google::protobuf::RepeatedPtrField< ::Proto::Bearing >*
+inline ::google::protobuf::RepeatedPtrField< ::ProtoMeas::Bearing >*
 Measurements::mutable_bearings() {
-  // @@protoc_insertion_point(field_mutable_list:Proto.Measurements.bearings)
+  // @@protoc_insertion_point(field_mutable_list:ProtoMeas.Measurements.bearings)
   return &bearings_;
 }
-inline const ::google::protobuf::RepeatedPtrField< ::Proto::Bearing >&
+inline const ::google::protobuf::RepeatedPtrField< ::ProtoMeas::Bearing >&
 Measurements::bearings() const {
-  // @@protoc_insertion_point(field_list:Proto.Measurements.bearings)
+  // @@protoc_insertion_point(field_list:ProtoMeas.Measurements.bearings)
   return bearings_;
 }
 
 #endif  // !PROTOBUF_INLINE_NOT_IN_HEADERS
 // -------------------------------------------------------------------
 
+// -------------------------------------------------------------------
+
 
 // @@protoc_insertion_point(namespace_scope)
 
-}  // namespace Proto
+}  // namespace ProtoMeas
 
 // @@protoc_insertion_point(global_scope)
 

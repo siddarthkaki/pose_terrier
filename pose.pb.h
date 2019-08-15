@@ -29,7 +29,7 @@
 #include <google/protobuf/unknown_field_set.h>
 // @@protoc_insertion_point(includes)
 
-namespace Proto {
+namespace ProtoPose {
 
 // Internal implementation detail -- do not call these.
 void protobuf_AddDesc_pose_2eproto();
@@ -42,7 +42,7 @@ class Position;
 
 // ===================================================================
 
-class Position : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:Proto.Position) */ {
+class Position : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:ProtoPose.Position) */ {
  public:
   Position();
   virtual ~Position();
@@ -120,7 +120,7 @@ class Position : public ::google::protobuf::Message /* @@protoc_insertion_point(
   double z() const;
   void set_z(double value);
 
-  // @@protoc_insertion_point(class_scope:Proto.Position)
+  // @@protoc_insertion_point(class_scope:ProtoPose.Position)
  private:
 
   ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
@@ -138,7 +138,7 @@ class Position : public ::google::protobuf::Message /* @@protoc_insertion_point(
 };
 // -------------------------------------------------------------------
 
-class Attitude : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:Proto.Attitude) */ {
+class Attitude : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:ProtoPose.Attitude) */ {
  public:
   Attitude();
   virtual ~Attitude();
@@ -222,7 +222,7 @@ class Attitude : public ::google::protobuf::Message /* @@protoc_insertion_point(
   double qz() const;
   void set_qz(double value);
 
-  // @@protoc_insertion_point(class_scope:Proto.Attitude)
+  // @@protoc_insertion_point(class_scope:ProtoPose.Attitude)
  private:
 
   ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
@@ -241,7 +241,7 @@ class Attitude : public ::google::protobuf::Message /* @@protoc_insertion_point(
 };
 // -------------------------------------------------------------------
 
-class Pose : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:Proto.Pose) */ {
+class Pose : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:ProtoPose.Pose) */ {
  public:
   Pose();
   virtual ~Pose();
@@ -301,31 +301,38 @@ class Pose : public ::google::protobuf::Message /* @@protoc_insertion_point(clas
 
   // accessors -------------------------------------------------------
 
-  // optional .Proto.Position pos = 1;
+  // optional .ProtoPose.Position pos = 1;
   bool has_pos() const;
   void clear_pos();
   static const int kPosFieldNumber = 1;
-  const ::Proto::Position& pos() const;
-  ::Proto::Position* mutable_pos();
-  ::Proto::Position* release_pos();
-  void set_allocated_pos(::Proto::Position* pos);
+  const ::ProtoPose::Position& pos() const;
+  ::ProtoPose::Position* mutable_pos();
+  ::ProtoPose::Position* release_pos();
+  void set_allocated_pos(::ProtoPose::Position* pos);
 
-  // optional .Proto.Attitude att = 2;
+  // optional .ProtoPose.Attitude att = 2;
   bool has_att() const;
   void clear_att();
   static const int kAttFieldNumber = 2;
-  const ::Proto::Attitude& att() const;
-  ::Proto::Attitude* mutable_att();
-  ::Proto::Attitude* release_att();
-  void set_allocated_att(::Proto::Attitude* att);
+  const ::ProtoPose::Attitude& att() const;
+  ::ProtoPose::Attitude* mutable_att();
+  ::ProtoPose::Attitude* release_att();
+  void set_allocated_att(::ProtoPose::Attitude* att);
 
-  // @@protoc_insertion_point(class_scope:Proto.Pose)
+  // optional double time_stamp = 3;
+  void clear_time_stamp();
+  static const int kTimeStampFieldNumber = 3;
+  double time_stamp() const;
+  void set_time_stamp(double value);
+
+  // @@protoc_insertion_point(class_scope:ProtoPose.Pose)
  private:
 
   ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
   bool _is_default_instance_;
-  ::Proto::Position* pos_;
-  ::Proto::Attitude* att_;
+  ::ProtoPose::Position* pos_;
+  ::ProtoPose::Attitude* att_;
+  double time_stamp_;
   mutable int _cached_size_;
   friend void  protobuf_AddDesc_pose_2eproto();
   friend void protobuf_AssignDesc_pose_2eproto();
@@ -347,13 +354,13 @@ inline void Position::clear_x() {
   x_ = 0;
 }
 inline double Position::x() const {
-  // @@protoc_insertion_point(field_get:Proto.Position.x)
+  // @@protoc_insertion_point(field_get:ProtoPose.Position.x)
   return x_;
 }
 inline void Position::set_x(double value) {
   
   x_ = value;
-  // @@protoc_insertion_point(field_set:Proto.Position.x)
+  // @@protoc_insertion_point(field_set:ProtoPose.Position.x)
 }
 
 // optional double y = 2;
@@ -361,13 +368,13 @@ inline void Position::clear_y() {
   y_ = 0;
 }
 inline double Position::y() const {
-  // @@protoc_insertion_point(field_get:Proto.Position.y)
+  // @@protoc_insertion_point(field_get:ProtoPose.Position.y)
   return y_;
 }
 inline void Position::set_y(double value) {
   
   y_ = value;
-  // @@protoc_insertion_point(field_set:Proto.Position.y)
+  // @@protoc_insertion_point(field_set:ProtoPose.Position.y)
 }
 
 // optional double z = 3;
@@ -375,13 +382,13 @@ inline void Position::clear_z() {
   z_ = 0;
 }
 inline double Position::z() const {
-  // @@protoc_insertion_point(field_get:Proto.Position.z)
+  // @@protoc_insertion_point(field_get:ProtoPose.Position.z)
   return z_;
 }
 inline void Position::set_z(double value) {
   
   z_ = value;
-  // @@protoc_insertion_point(field_set:Proto.Position.z)
+  // @@protoc_insertion_point(field_set:ProtoPose.Position.z)
 }
 
 // -------------------------------------------------------------------
@@ -393,13 +400,13 @@ inline void Attitude::clear_qw() {
   qw_ = 0;
 }
 inline double Attitude::qw() const {
-  // @@protoc_insertion_point(field_get:Proto.Attitude.qw)
+  // @@protoc_insertion_point(field_get:ProtoPose.Attitude.qw)
   return qw_;
 }
 inline void Attitude::set_qw(double value) {
   
   qw_ = value;
-  // @@protoc_insertion_point(field_set:Proto.Attitude.qw)
+  // @@protoc_insertion_point(field_set:ProtoPose.Attitude.qw)
 }
 
 // optional double qx = 2;
@@ -407,13 +414,13 @@ inline void Attitude::clear_qx() {
   qx_ = 0;
 }
 inline double Attitude::qx() const {
-  // @@protoc_insertion_point(field_get:Proto.Attitude.qx)
+  // @@protoc_insertion_point(field_get:ProtoPose.Attitude.qx)
   return qx_;
 }
 inline void Attitude::set_qx(double value) {
   
   qx_ = value;
-  // @@protoc_insertion_point(field_set:Proto.Attitude.qx)
+  // @@protoc_insertion_point(field_set:ProtoPose.Attitude.qx)
 }
 
 // optional double qy = 3;
@@ -421,13 +428,13 @@ inline void Attitude::clear_qy() {
   qy_ = 0;
 }
 inline double Attitude::qy() const {
-  // @@protoc_insertion_point(field_get:Proto.Attitude.qy)
+  // @@protoc_insertion_point(field_get:ProtoPose.Attitude.qy)
   return qy_;
 }
 inline void Attitude::set_qy(double value) {
   
   qy_ = value;
-  // @@protoc_insertion_point(field_set:Proto.Attitude.qy)
+  // @@protoc_insertion_point(field_set:ProtoPose.Attitude.qy)
 }
 
 // optional double qz = 4;
@@ -435,20 +442,20 @@ inline void Attitude::clear_qz() {
   qz_ = 0;
 }
 inline double Attitude::qz() const {
-  // @@protoc_insertion_point(field_get:Proto.Attitude.qz)
+  // @@protoc_insertion_point(field_get:ProtoPose.Attitude.qz)
   return qz_;
 }
 inline void Attitude::set_qz(double value) {
   
   qz_ = value;
-  // @@protoc_insertion_point(field_set:Proto.Attitude.qz)
+  // @@protoc_insertion_point(field_set:ProtoPose.Attitude.qz)
 }
 
 // -------------------------------------------------------------------
 
 // Pose
 
-// optional .Proto.Position pos = 1;
+// optional .ProtoPose.Position pos = 1;
 inline bool Pose::has_pos() const {
   return !_is_default_instance_ && pos_ != NULL;
 }
@@ -456,26 +463,26 @@ inline void Pose::clear_pos() {
   if (GetArenaNoVirtual() == NULL && pos_ != NULL) delete pos_;
   pos_ = NULL;
 }
-inline const ::Proto::Position& Pose::pos() const {
-  // @@protoc_insertion_point(field_get:Proto.Pose.pos)
+inline const ::ProtoPose::Position& Pose::pos() const {
+  // @@protoc_insertion_point(field_get:ProtoPose.Pose.pos)
   return pos_ != NULL ? *pos_ : *default_instance_->pos_;
 }
-inline ::Proto::Position* Pose::mutable_pos() {
+inline ::ProtoPose::Position* Pose::mutable_pos() {
   
   if (pos_ == NULL) {
-    pos_ = new ::Proto::Position;
+    pos_ = new ::ProtoPose::Position;
   }
-  // @@protoc_insertion_point(field_mutable:Proto.Pose.pos)
+  // @@protoc_insertion_point(field_mutable:ProtoPose.Pose.pos)
   return pos_;
 }
-inline ::Proto::Position* Pose::release_pos() {
-  // @@protoc_insertion_point(field_release:Proto.Pose.pos)
+inline ::ProtoPose::Position* Pose::release_pos() {
+  // @@protoc_insertion_point(field_release:ProtoPose.Pose.pos)
   
-  ::Proto::Position* temp = pos_;
+  ::ProtoPose::Position* temp = pos_;
   pos_ = NULL;
   return temp;
 }
-inline void Pose::set_allocated_pos(::Proto::Position* pos) {
+inline void Pose::set_allocated_pos(::ProtoPose::Position* pos) {
   delete pos_;
   pos_ = pos;
   if (pos) {
@@ -483,10 +490,10 @@ inline void Pose::set_allocated_pos(::Proto::Position* pos) {
   } else {
     
   }
-  // @@protoc_insertion_point(field_set_allocated:Proto.Pose.pos)
+  // @@protoc_insertion_point(field_set_allocated:ProtoPose.Pose.pos)
 }
 
-// optional .Proto.Attitude att = 2;
+// optional .ProtoPose.Attitude att = 2;
 inline bool Pose::has_att() const {
   return !_is_default_instance_ && att_ != NULL;
 }
@@ -494,26 +501,26 @@ inline void Pose::clear_att() {
   if (GetArenaNoVirtual() == NULL && att_ != NULL) delete att_;
   att_ = NULL;
 }
-inline const ::Proto::Attitude& Pose::att() const {
-  // @@protoc_insertion_point(field_get:Proto.Pose.att)
+inline const ::ProtoPose::Attitude& Pose::att() const {
+  // @@protoc_insertion_point(field_get:ProtoPose.Pose.att)
   return att_ != NULL ? *att_ : *default_instance_->att_;
 }
-inline ::Proto::Attitude* Pose::mutable_att() {
+inline ::ProtoPose::Attitude* Pose::mutable_att() {
   
   if (att_ == NULL) {
-    att_ = new ::Proto::Attitude;
+    att_ = new ::ProtoPose::Attitude;
   }
-  // @@protoc_insertion_point(field_mutable:Proto.Pose.att)
+  // @@protoc_insertion_point(field_mutable:ProtoPose.Pose.att)
   return att_;
 }
-inline ::Proto::Attitude* Pose::release_att() {
-  // @@protoc_insertion_point(field_release:Proto.Pose.att)
+inline ::ProtoPose::Attitude* Pose::release_att() {
+  // @@protoc_insertion_point(field_release:ProtoPose.Pose.att)
   
-  ::Proto::Attitude* temp = att_;
+  ::ProtoPose::Attitude* temp = att_;
   att_ = NULL;
   return temp;
 }
-inline void Pose::set_allocated_att(::Proto::Attitude* att) {
+inline void Pose::set_allocated_att(::ProtoPose::Attitude* att) {
   delete att_;
   att_ = att;
   if (att) {
@@ -521,7 +528,21 @@ inline void Pose::set_allocated_att(::Proto::Attitude* att) {
   } else {
     
   }
-  // @@protoc_insertion_point(field_set_allocated:Proto.Pose.att)
+  // @@protoc_insertion_point(field_set_allocated:ProtoPose.Pose.att)
+}
+
+// optional double time_stamp = 3;
+inline void Pose::clear_time_stamp() {
+  time_stamp_ = 0;
+}
+inline double Pose::time_stamp() const {
+  // @@protoc_insertion_point(field_get:ProtoPose.Pose.time_stamp)
+  return time_stamp_;
+}
+inline void Pose::set_time_stamp(double value) {
+  
+  time_stamp_ = value;
+  // @@protoc_insertion_point(field_set:ProtoPose.Pose.time_stamp)
 }
 
 #endif  // !PROTOBUF_INLINE_NOT_IN_HEADERS
@@ -532,7 +553,7 @@ inline void Pose::set_allocated_att(::Proto::Attitude* att) {
 
 // @@protoc_insertion_point(namespace_scope)
 
-}  // namespace Proto
+}  // namespace ProtoPose
 
 // @@protoc_insertion_point(global_scope)
 

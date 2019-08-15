@@ -17,7 +17,7 @@
 #include <google/protobuf/wire_format.h>
 // @@protoc_insertion_point(includes)
 
-namespace Proto {
+namespace ProtoPose {
 
 namespace {
 
@@ -77,9 +77,10 @@ void protobuf_AssignDesc_pose_2eproto() {
       GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Attitude, _internal_metadata_),
       GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Attitude, _is_default_instance_));
   Pose_descriptor_ = file->message_type(2);
-  static const int Pose_offsets_[2] = {
+  static const int Pose_offsets_[3] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Pose, pos_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Pose, att_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Pose, time_stamp_),
   };
   Pose_reflection_ =
     ::google::protobuf::internal::GeneratedMessageReflection::NewGeneratedMessageReflection(
@@ -132,11 +133,12 @@ void protobuf_AddDesc_pose_2eproto() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
-    "\n\npose.proto\022\005Proto\"+\n\010Position\022\t\n\001x\030\001 \001"
-    "(\001\022\t\n\001y\030\002 \001(\001\022\t\n\001z\030\003 \001(\001\":\n\010Attitude\022\n\n\002"
-    "qw\030\001 \001(\001\022\n\n\002qx\030\002 \001(\001\022\n\n\002qy\030\003 \001(\001\022\n\n\002qz\030\004"
-    " \001(\001\"B\n\004Pose\022\034\n\003pos\030\001 \001(\0132\017.Proto.Positi"
-    "on\022\034\n\003att\030\002 \001(\0132\017.Proto.Attitudeb\006proto3", 200);
+    "\n\npose.proto\022\tProtoPose\"+\n\010Position\022\t\n\001x"
+    "\030\001 \001(\001\022\t\n\001y\030\002 \001(\001\022\t\n\001z\030\003 \001(\001\":\n\010Attitude"
+    "\022\n\n\002qw\030\001 \001(\001\022\n\n\002qx\030\002 \001(\001\022\n\n\002qy\030\003 \001(\001\022\n\n\002"
+    "qz\030\004 \001(\001\"^\n\004Pose\022 \n\003pos\030\001 \001(\0132\023.ProtoPos"
+    "e.Position\022 \n\003att\030\002 \001(\0132\023.ProtoPose.Atti"
+    "tude\022\022\n\ntime_stamp\030\003 \001(\001b\006proto3", 232);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "pose.proto", &protobuf_RegisterTypes);
   Position::default_instance_ = new Position();
@@ -166,7 +168,7 @@ const int Position::kZFieldNumber;
 Position::Position()
   : ::google::protobuf::Message(), _internal_metadata_(NULL) {
   SharedCtor();
-  // @@protoc_insertion_point(constructor:Proto.Position)
+  // @@protoc_insertion_point(constructor:ProtoPose.Position)
 }
 
 void Position::InitAsDefaultInstance() {
@@ -178,7 +180,7 @@ Position::Position(const Position& from)
     _internal_metadata_(NULL) {
   SharedCtor();
   MergeFrom(from);
-  // @@protoc_insertion_point(copy_constructor:Proto.Position)
+  // @@protoc_insertion_point(copy_constructor:ProtoPose.Position)
 }
 
 void Position::SharedCtor() {
@@ -190,7 +192,7 @@ void Position::SharedCtor() {
 }
 
 Position::~Position() {
-  // @@protoc_insertion_point(destructor:Proto.Position)
+  // @@protoc_insertion_point(destructor:ProtoPose.Position)
   SharedDtor();
 }
 
@@ -225,7 +227,7 @@ Position* Position::New(::google::protobuf::Arena* arena) const {
 }
 
 void Position::Clear() {
-// @@protoc_insertion_point(message_clear_start:Proto.Position)
+// @@protoc_insertion_point(message_clear_start:ProtoPose.Position)
 #if defined(__clang__)
 #define ZR_HELPER_(f) \
   _Pragma("clang diagnostic push") \
@@ -253,7 +255,7 @@ bool Position::MergePartialFromCodedStream(
     ::google::protobuf::io::CodedInputStream* input) {
 #define DO_(EXPRESSION) if (!GOOGLE_PREDICT_TRUE(EXPRESSION)) goto failure
   ::google::protobuf::uint32 tag;
-  // @@protoc_insertion_point(parse_start:Proto.Position)
+  // @@protoc_insertion_point(parse_start:ProtoPose.Position)
   for (;;) {
     ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoff(127);
     tag = p.first;
@@ -316,17 +318,17 @@ bool Position::MergePartialFromCodedStream(
     }
   }
 success:
-  // @@protoc_insertion_point(parse_success:Proto.Position)
+  // @@protoc_insertion_point(parse_success:ProtoPose.Position)
   return true;
 failure:
-  // @@protoc_insertion_point(parse_failure:Proto.Position)
+  // @@protoc_insertion_point(parse_failure:ProtoPose.Position)
   return false;
 #undef DO_
 }
 
 void Position::SerializeWithCachedSizes(
     ::google::protobuf::io::CodedOutputStream* output) const {
-  // @@protoc_insertion_point(serialize_start:Proto.Position)
+  // @@protoc_insertion_point(serialize_start:ProtoPose.Position)
   // optional double x = 1;
   if (this->x() != 0) {
     ::google::protobuf::internal::WireFormatLite::WriteDouble(1, this->x(), output);
@@ -342,12 +344,12 @@ void Position::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormatLite::WriteDouble(3, this->z(), output);
   }
 
-  // @@protoc_insertion_point(serialize_end:Proto.Position)
+  // @@protoc_insertion_point(serialize_end:ProtoPose.Position)
 }
 
 ::google::protobuf::uint8* Position::InternalSerializeWithCachedSizesToArray(
     bool deterministic, ::google::protobuf::uint8* target) const {
-  // @@protoc_insertion_point(serialize_to_array_start:Proto.Position)
+  // @@protoc_insertion_point(serialize_to_array_start:ProtoPose.Position)
   // optional double x = 1;
   if (this->x() != 0) {
     target = ::google::protobuf::internal::WireFormatLite::WriteDoubleToArray(1, this->x(), target);
@@ -363,12 +365,12 @@ void Position::SerializeWithCachedSizes(
     target = ::google::protobuf::internal::WireFormatLite::WriteDoubleToArray(3, this->z(), target);
   }
 
-  // @@protoc_insertion_point(serialize_to_array_end:Proto.Position)
+  // @@protoc_insertion_point(serialize_to_array_end:ProtoPose.Position)
   return target;
 }
 
 int Position::ByteSize() const {
-// @@protoc_insertion_point(message_byte_size_start:Proto.Position)
+// @@protoc_insertion_point(message_byte_size_start:ProtoPose.Position)
   int total_size = 0;
 
   // optional double x = 1;
@@ -393,7 +395,7 @@ int Position::ByteSize() const {
 }
 
 void Position::MergeFrom(const ::google::protobuf::Message& from) {
-// @@protoc_insertion_point(generalized_merge_from_start:Proto.Position)
+// @@protoc_insertion_point(generalized_merge_from_start:ProtoPose.Position)
   if (GOOGLE_PREDICT_FALSE(&from == this)) {
     ::google::protobuf::internal::MergeFromFail(__FILE__, __LINE__);
   }
@@ -401,16 +403,16 @@ void Position::MergeFrom(const ::google::protobuf::Message& from) {
       ::google::protobuf::internal::DynamicCastToGenerated<const Position>(
           &from);
   if (source == NULL) {
-  // @@protoc_insertion_point(generalized_merge_from_cast_fail:Proto.Position)
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:ProtoPose.Position)
     ::google::protobuf::internal::ReflectionOps::Merge(from, this);
   } else {
-  // @@protoc_insertion_point(generalized_merge_from_cast_success:Proto.Position)
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:ProtoPose.Position)
     MergeFrom(*source);
   }
 }
 
 void Position::MergeFrom(const Position& from) {
-// @@protoc_insertion_point(class_specific_merge_from_start:Proto.Position)
+// @@protoc_insertion_point(class_specific_merge_from_start:ProtoPose.Position)
   if (GOOGLE_PREDICT_FALSE(&from == this)) {
     ::google::protobuf::internal::MergeFromFail(__FILE__, __LINE__);
   }
@@ -426,14 +428,14 @@ void Position::MergeFrom(const Position& from) {
 }
 
 void Position::CopyFrom(const ::google::protobuf::Message& from) {
-// @@protoc_insertion_point(generalized_copy_from_start:Proto.Position)
+// @@protoc_insertion_point(generalized_copy_from_start:ProtoPose.Position)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
 }
 
 void Position::CopyFrom(const Position& from) {
-// @@protoc_insertion_point(class_specific_copy_from_start:Proto.Position)
+// @@protoc_insertion_point(class_specific_copy_from_start:ProtoPose.Position)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
@@ -472,13 +474,13 @@ void Position::clear_x() {
   x_ = 0;
 }
  double Position::x() const {
-  // @@protoc_insertion_point(field_get:Proto.Position.x)
+  // @@protoc_insertion_point(field_get:ProtoPose.Position.x)
   return x_;
 }
  void Position::set_x(double value) {
   
   x_ = value;
-  // @@protoc_insertion_point(field_set:Proto.Position.x)
+  // @@protoc_insertion_point(field_set:ProtoPose.Position.x)
 }
 
 // optional double y = 2;
@@ -486,13 +488,13 @@ void Position::clear_y() {
   y_ = 0;
 }
  double Position::y() const {
-  // @@protoc_insertion_point(field_get:Proto.Position.y)
+  // @@protoc_insertion_point(field_get:ProtoPose.Position.y)
   return y_;
 }
  void Position::set_y(double value) {
   
   y_ = value;
-  // @@protoc_insertion_point(field_set:Proto.Position.y)
+  // @@protoc_insertion_point(field_set:ProtoPose.Position.y)
 }
 
 // optional double z = 3;
@@ -500,13 +502,13 @@ void Position::clear_z() {
   z_ = 0;
 }
  double Position::z() const {
-  // @@protoc_insertion_point(field_get:Proto.Position.z)
+  // @@protoc_insertion_point(field_get:ProtoPose.Position.z)
   return z_;
 }
  void Position::set_z(double value) {
   
   z_ = value;
-  // @@protoc_insertion_point(field_set:Proto.Position.z)
+  // @@protoc_insertion_point(field_set:ProtoPose.Position.z)
 }
 
 #endif  // PROTOBUF_INLINE_NOT_IN_HEADERS
@@ -523,7 +525,7 @@ const int Attitude::kQzFieldNumber;
 Attitude::Attitude()
   : ::google::protobuf::Message(), _internal_metadata_(NULL) {
   SharedCtor();
-  // @@protoc_insertion_point(constructor:Proto.Attitude)
+  // @@protoc_insertion_point(constructor:ProtoPose.Attitude)
 }
 
 void Attitude::InitAsDefaultInstance() {
@@ -535,7 +537,7 @@ Attitude::Attitude(const Attitude& from)
     _internal_metadata_(NULL) {
   SharedCtor();
   MergeFrom(from);
-  // @@protoc_insertion_point(copy_constructor:Proto.Attitude)
+  // @@protoc_insertion_point(copy_constructor:ProtoPose.Attitude)
 }
 
 void Attitude::SharedCtor() {
@@ -548,7 +550,7 @@ void Attitude::SharedCtor() {
 }
 
 Attitude::~Attitude() {
-  // @@protoc_insertion_point(destructor:Proto.Attitude)
+  // @@protoc_insertion_point(destructor:ProtoPose.Attitude)
   SharedDtor();
 }
 
@@ -583,7 +585,7 @@ Attitude* Attitude::New(::google::protobuf::Arena* arena) const {
 }
 
 void Attitude::Clear() {
-// @@protoc_insertion_point(message_clear_start:Proto.Attitude)
+// @@protoc_insertion_point(message_clear_start:ProtoPose.Attitude)
 #if defined(__clang__)
 #define ZR_HELPER_(f) \
   _Pragma("clang diagnostic push") \
@@ -611,7 +613,7 @@ bool Attitude::MergePartialFromCodedStream(
     ::google::protobuf::io::CodedInputStream* input) {
 #define DO_(EXPRESSION) if (!GOOGLE_PREDICT_TRUE(EXPRESSION)) goto failure
   ::google::protobuf::uint32 tag;
-  // @@protoc_insertion_point(parse_start:Proto.Attitude)
+  // @@protoc_insertion_point(parse_start:ProtoPose.Attitude)
   for (;;) {
     ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoff(127);
     tag = p.first;
@@ -689,17 +691,17 @@ bool Attitude::MergePartialFromCodedStream(
     }
   }
 success:
-  // @@protoc_insertion_point(parse_success:Proto.Attitude)
+  // @@protoc_insertion_point(parse_success:ProtoPose.Attitude)
   return true;
 failure:
-  // @@protoc_insertion_point(parse_failure:Proto.Attitude)
+  // @@protoc_insertion_point(parse_failure:ProtoPose.Attitude)
   return false;
 #undef DO_
 }
 
 void Attitude::SerializeWithCachedSizes(
     ::google::protobuf::io::CodedOutputStream* output) const {
-  // @@protoc_insertion_point(serialize_start:Proto.Attitude)
+  // @@protoc_insertion_point(serialize_start:ProtoPose.Attitude)
   // optional double qw = 1;
   if (this->qw() != 0) {
     ::google::protobuf::internal::WireFormatLite::WriteDouble(1, this->qw(), output);
@@ -720,12 +722,12 @@ void Attitude::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormatLite::WriteDouble(4, this->qz(), output);
   }
 
-  // @@protoc_insertion_point(serialize_end:Proto.Attitude)
+  // @@protoc_insertion_point(serialize_end:ProtoPose.Attitude)
 }
 
 ::google::protobuf::uint8* Attitude::InternalSerializeWithCachedSizesToArray(
     bool deterministic, ::google::protobuf::uint8* target) const {
-  // @@protoc_insertion_point(serialize_to_array_start:Proto.Attitude)
+  // @@protoc_insertion_point(serialize_to_array_start:ProtoPose.Attitude)
   // optional double qw = 1;
   if (this->qw() != 0) {
     target = ::google::protobuf::internal::WireFormatLite::WriteDoubleToArray(1, this->qw(), target);
@@ -746,12 +748,12 @@ void Attitude::SerializeWithCachedSizes(
     target = ::google::protobuf::internal::WireFormatLite::WriteDoubleToArray(4, this->qz(), target);
   }
 
-  // @@protoc_insertion_point(serialize_to_array_end:Proto.Attitude)
+  // @@protoc_insertion_point(serialize_to_array_end:ProtoPose.Attitude)
   return target;
 }
 
 int Attitude::ByteSize() const {
-// @@protoc_insertion_point(message_byte_size_start:Proto.Attitude)
+// @@protoc_insertion_point(message_byte_size_start:ProtoPose.Attitude)
   int total_size = 0;
 
   // optional double qw = 1;
@@ -781,7 +783,7 @@ int Attitude::ByteSize() const {
 }
 
 void Attitude::MergeFrom(const ::google::protobuf::Message& from) {
-// @@protoc_insertion_point(generalized_merge_from_start:Proto.Attitude)
+// @@protoc_insertion_point(generalized_merge_from_start:ProtoPose.Attitude)
   if (GOOGLE_PREDICT_FALSE(&from == this)) {
     ::google::protobuf::internal::MergeFromFail(__FILE__, __LINE__);
   }
@@ -789,16 +791,16 @@ void Attitude::MergeFrom(const ::google::protobuf::Message& from) {
       ::google::protobuf::internal::DynamicCastToGenerated<const Attitude>(
           &from);
   if (source == NULL) {
-  // @@protoc_insertion_point(generalized_merge_from_cast_fail:Proto.Attitude)
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:ProtoPose.Attitude)
     ::google::protobuf::internal::ReflectionOps::Merge(from, this);
   } else {
-  // @@protoc_insertion_point(generalized_merge_from_cast_success:Proto.Attitude)
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:ProtoPose.Attitude)
     MergeFrom(*source);
   }
 }
 
 void Attitude::MergeFrom(const Attitude& from) {
-// @@protoc_insertion_point(class_specific_merge_from_start:Proto.Attitude)
+// @@protoc_insertion_point(class_specific_merge_from_start:ProtoPose.Attitude)
   if (GOOGLE_PREDICT_FALSE(&from == this)) {
     ::google::protobuf::internal::MergeFromFail(__FILE__, __LINE__);
   }
@@ -817,14 +819,14 @@ void Attitude::MergeFrom(const Attitude& from) {
 }
 
 void Attitude::CopyFrom(const ::google::protobuf::Message& from) {
-// @@protoc_insertion_point(generalized_copy_from_start:Proto.Attitude)
+// @@protoc_insertion_point(generalized_copy_from_start:ProtoPose.Attitude)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
 }
 
 void Attitude::CopyFrom(const Attitude& from) {
-// @@protoc_insertion_point(class_specific_copy_from_start:Proto.Attitude)
+// @@protoc_insertion_point(class_specific_copy_from_start:ProtoPose.Attitude)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
@@ -864,13 +866,13 @@ void Attitude::clear_qw() {
   qw_ = 0;
 }
  double Attitude::qw() const {
-  // @@protoc_insertion_point(field_get:Proto.Attitude.qw)
+  // @@protoc_insertion_point(field_get:ProtoPose.Attitude.qw)
   return qw_;
 }
  void Attitude::set_qw(double value) {
   
   qw_ = value;
-  // @@protoc_insertion_point(field_set:Proto.Attitude.qw)
+  // @@protoc_insertion_point(field_set:ProtoPose.Attitude.qw)
 }
 
 // optional double qx = 2;
@@ -878,13 +880,13 @@ void Attitude::clear_qx() {
   qx_ = 0;
 }
  double Attitude::qx() const {
-  // @@protoc_insertion_point(field_get:Proto.Attitude.qx)
+  // @@protoc_insertion_point(field_get:ProtoPose.Attitude.qx)
   return qx_;
 }
  void Attitude::set_qx(double value) {
   
   qx_ = value;
-  // @@protoc_insertion_point(field_set:Proto.Attitude.qx)
+  // @@protoc_insertion_point(field_set:ProtoPose.Attitude.qx)
 }
 
 // optional double qy = 3;
@@ -892,13 +894,13 @@ void Attitude::clear_qy() {
   qy_ = 0;
 }
  double Attitude::qy() const {
-  // @@protoc_insertion_point(field_get:Proto.Attitude.qy)
+  // @@protoc_insertion_point(field_get:ProtoPose.Attitude.qy)
   return qy_;
 }
  void Attitude::set_qy(double value) {
   
   qy_ = value;
-  // @@protoc_insertion_point(field_set:Proto.Attitude.qy)
+  // @@protoc_insertion_point(field_set:ProtoPose.Attitude.qy)
 }
 
 // optional double qz = 4;
@@ -906,13 +908,13 @@ void Attitude::clear_qz() {
   qz_ = 0;
 }
  double Attitude::qz() const {
-  // @@protoc_insertion_point(field_get:Proto.Attitude.qz)
+  // @@protoc_insertion_point(field_get:ProtoPose.Attitude.qz)
   return qz_;
 }
  void Attitude::set_qz(double value) {
   
   qz_ = value;
-  // @@protoc_insertion_point(field_set:Proto.Attitude.qz)
+  // @@protoc_insertion_point(field_set:ProtoPose.Attitude.qz)
 }
 
 #endif  // PROTOBUF_INLINE_NOT_IN_HEADERS
@@ -922,18 +924,19 @@ void Attitude::clear_qz() {
 #if !defined(_MSC_VER) || _MSC_VER >= 1900
 const int Pose::kPosFieldNumber;
 const int Pose::kAttFieldNumber;
+const int Pose::kTimeStampFieldNumber;
 #endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
 
 Pose::Pose()
   : ::google::protobuf::Message(), _internal_metadata_(NULL) {
   SharedCtor();
-  // @@protoc_insertion_point(constructor:Proto.Pose)
+  // @@protoc_insertion_point(constructor:ProtoPose.Pose)
 }
 
 void Pose::InitAsDefaultInstance() {
   _is_default_instance_ = true;
-  pos_ = const_cast< ::Proto::Position*>(&::Proto::Position::default_instance());
-  att_ = const_cast< ::Proto::Attitude*>(&::Proto::Attitude::default_instance());
+  pos_ = const_cast< ::ProtoPose::Position*>(&::ProtoPose::Position::default_instance());
+  att_ = const_cast< ::ProtoPose::Attitude*>(&::ProtoPose::Attitude::default_instance());
 }
 
 Pose::Pose(const Pose& from)
@@ -941,7 +944,7 @@ Pose::Pose(const Pose& from)
     _internal_metadata_(NULL) {
   SharedCtor();
   MergeFrom(from);
-  // @@protoc_insertion_point(copy_constructor:Proto.Pose)
+  // @@protoc_insertion_point(copy_constructor:ProtoPose.Pose)
 }
 
 void Pose::SharedCtor() {
@@ -949,10 +952,11 @@ void Pose::SharedCtor() {
   _cached_size_ = 0;
   pos_ = NULL;
   att_ = NULL;
+  time_stamp_ = 0;
 }
 
 Pose::~Pose() {
-  // @@protoc_insertion_point(destructor:Proto.Pose)
+  // @@protoc_insertion_point(destructor:ProtoPose.Pose)
   SharedDtor();
 }
 
@@ -989,24 +993,25 @@ Pose* Pose::New(::google::protobuf::Arena* arena) const {
 }
 
 void Pose::Clear() {
-// @@protoc_insertion_point(message_clear_start:Proto.Pose)
+// @@protoc_insertion_point(message_clear_start:ProtoPose.Pose)
   if (GetArenaNoVirtual() == NULL && pos_ != NULL) delete pos_;
   pos_ = NULL;
   if (GetArenaNoVirtual() == NULL && att_ != NULL) delete att_;
   att_ = NULL;
+  time_stamp_ = 0;
 }
 
 bool Pose::MergePartialFromCodedStream(
     ::google::protobuf::io::CodedInputStream* input) {
 #define DO_(EXPRESSION) if (!GOOGLE_PREDICT_TRUE(EXPRESSION)) goto failure
   ::google::protobuf::uint32 tag;
-  // @@protoc_insertion_point(parse_start:Proto.Pose)
+  // @@protoc_insertion_point(parse_start:ProtoPose.Pose)
   for (;;) {
     ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoff(127);
     tag = p.first;
     if (!p.second) goto handle_unusual;
     switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
-      // optional .Proto.Position pos = 1;
+      // optional .ProtoPose.Position pos = 1;
       case 1: {
         if (tag == 10) {
           DO_(::google::protobuf::internal::WireFormatLite::ReadMessageNoVirtual(
@@ -1018,12 +1023,27 @@ bool Pose::MergePartialFromCodedStream(
         break;
       }
 
-      // optional .Proto.Attitude att = 2;
+      // optional .ProtoPose.Attitude att = 2;
       case 2: {
         if (tag == 18) {
          parse_att:
           DO_(::google::protobuf::internal::WireFormatLite::ReadMessageNoVirtual(
                input, mutable_att()));
+        } else {
+          goto handle_unusual;
+        }
+        if (input->ExpectTag(25)) goto parse_time_stamp;
+        break;
+      }
+
+      // optional double time_stamp = 3;
+      case 3: {
+        if (tag == 25) {
+         parse_time_stamp:
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   double, ::google::protobuf::internal::WireFormatLite::TYPE_DOUBLE>(
+                 input, &time_stamp_)));
+
         } else {
           goto handle_unusual;
         }
@@ -1044,69 +1064,84 @@ bool Pose::MergePartialFromCodedStream(
     }
   }
 success:
-  // @@protoc_insertion_point(parse_success:Proto.Pose)
+  // @@protoc_insertion_point(parse_success:ProtoPose.Pose)
   return true;
 failure:
-  // @@protoc_insertion_point(parse_failure:Proto.Pose)
+  // @@protoc_insertion_point(parse_failure:ProtoPose.Pose)
   return false;
 #undef DO_
 }
 
 void Pose::SerializeWithCachedSizes(
     ::google::protobuf::io::CodedOutputStream* output) const {
-  // @@protoc_insertion_point(serialize_start:Proto.Pose)
-  // optional .Proto.Position pos = 1;
+  // @@protoc_insertion_point(serialize_start:ProtoPose.Pose)
+  // optional .ProtoPose.Position pos = 1;
   if (this->has_pos()) {
     ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
       1, *this->pos_, output);
   }
 
-  // optional .Proto.Attitude att = 2;
+  // optional .ProtoPose.Attitude att = 2;
   if (this->has_att()) {
     ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
       2, *this->att_, output);
   }
 
-  // @@protoc_insertion_point(serialize_end:Proto.Pose)
+  // optional double time_stamp = 3;
+  if (this->time_stamp() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteDouble(3, this->time_stamp(), output);
+  }
+
+  // @@protoc_insertion_point(serialize_end:ProtoPose.Pose)
 }
 
 ::google::protobuf::uint8* Pose::InternalSerializeWithCachedSizesToArray(
     bool deterministic, ::google::protobuf::uint8* target) const {
-  // @@protoc_insertion_point(serialize_to_array_start:Proto.Pose)
-  // optional .Proto.Position pos = 1;
+  // @@protoc_insertion_point(serialize_to_array_start:ProtoPose.Pose)
+  // optional .ProtoPose.Position pos = 1;
   if (this->has_pos()) {
     target = ::google::protobuf::internal::WireFormatLite::
       InternalWriteMessageNoVirtualToArray(
         1, *this->pos_, false, target);
   }
 
-  // optional .Proto.Attitude att = 2;
+  // optional .ProtoPose.Attitude att = 2;
   if (this->has_att()) {
     target = ::google::protobuf::internal::WireFormatLite::
       InternalWriteMessageNoVirtualToArray(
         2, *this->att_, false, target);
   }
 
-  // @@protoc_insertion_point(serialize_to_array_end:Proto.Pose)
+  // optional double time_stamp = 3;
+  if (this->time_stamp() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteDoubleToArray(3, this->time_stamp(), target);
+  }
+
+  // @@protoc_insertion_point(serialize_to_array_end:ProtoPose.Pose)
   return target;
 }
 
 int Pose::ByteSize() const {
-// @@protoc_insertion_point(message_byte_size_start:Proto.Pose)
+// @@protoc_insertion_point(message_byte_size_start:ProtoPose.Pose)
   int total_size = 0;
 
-  // optional .Proto.Position pos = 1;
+  // optional .ProtoPose.Position pos = 1;
   if (this->has_pos()) {
     total_size += 1 +
       ::google::protobuf::internal::WireFormatLite::MessageSizeNoVirtual(
         *this->pos_);
   }
 
-  // optional .Proto.Attitude att = 2;
+  // optional .ProtoPose.Attitude att = 2;
   if (this->has_att()) {
     total_size += 1 +
       ::google::protobuf::internal::WireFormatLite::MessageSizeNoVirtual(
         *this->att_);
+  }
+
+  // optional double time_stamp = 3;
+  if (this->time_stamp() != 0) {
+    total_size += 1 + 8;
   }
 
   GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
@@ -1116,7 +1151,7 @@ int Pose::ByteSize() const {
 }
 
 void Pose::MergeFrom(const ::google::protobuf::Message& from) {
-// @@protoc_insertion_point(generalized_merge_from_start:Proto.Pose)
+// @@protoc_insertion_point(generalized_merge_from_start:ProtoPose.Pose)
   if (GOOGLE_PREDICT_FALSE(&from == this)) {
     ::google::protobuf::internal::MergeFromFail(__FILE__, __LINE__);
   }
@@ -1124,36 +1159,39 @@ void Pose::MergeFrom(const ::google::protobuf::Message& from) {
       ::google::protobuf::internal::DynamicCastToGenerated<const Pose>(
           &from);
   if (source == NULL) {
-  // @@protoc_insertion_point(generalized_merge_from_cast_fail:Proto.Pose)
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:ProtoPose.Pose)
     ::google::protobuf::internal::ReflectionOps::Merge(from, this);
   } else {
-  // @@protoc_insertion_point(generalized_merge_from_cast_success:Proto.Pose)
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:ProtoPose.Pose)
     MergeFrom(*source);
   }
 }
 
 void Pose::MergeFrom(const Pose& from) {
-// @@protoc_insertion_point(class_specific_merge_from_start:Proto.Pose)
+// @@protoc_insertion_point(class_specific_merge_from_start:ProtoPose.Pose)
   if (GOOGLE_PREDICT_FALSE(&from == this)) {
     ::google::protobuf::internal::MergeFromFail(__FILE__, __LINE__);
   }
   if (from.has_pos()) {
-    mutable_pos()->::Proto::Position::MergeFrom(from.pos());
+    mutable_pos()->::ProtoPose::Position::MergeFrom(from.pos());
   }
   if (from.has_att()) {
-    mutable_att()->::Proto::Attitude::MergeFrom(from.att());
+    mutable_att()->::ProtoPose::Attitude::MergeFrom(from.att());
+  }
+  if (from.time_stamp() != 0) {
+    set_time_stamp(from.time_stamp());
   }
 }
 
 void Pose::CopyFrom(const ::google::protobuf::Message& from) {
-// @@protoc_insertion_point(generalized_copy_from_start:Proto.Pose)
+// @@protoc_insertion_point(generalized_copy_from_start:ProtoPose.Pose)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
 }
 
 void Pose::CopyFrom(const Pose& from) {
-// @@protoc_insertion_point(class_specific_copy_from_start:Proto.Pose)
+// @@protoc_insertion_point(class_specific_copy_from_start:ProtoPose.Pose)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
@@ -1171,6 +1209,7 @@ void Pose::Swap(Pose* other) {
 void Pose::InternalSwap(Pose* other) {
   std::swap(pos_, other->pos_);
   std::swap(att_, other->att_);
+  std::swap(time_stamp_, other->time_stamp_);
   _internal_metadata_.Swap(&other->_internal_metadata_);
   std::swap(_cached_size_, other->_cached_size_);
 }
@@ -1186,7 +1225,7 @@ void Pose::InternalSwap(Pose* other) {
 #if PROTOBUF_INLINE_NOT_IN_HEADERS
 // Pose
 
-// optional .Proto.Position pos = 1;
+// optional .ProtoPose.Position pos = 1;
 bool Pose::has_pos() const {
   return !_is_default_instance_ && pos_ != NULL;
 }
@@ -1194,26 +1233,26 @@ void Pose::clear_pos() {
   if (GetArenaNoVirtual() == NULL && pos_ != NULL) delete pos_;
   pos_ = NULL;
 }
-const ::Proto::Position& Pose::pos() const {
-  // @@protoc_insertion_point(field_get:Proto.Pose.pos)
+const ::ProtoPose::Position& Pose::pos() const {
+  // @@protoc_insertion_point(field_get:ProtoPose.Pose.pos)
   return pos_ != NULL ? *pos_ : *default_instance_->pos_;
 }
-::Proto::Position* Pose::mutable_pos() {
+::ProtoPose::Position* Pose::mutable_pos() {
   
   if (pos_ == NULL) {
-    pos_ = new ::Proto::Position;
+    pos_ = new ::ProtoPose::Position;
   }
-  // @@protoc_insertion_point(field_mutable:Proto.Pose.pos)
+  // @@protoc_insertion_point(field_mutable:ProtoPose.Pose.pos)
   return pos_;
 }
-::Proto::Position* Pose::release_pos() {
-  // @@protoc_insertion_point(field_release:Proto.Pose.pos)
+::ProtoPose::Position* Pose::release_pos() {
+  // @@protoc_insertion_point(field_release:ProtoPose.Pose.pos)
   
-  ::Proto::Position* temp = pos_;
+  ::ProtoPose::Position* temp = pos_;
   pos_ = NULL;
   return temp;
 }
-void Pose::set_allocated_pos(::Proto::Position* pos) {
+void Pose::set_allocated_pos(::ProtoPose::Position* pos) {
   delete pos_;
   pos_ = pos;
   if (pos) {
@@ -1221,10 +1260,10 @@ void Pose::set_allocated_pos(::Proto::Position* pos) {
   } else {
     
   }
-  // @@protoc_insertion_point(field_set_allocated:Proto.Pose.pos)
+  // @@protoc_insertion_point(field_set_allocated:ProtoPose.Pose.pos)
 }
 
-// optional .Proto.Attitude att = 2;
+// optional .ProtoPose.Attitude att = 2;
 bool Pose::has_att() const {
   return !_is_default_instance_ && att_ != NULL;
 }
@@ -1232,26 +1271,26 @@ void Pose::clear_att() {
   if (GetArenaNoVirtual() == NULL && att_ != NULL) delete att_;
   att_ = NULL;
 }
-const ::Proto::Attitude& Pose::att() const {
-  // @@protoc_insertion_point(field_get:Proto.Pose.att)
+const ::ProtoPose::Attitude& Pose::att() const {
+  // @@protoc_insertion_point(field_get:ProtoPose.Pose.att)
   return att_ != NULL ? *att_ : *default_instance_->att_;
 }
-::Proto::Attitude* Pose::mutable_att() {
+::ProtoPose::Attitude* Pose::mutable_att() {
   
   if (att_ == NULL) {
-    att_ = new ::Proto::Attitude;
+    att_ = new ::ProtoPose::Attitude;
   }
-  // @@protoc_insertion_point(field_mutable:Proto.Pose.att)
+  // @@protoc_insertion_point(field_mutable:ProtoPose.Pose.att)
   return att_;
 }
-::Proto::Attitude* Pose::release_att() {
-  // @@protoc_insertion_point(field_release:Proto.Pose.att)
+::ProtoPose::Attitude* Pose::release_att() {
+  // @@protoc_insertion_point(field_release:ProtoPose.Pose.att)
   
-  ::Proto::Attitude* temp = att_;
+  ::ProtoPose::Attitude* temp = att_;
   att_ = NULL;
   return temp;
 }
-void Pose::set_allocated_att(::Proto::Attitude* att) {
+void Pose::set_allocated_att(::ProtoPose::Attitude* att) {
   delete att_;
   att_ = att;
   if (att) {
@@ -1259,13 +1298,27 @@ void Pose::set_allocated_att(::Proto::Attitude* att) {
   } else {
     
   }
-  // @@protoc_insertion_point(field_set_allocated:Proto.Pose.att)
+  // @@protoc_insertion_point(field_set_allocated:ProtoPose.Pose.att)
+}
+
+// optional double time_stamp = 3;
+void Pose::clear_time_stamp() {
+  time_stamp_ = 0;
+}
+ double Pose::time_stamp() const {
+  // @@protoc_insertion_point(field_get:ProtoPose.Pose.time_stamp)
+  return time_stamp_;
+}
+ void Pose::set_time_stamp(double value) {
+  
+  time_stamp_ = value;
+  // @@protoc_insertion_point(field_set:ProtoPose.Pose.time_stamp)
 }
 
 #endif  // PROTOBUF_INLINE_NOT_IN_HEADERS
 
 // @@protoc_insertion_point(namespace_scope)
 
-}  // namespace Proto
+}  // namespace ProtoPose
 
 // @@protoc_insertion_point(global_scope)

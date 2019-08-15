@@ -127,18 +127,18 @@ int main(int argc, char **argv)
         //-- Package Measurements into ProtoBuf ------------------------------/
 
         // deserialise from buffer array
-        Proto::Measurements measurements;
+        ProtoMeas::Measurements measurements;
 
         measurements.set_num_feature_points(num_features);
 
         for (unsigned int idx = 0; idx < num_features; idx++)
         {
-            Proto::Position *feature_point = measurements.add_feature_points();
+            ProtoMeas::Position *feature_point = measurements.add_feature_points();
             feature_point->set_x(rFeaMat(idx, 0));
             feature_point->set_y(rFeaMat(idx, 1));
             feature_point->set_z(rFeaMat(idx, 2));
 
-            Proto::Bearing *bearing = measurements.add_bearings();
+            ProtoMeas::Bearing *bearing = measurements.add_bearings();
             bearing->set_az(yVecNoise(2 * idx + 0));
             bearing->set_el(yVecNoise(2 * idx + 1));
         }
