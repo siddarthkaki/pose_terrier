@@ -16,9 +16,9 @@ target_link_libraries(pose_tracking_test ceres glog)
 
 add_executable(pose_estimator_main pose_estimator_main.cc Utilities.cc PoseSolver.cc KalmanFilter.cc pose.pb.cc measurement.pb.cc)
 target_include_directories(pose_estimator_main PUBLIC ${PROTOBUF_INCLUDE_DIR})
-target_link_libraries(pose_estimator_main ceres ${PROTOBUF_LIBRARY})
+target_link_libraries(pose_estimator_main ceres glog ${PROTOBUF_LIBRARY})
 
 add_executable(simulate_measurements simulate_measurements.cc Utilities.cc pose.pb.cc measurement.pb.cc)
 target_include_directories(simulate_measurements PUBLIC ${PROTOBUF_INCLUDE_DIR})
-target_link_libraries(simulate_measurements ${PROTOBUF_LIBRARY})
+target_link_libraries(simulate_measurements glog ${PROTOBUF_LIBRARY})
 
