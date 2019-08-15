@@ -198,12 +198,13 @@ int main(int argc, char **argv)
 
             kf.PrintModelMatrices();
 
+            solved_poses.push_back(pose_sol.pose);
             filtered_poses.push_back(pose_sol.pose);
             timestamps.push_back(0.0);
         }
         else
         { // if no size message found
-            std::cout << "Awaiting first measurement..." << std::endl;
+            //std::cout << "Awaiting first measurement..." << std::endl;
         }
     }
 
@@ -259,6 +260,8 @@ int main(int argc, char **argv)
             // deserialise from buffer array
             Proto::Measurements measurements;
             measurements.ParseFromArray(buffer, size);
+
+            std::cout << "Received new measurement." << std::endl;
 
             unsigned int num_feature_points = measurements.num_feature_points();
 
@@ -326,22 +329,11 @@ int main(int argc, char **argv)
 
         //--------------------------------------------------------------------/
 
-        //-- Performance Metrics & Storage -----------------------------------/
-
-        /*
-        // store info from ith run
-        true_poses.push_back(pose_true);
-        solved_poses.push_back(pose_sol.pose);
-        solved_poses_conj.push_back(conj_pose);
-        filtered_poses.push_back(pose_filtered);
-        solution_times.push_back((double)duration);
-        pos_scores.push_back(pos_score);
-        att_scores.push_back(att_score); //std::min(att_score,conj_att_score) );
-        */
+        //-- Data Storage ----------------------------------------------------/
         solved_poses.push_back(pose_sol.pose);
         filtered_poses.push_back(pose_filtered);
 
-        //-- Handling for program exit ----------------------------------------/
+        //-- Handling for program exit ---------------------------------------/
         if (finished)
         {
             // write to csv file
