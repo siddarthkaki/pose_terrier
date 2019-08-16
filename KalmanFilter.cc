@@ -125,8 +125,10 @@ namespace KF {
         statekk_ = state0;
         covarkk_ = covar0;
 
-        states.push_back(statekk_);
-        covars.push_back(covarkk_);
+        last_state_estimate = statekk_;
+        last_covar_estimate = covarkk_;
+        //states.push_back(statekk_);
+        //covars.push_back(covarkk_);
     }
 
     void KalmanFilter::Predict(const VectorXd &input)
@@ -172,16 +174,20 @@ namespace KF {
     {
         if(processed_measurement_)
         {
-            states.push_back(statek1k1_);
-            covars.push_back(covark1k1_);
+            last_state_estimate = statek1k1_;
+            last_covar_estimate = covark1k1_;
+            //states.push_back(statek1k1_);
+            //covars.push_back(covark1k1_);
 
             statekk_ = statek1k1_;
             covarkk_ = covark1k1_;
         }
         else
         {
-            states.push_back(statek1k_);
-            covars.push_back(covark1k_);
+            last_state_estimate = statek1k_;
+            last_covar_estimate = covark1k_;
+            //states.push_back(statek1k_);
+            //covars.push_back(covark1k_);
 
             statekk_ = statek1k_;
             covarkk_ = covark1k_;
