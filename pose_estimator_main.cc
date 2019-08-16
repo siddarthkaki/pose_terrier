@@ -152,6 +152,9 @@ int main(int argc, char **argv)
             // close pipe
             close(fd_in);
 
+            // free memory
+            free(buffer);
+
             std::cout << "Received first measurement." << std::endl;
             received_first_meas = true;
 
@@ -209,6 +212,8 @@ int main(int argc, char **argv)
 
             solved_poses.push_back(pose_sol.pose);
             filtered_poses.push_back(pose_sol.pose);
+            kf_states.push_back(state0);
+            kf_covars.push_back(covar0);
             timestamps.push_back(0.0);
         }
         else
@@ -269,6 +274,9 @@ int main(int argc, char **argv)
             // deserialise from buffer array
             ProtoMeas::Measurements measurements;
             measurements.ParseFromArray(buffer, size);
+
+            // free memory
+            free(buffer);
 
             std::cout << "Received new measurement." << std::endl;
 
@@ -391,6 +399,9 @@ int main(int argc, char **argv)
                 Utilities::WriteKFCovarsToCSV(kf_covars, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(kf_covars))), append_mode);
                 printf("Logged data to file.\n");
             }
+
+            // close pipe
+            close(fd_in);
 
             printf("Exiting....\n");
             exit(1);
