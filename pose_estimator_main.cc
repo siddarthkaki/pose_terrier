@@ -278,7 +278,7 @@ int main(int argc, char **argv)
             // free memory
             free(buffer);
 
-            std::cout << "Received new measurement." << std::endl;
+            //std::cout << "Received new measurement." << std::endl;
 
             unsigned int num_feature_points = measurements.num_feature_points();
 
@@ -342,9 +342,9 @@ int main(int argc, char **argv)
         Pose pose_filtered;
         VectorXd pose_filt_wrapper = kf.last_state_estimate;
         pose_filtered.pos = pose_filt_wrapper.head(3);
-        pose_filtered.quat = AngleAxisd(pose_filt_wrapper(9) , Vector3d::UnitX()) *
-                             AngleAxisd(pose_filt_wrapper(10), Vector3d::UnitY()) *
-                             AngleAxisd(pose_filt_wrapper(11), Vector3d::UnitZ());
+        pose_filtered.quat = (  AngleAxisd(pose_filt_wrapper(9) , Vector3d::UnitX()) *
+                                AngleAxisd(pose_filt_wrapper(10), Vector3d::UnitY()) *
+                                AngleAxisd(pose_filt_wrapper(11), Vector3d::UnitZ()) );
 
         //--------------------------------------------------------------------/
 
@@ -373,7 +373,6 @@ int main(int argc, char **argv)
             filtered_poses.clear();
             kf_states.clear();
             kf_covars.clear();
-            // TODO CLEAR kf states
         }
 
         //-- Handling for Program Exit ---------------------------------------/

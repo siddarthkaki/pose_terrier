@@ -6,9 +6,9 @@
     "pipe_path_input": "pipe_dream_meas",
     "pipe_path_output": "pipe_dream_pose",
     "log_to_file": true,
-    "log_periodically": false,
-    "vector_reserve_size": 5000,
-    "kf_dt": 0.01,
+    "log_periodically": true,
+    "vector_reserve_size": 1000,
+    "kf_dt": 0.1,
     "rFeaMat":
     [
         {"fea1": [0.0, 0.0, 0.5]},

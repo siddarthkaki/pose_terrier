@@ -95,6 +95,8 @@ int main(int argc, char **argv)
     pose_true.quat.w() = 1.0;
     pose_true.quat.vec() = Vector3d::Zero();
 
+    unsigned int meas_count = 1;
+
     for (;;)//unsigned int pose_idx = 0; pose_idx < num_poses_test; pose_idx++)
     {
         //-- Simulate Measurements -------------------------------------------/
@@ -160,10 +162,11 @@ int main(int argc, char **argv)
         close(fd);
 
         // write to console
-        std::cout << "Sent new measurement." << std::endl;
+        std::cout << "Sent measurement: " << meas_count << std::endl;
+        meas_count++;
 
-        // sleep for 0.1 sec
-        usleep(100000);
+        // sleep for 1.0 sec
+        usleep(1000000);
     }
 
     return 0;
