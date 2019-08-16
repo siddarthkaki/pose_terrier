@@ -99,11 +99,15 @@ int main(int argc, char **argv)
 
     // declare vectors for storage
     std::vector<Pose> solved_poses, filtered_poses;
+    std::vector<VectorXd> kf_states;
+    std::vector<MatrixXd> kf_covars;
     std::vector<double> solution_times, timestamps; // [ms]
 
     // pre-allocate memory
     solved_poses.reserve(vector_reserve_size);
     filtered_poses.reserve(vector_reserve_size);
+    kf_states.reserve(vector_reserve_size);
+    kf_covars.reserve(vector_reserve_size);
     solution_times.reserve(vector_reserve_size);
     timestamps.reserve(vector_reserve_size);
 
@@ -328,7 +332,7 @@ int main(int argc, char **argv)
         kf.StoreAndClean();
 
         Pose pose_filtered;
-        VectorXd pose_filt_wrapper = kf.states.back();
+        VectorXd pose_filt_wrapper = kf.last_state_estimate;
         pose_filtered.pos = pose_filt_wrapper.head(3);
         pose_filtered.quat = AngleAxisd(pose_filt_wrapper(9) , Vector3d::UnitX()) *
                              AngleAxisd(pose_filt_wrapper(10), Vector3d::UnitY()) *
@@ -339,24 +343,28 @@ int main(int argc, char **argv)
         //-- Data Storage ----------------------------------------------------/
         solved_poses.push_back(pose_sol.pose);
         filtered_poses.push_back(pose_filtered);
+        kf_states.push_back(kf.last_state_estimate);
+        kf_covars.push_back(kf.last_covar_estimate);
 
         // set NLS initial guess for next time-step to latest filtered estimate
         pose0 = filtered_poses.back();
 
         //-- Handling for Periodic Logging -----------------------------------/
-        if (log_to_file && log_periodically && filtered_poses.size() == vector_reserve_size)
+        if (log_to_file && log_periodically && filtered_poses.size() >= vector_reserve_size)
         {
             // write to csv files
             bool append_mode = true;
             // TODO TIMESTAMP FILENAME
             Utilities::WritePosesToCSV(solved_poses, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(solved_poses))), append_mode);
             Utilities::WritePosesToCSV(filtered_poses, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(filtered_poses))), append_mode);
-            Utilities::WriteKFStatesToCSV(kf.states, Utilities::WrapVarToPath(std::string("kf_states")), append_mode);
-            Utilities::WriteKFCovarsToCSV(kf.covars, Utilities::WrapVarToPath(std::string("kf_covars")), append_mode);
+            Utilities::WriteKFStatesToCSV(kf_states, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(kf_states))), append_mode);
+            Utilities::WriteKFCovarsToCSV(kf_covars, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(kf_covars))), append_mode);
 
             // clear vectors
             solved_poses.clear();
             filtered_poses.clear();
+            kf_states.clear();
+            kf_covars.clear();
             // TODO CLEAR kf states
         }
 
@@ -379,8 +387,8 @@ int main(int argc, char **argv)
                 // write to csv files
                 Utilities::WritePosesToCSV(solved_poses, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(solved_poses))), append_mode);
                 Utilities::WritePosesToCSV(filtered_poses, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(filtered_poses))), append_mode);
-                Utilities::WriteKFStatesToCSV(kf.states, Utilities::WrapVarToPath(std::string("kf_states")), append_mode);
-                Utilities::WriteKFCovarsToCSV(kf.covars, Utilities::WrapVarToPath(std::string("kf_covars")), append_mode);
+                Utilities::WriteKFStatesToCSV(kf_states, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(kf_states))), append_mode);
+                Utilities::WriteKFCovarsToCSV(kf_covars, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(kf_covars))), append_mode);
                 printf("Logged data to file.\n");
             }
 

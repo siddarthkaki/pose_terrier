@@ -85,6 +85,8 @@ int main(int argc, char **argv)
     //-- Loop ----------------------------------------------------------------/
 
     std::vector<Pose> true_poses, solved_poses, solved_poses_conj, filtered_poses;
+    std::vector<VectorXd> kf_states;
+    std::vector<MatrixXd> kf_covars;
     std::vector<double> solution_times; // [ms]
     std::vector<double> pos_scores;
     std::vector<double> att_scores;
@@ -93,6 +95,8 @@ int main(int argc, char **argv)
     solved_poses.reserve(num_poses_test);
     solved_poses_conj.reserve(num_poses_test);
     filtered_poses.reserve(num_poses_test);
+    kf_states.reserve(num_poses_test);
+    kf_covars.reserve(num_poses_test);
     solution_times.reserve(num_poses_test);
     pos_scores.reserve(num_poses_test);
     att_scores.reserve(num_poses_test);
@@ -233,7 +237,7 @@ int main(int argc, char **argv)
 
             kf.StoreAndClean();
 
-            VectorXd pose_filt_wrapper = kf.states.back();
+            VectorXd pose_filt_wrapper = kf.last_state_estimate;
             pose_filtered.pos = pose_filt_wrapper.head(3);
             pose_filtered.quat = AngleAxisd(pose_filt_wrapper(9), Vector3d::UnitX()) *
                                  AngleAxisd(pose_filt_wrapper(10), Vector3d::UnitY()) *
@@ -260,6 +264,8 @@ int main(int argc, char **argv)
         solved_poses.push_back(pose_sol.pose);
         solved_poses_conj.push_back(conj_pose);
         filtered_poses.push_back(pose_filtered);
+        kf_states.push_back(kf.last_state_estimate);
+        kf_covars.push_back(kf.last_covar_estimate);
         solution_times.push_back((double)duration);
         pos_scores.push_back(pos_score);
         att_scores.push_back(att_score); //std::min(att_score,conj_att_score) );
@@ -276,8 +282,8 @@ int main(int argc, char **argv)
     Utilities::WritePosesToCSV(true_poses, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(true_poses))), false);
     Utilities::WritePosesToCSV(solved_poses, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(solved_poses))), false);
     Utilities::WritePosesToCSV(filtered_poses, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(filtered_poses))), false);
-    Utilities::WriteKFStatesToCSV(kf.states, Utilities::WrapVarToPath(std::string("kf_states")), false);
-    Utilities::WriteKFCovarsToCSV(kf.covars, Utilities::WrapVarToPath(std::string("kf_covars")), false);
+    Utilities::WriteKFStatesToCSV(kf_states, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(kf_states))), false);
+    Utilities::WriteKFCovarsToCSV(kf_covars, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(kf_covars))), false);
 
     double pos_score_mean = Utilities::StdVectorMean(pos_scores);
     double att_score_mean = Utilities::StdVectorMean(att_scores);
