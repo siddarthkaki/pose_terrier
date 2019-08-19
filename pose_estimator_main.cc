@@ -71,8 +71,8 @@ int main(int argc, char **argv)
                   << "byte position of error: " << e.byte << std::endl;
     }
 
-    std::string pipe_path_input = json_params["pipe_path_input"];
-    std::string pipe_path_output = json_params["pipe_path_output"];
+    const std::string pipe_path_input = json_params["pipe_path_input"];
+    const std::string pipe_path_output = json_params["pipe_path_output"];
 
     // specify rigid position vector of camera wrt chaser in chaser frame
     Vector3d rCamVec;
@@ -88,13 +88,14 @@ int main(int argc, char **argv)
     //double meas_std = double(json_params["meas_std_deg"]) * Utilities::DEG2RAD;
 
     // specify expected number of time-steps for memory pre-allocation
-    unsigned int num_poses_test = json_params["num_poses_test"];
+    const unsigned int num_poses_test = json_params["num_poses_test"];
 
-    bool log_to_file = json_params["log_to_file"];
-    bool log_periodically = json_params["log_periodically"];
-    unsigned int vector_reserve_size = json_params["vector_reserve_size"];
+    const bool output_to_pipe = json_params["output_to_pipe"];
+    const bool log_to_file = json_params["log_to_file"];
+    const bool log_periodically = json_params["log_periodically"];
+    const unsigned int vector_reserve_size = json_params["vector_reserve_size"];
 
-    double kf_dt = json_params["kf_dt"];
+    const double kf_dt = json_params["kf_dt"];
 
     //------------------------------------------------------------------------/
 
@@ -390,41 +391,44 @@ int main(int argc, char **argv)
         pose0 = filtered_poses.back();
 
         //-- Write Pose to Pipe ----------------------------------------------/
-        ProtoPose::Pose proto_pose;
-        ProtoPose::Position *pos = proto_pose.mutable_pos();
-        ProtoPose::Attitude *att = proto_pose.mutable_att();
-        pos->set_x(pose_filtered.pos(0));
-        pos->set_y(pose_filtered.pos(1));
-        pos->set_z(pose_filtered.pos(2));
-        att->set_qw(pose_filtered.quat.w());
-        att->set_qx(pose_filtered.quat.x());
-        att->set_qy(pose_filtered.quat.y());
-        att->set_qz(pose_filtered.quat.z());
-        proto_pose.set_time_stamp(0.0); // TODO: TIME-STAMP
+        if (output_to_pipe)
+        {
+            ProtoPose::Pose proto_pose;
+            ProtoPose::Position *pos = proto_pose.mutable_pos();
+            ProtoPose::Attitude *att = proto_pose.mutable_att();
+            pos->set_x(pose_filtered.pos(0));
+            pos->set_y(pose_filtered.pos(1));
+            pos->set_z(pose_filtered.pos(2));
+            att->set_qw(pose_filtered.quat.w());
+            att->set_qx(pose_filtered.quat.x());
+            att->set_qy(pose_filtered.quat.y());
+            att->set_qz(pose_filtered.quat.z());
+            proto_pose.set_time_stamp(0.0); // TODO: TIME-STAMP
 
-        // store byte size of pose object
-        size_t size_out = proto_pose.ByteSize();
+            // store byte size of pose object
+            size_t size_out = proto_pose.ByteSize();
 
-        // allocate sufficient buffer space
-        void *buffer_out = malloc(size_out);
+            // allocate sufficient buffer space
+            void *buffer_out = malloc(size_out);
 
-        // serialise to the buffer array
-        proto_pose.SerializeToArray(buffer_out, size_out);
+            // serialise to the buffer array
+            proto_pose.SerializeToArray(buffer_out, size_out);
 
-        // Open FIFO for write only, without blocking
-        fd_out = open(fifo_path_output, O_WRONLY | O_NONBLOCK);
+            // Open FIFO for write only, without blocking
+            fd_out = open(fifo_path_output, O_WRONLY | O_NONBLOCK);
 
-        // write size of pose object to pipe
-        write(fd_out, &size_out, sizeof(size_out));
+            // write size of pose object to pipe
+            write(fd_out, &size_out, sizeof(size_out));
 
-        // write serialised pose object to pipe
-        write(fd_out, buffer_out, size_out);
+            // write serialised pose object to pipe
+            write(fd_out, buffer_out, size_out);
 
-        // close FIFO
-        close(fd_out);
+            // close FIFO
+            close(fd_out);
 
-        // free memory
-        free(buffer_out);
+            // free memory
+            free(buffer_out);
+        }
 
         //-- Handling for Periodic Logging -----------------------------------/
         if (log_to_file && log_periodically && filtered_poses.size() >= vector_reserve_size)

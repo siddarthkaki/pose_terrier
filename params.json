@@ -5,6 +5,7 @@
     "num_poses_test": 1000,
     "pipe_path_input": "pipe_dream_meas",
     "pipe_path_output": "pipe_dream_pose",
+    "output_to_pipe": true,
     "log_to_file": true,
     "log_periodically": true,
     "vector_reserve_size": 1000,
