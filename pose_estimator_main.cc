@@ -10,6 +10,8 @@
 #include <math.h>
 #include <fcntl.h>
 
+#include <google/protobuf/text_format.h>
+
 #include "ceres/ceres.h"
 #include "glog/logging.h"
 
@@ -43,6 +45,8 @@ void exit_handler(int signal)
     finished = 1;
 }
 
+bool CheckValidMeasurement(const ProtoMeas::Measurements &measurements);
+
 /**
  * @function main
  * @brief main function
@@ -50,6 +54,7 @@ void exit_handler(int signal)
 int main(int argc, char **argv)
 {
     //google::InitGoogleLogging(argv[0]);
+    google::InstallFailureSignalHandler();
 
     //-- Read-in problem geometry and params ---------------------------------/
 
@@ -145,76 +150,91 @@ int main(int argc, char **argv)
             // read serialised measurement object from pipe
             rd_in = read(fd_in, buffer, size);
 
-            // deserialise from buffer array
-            ProtoMeas::Measurements measurements;
-            measurements.ParseFromArray(buffer, size);
-
             // close pipe
             close(fd_in);
+
+            // deserialise from buffer array
+            ProtoMeas::Measurements measurements;
+            const bool protomeas_ok = measurements.ParseFromArray(buffer, size);
 
             // free memory
             free(buffer);
 
-            std::cout << "Received first measurement." << std::endl;
-            received_first_meas = true;
-
-            unsigned int num_feature_points = measurements.num_feature_points();
-
-            // Construct Eigen::MatrixXd out of feature point locations
-            MatrixXd rFeaMat(num_feature_points, 3);
-            for (unsigned int idx = 0; idx < num_feature_points; idx++)
+            if (protomeas_ok) // if measurement parsed properly from pipe
             {
-                rFeaMat(idx, 0) = measurements.feature_points(idx).x();
-                rFeaMat(idx, 1) = measurements.feature_points(idx).y();
-                rFeaMat(idx, 2) = measurements.feature_points(idx).z();
-            }
+                // sanitise measurement inputs
+                if (CheckValidMeasurement(measurements))
+                {
+                    std::cout << "Received first measurement." << std::endl;
+                    received_first_meas = true;
 
-            // Construct Eigen::VectorXd out of measurements
-            VectorXd yVec(2 * num_feature_points);
-            for (unsigned int idx = 0; idx < num_feature_points; idx++)
+                    unsigned int num_feature_points = measurements.num_feature_points();
+
+                    // Construct Eigen::MatrixXd out of feature point locations
+                    MatrixXd rFeaMat(num_feature_points, 3);
+                    for (unsigned int idx = 0; idx < num_feature_points; idx++)
+                    {
+                        rFeaMat(idx, 0) = measurements.feature_points(idx).x();
+                        rFeaMat(idx, 1) = measurements.feature_points(idx).y();
+                        rFeaMat(idx, 2) = measurements.feature_points(idx).z();
+                    }
+
+                    // Construct Eigen::VectorXd out of measurements
+                    VectorXd yVec(2 * num_feature_points);
+                    for (unsigned int idx = 0; idx < num_feature_points; idx++)
+                    {
+                        yVec(2 * idx + 0) = measurements.bearings(idx).az();
+                        yVec(2 * idx + 1) = measurements.bearings(idx).el();
+                    }
+
+                    // solve for pose with ceres (via wrapper)
+                    PoseSolution pose_sol = PoseSolver::SolvePoseReinit(pose0, yVec, rCamVec, rFeaMat);
+
+                    Pose conj_pose_temp = Utilities::ConjugatePose(pose_sol.pose);
+                    Pose conj_pose = PoseSolver::SolvePose(conj_pose_temp, yVec, rCamVec, rFeaMat).pose;
+
+                    // initialise KF
+
+                    double kf_process_noise_std = 0.01;
+                    double kf_measurement_noise_std = 0.05;
+
+                    kf.InitLinearPoseTracking(kf_process_noise_std, kf_measurement_noise_std, kf_dt);
+                    VectorXd state0 = VectorXd::Zero(kf.num_states_);
+                    state0.head(3) = pose_sol.pose.pos;
+                    state0.segment(3, 3) = pose_sol.pose.quat.toRotationMatrix().eulerAngles(0, 1, 2);
+                    MatrixXd covar0 = 10.0 * MatrixXd::Identity(kf.num_states_, kf.num_states_);
+                    covar0( 0,  0) = 1.0;
+                    covar0( 1,  1) = 1.0;
+                    covar0( 2,  2) = 3.0;
+                    covar0( 9,  9) = 10.0 * Utilities::DEG2RAD;
+                    covar0(10, 10) = 10.0 * Utilities::DEG2RAD;
+                    covar0(11, 11) = 10.0 * Utilities::DEG2RAD;
+                    kf.SetInitialStateAndCovar(state0, covar0);
+
+                    kf.R_(0, 0) = 1.0;
+                    kf.R_(1, 1) = 1.0;
+                    kf.R_(2, 2) = 3.0;
+                    kf.R_(3, 3) = 10.0 * Utilities::DEG2RAD;
+                    kf.R_(4, 4) = 10.0 * Utilities::DEG2RAD;
+                    kf.R_(5, 5) = 10.0 * Utilities::DEG2RAD;
+
+                    kf.PrintModelMatrices();
+
+                    solved_poses.push_back(pose_sol.pose);
+                    filtered_poses.push_back(pose_sol.pose);
+                    kf_states.push_back(state0);
+                    kf_covars.push_back(covar0);
+                    timestamps.push_back(0.0);
+                }
+                else // if bad measurement received, wait for new one
+                {
+                    std::cout << "Received bad first measurement, waiting for valid first measurement." << std::endl;
+                }
+            }
+            else // if message not parsed properly, wait for new one
             {
-                yVec(2 * idx + 0) = measurements.bearings(idx).az();
-                yVec(2 * idx + 1) = measurements.bearings(idx).el();
+                std::cout << "Received bad first measurement, waiting for valid first measurement." << std::endl;
             }
-
-            // solve for pose with ceres (via wrapper)
-            PoseSolution pose_sol = PoseSolver::SolvePoseReinit(pose0, yVec, rCamVec, rFeaMat);
-
-            Pose conj_pose_temp = Utilities::ConjugatePose(pose_sol.pose);
-            Pose conj_pose = PoseSolver::SolvePose(conj_pose_temp, yVec, rCamVec, rFeaMat).pose;
-
-            // initialise KF
-
-            double kf_process_noise_std = 0.01;
-            double kf_measurement_noise_std = 0.05;
-
-            kf.InitLinearPoseTracking(kf_process_noise_std, kf_measurement_noise_std, kf_dt);
-            VectorXd state0 = VectorXd::Zero(kf.num_states_);
-            state0.head(3) = pose_sol.pose.pos;
-            state0.segment(3, 3) = pose_sol.pose.quat.toRotationMatrix().eulerAngles(0, 1, 2);
-            MatrixXd covar0 = 10.0 * MatrixXd::Identity(kf.num_states_, kf.num_states_);
-            covar0( 0,  0) = 1.0;
-            covar0( 1,  1) = 1.0;
-            covar0( 2,  2) = 3.0;
-            covar0( 9,  9) = 10.0 * Utilities::DEG2RAD;
-            covar0(10, 10) = 10.0 * Utilities::DEG2RAD;
-            covar0(11, 11) = 10.0 * Utilities::DEG2RAD;
-            kf.SetInitialStateAndCovar(state0, covar0);
-
-            kf.R_(0, 0) = 1.0;
-            kf.R_(1, 1) = 1.0;
-            kf.R_(2, 2) = 3.0;
-            kf.R_(3, 3) = 10.0 * Utilities::DEG2RAD;
-            kf.R_(4, 4) = 10.0 * Utilities::DEG2RAD;
-            kf.R_(5, 5) = 10.0 * Utilities::DEG2RAD;
-
-            kf.PrintModelMatrices();
-
-            solved_poses.push_back(pose_sol.pose);
-            filtered_poses.push_back(pose_sol.pose);
-            kf_states.push_back(state0);
-            kf_covars.push_back(covar0);
-            timestamps.push_back(0.0);
         }
         else
         { // if no size message found
@@ -268,73 +288,85 @@ int main(int argc, char **argv)
             // allocate sufficient buffer space
             void *buffer = malloc(size);
 
-            // read serialised pose object from pipe
+            // read serialised measurement object from pipe
             rd_in = read(fd_in, buffer, size);
 
             // deserialise from buffer array
             ProtoMeas::Measurements measurements;
-            measurements.ParseFromArray(buffer, size);
+            const bool protomeas_ok = measurements.ParseFromArray(buffer, size);
 
             // free memory
             free(buffer);
 
-            //std::cout << "Received new measurement." << std::endl;
-
-            unsigned int num_feature_points = measurements.num_feature_points();
-
-            // Construct Eigen::MatrixXd out of feature point locations
-            MatrixXd rFeaMat(num_feature_points, 3);
-            for (unsigned int idx = 0; idx < num_feature_points; idx++)
+            if (protomeas_ok) // if measurement parsed properly from pipe
             {
-                rFeaMat(idx, 0) = measurements.feature_points(idx).x();
-                rFeaMat(idx, 1) = measurements.feature_points(idx).y();
-                rFeaMat(idx, 2) = measurements.feature_points(idx).z();
+                // sanitise measurement inputs
+                if (CheckValidMeasurement(measurements))
+                {
+                    unsigned int num_feature_points = measurements.num_feature_points();
+
+                    // Construct Eigen::MatrixXd out of feature point locations
+                    MatrixXd rFeaMat(num_feature_points, 3);
+                    for (unsigned int idx = 0; idx < num_feature_points; idx++)
+                    {
+                        rFeaMat(idx, 0) = measurements.feature_points(idx).x();
+                        rFeaMat(idx, 1) = measurements.feature_points(idx).y();
+                        rFeaMat(idx, 2) = measurements.feature_points(idx).z();
+                    }
+
+                    // Construct Eigen::VectorXd out of measurements
+                    VectorXd yVec(2 * num_feature_points);
+                    for (unsigned int idx = 0; idx < num_feature_points; idx++)
+                    {
+                        yVec(2 * idx + 0) = measurements.bearings(idx).az();
+                        yVec(2 * idx + 1) = measurements.bearings(idx).el();
+                    }
+
+                    //-- Measurement update ----------------------------------/
+
+                    // Note: NLS initial guess for this time-step (pose0) is set to
+                    //       the last filtered estimate by this point
+
+                    // solve for pose with ceres (via wrapper)
+                    pose_sol = PoseSolver::SolvePoseReinit(pose0, yVec, rCamVec, rFeaMat);
+
+                    Pose conj_pose_temp = Utilities::ConjugatePose(pose_sol.pose);
+                    Pose conj_pose = PoseSolver::SolvePose(conj_pose_temp, yVec, rCamVec, rFeaMat).pose;
+
+                    // wrap NLS pose solution as KF measurement
+                    VectorXd pose_meas_wrapper(6);
+                    pose_meas_wrapper.head(3) = pose_sol.pose.pos;
+                    pose_meas_wrapper.tail(3) = pose_sol.pose.quat.toRotationMatrix().eulerAngles(0, 1, 2);
+
+                    // wrap NLS conjugate pose solution as KF measurement
+                    VectorXd conj_pose_meas_wrapper(6);
+                    conj_pose_meas_wrapper.head(3) = conj_pose.pos;
+                    conj_pose_meas_wrapper.tail(3) = conj_pose.quat.toRotationMatrix().eulerAngles(0, 1, 2);
+
+                    // choose as measurement whichever pose produces the smallest measurement residual norm
+                    double pose_meas_norm = (pose_meas_wrapper - kf.H_ * kf.statek1k_).norm();
+                    double conj_pose_meas_norm = (conj_pose_meas_wrapper - kf.H_ * kf.statek1k_).norm();
+                    if (pose_meas_norm < conj_pose_meas_norm)
+                    {
+                        kf.Update(pose_meas_wrapper);
+                    }
+                    else
+                    {
+                        kf.Update(conj_pose_meas_wrapper);
+                    }
+                }
+                else // if bad measurement received, skip measurement update
+                {
+                    std::cout << "Received bad measurement, skipping measurement update." << std::endl;
+                }
             }
-
-            // Construct Eigen::VectorXd out of measurements
-            VectorXd yVec(2 * num_feature_points);
-            for (unsigned int idx = 0; idx < num_feature_points; idx++)
+            else // if message not parsed properly, skip measurement update
             {
-                yVec(2 * idx + 0) = measurements.bearings(idx).az();
-                yVec(2 * idx + 1) = measurements.bearings(idx).el();
-            }
-
-            //-- Measurement update ------------------------------------------/
-
-            // Note: NLS initial guess for this time-step (pose0) is set to
-            //       the last filtered estimate by this point
-
-            // solve for pose with ceres (via wrapper)
-            pose_sol = PoseSolver::SolvePoseReinit(pose0, yVec, rCamVec, rFeaMat);
-
-            Pose conj_pose_temp = Utilities::ConjugatePose(pose_sol.pose);
-            Pose conj_pose = PoseSolver::SolvePose(conj_pose_temp, yVec, rCamVec, rFeaMat).pose;
-
-            // wrap NLS pose solution as KF measurement
-            VectorXd pose_meas_wrapper(6);
-            pose_meas_wrapper.head(3) = pose_sol.pose.pos;
-            pose_meas_wrapper.tail(3) = pose_sol.pose.quat.toRotationMatrix().eulerAngles(0, 1, 2);
-
-            // wrap NLS conjugate pose solution as KF measurement
-            VectorXd conj_pose_meas_wrapper(6);
-            conj_pose_meas_wrapper.head(3) = conj_pose.pos;
-            conj_pose_meas_wrapper.tail(3) = conj_pose.quat.toRotationMatrix().eulerAngles(0, 1, 2);
-
-            // choose as measurement whichever pose produces the smallest measurement residual norm
-            double pose_meas_norm = (pose_meas_wrapper - kf.H_ * kf.statek1k_).norm();
-            double conj_pose_meas_norm = (conj_pose_meas_wrapper - kf.H_ * kf.statek1k_).norm();
-            if (pose_meas_norm < conj_pose_meas_norm)
-            {
-                kf.Update(pose_meas_wrapper);
-            }
-            else
-            {
-                kf.Update(conj_pose_meas_wrapper);
+                std::cout << "Received unparsable measurement, skipping measurement update." << std::endl;
             }
         }
-        else
+        else // if no size message found, skip measurement update
         {
-            // if no size message found, skip measurement update
         }
 
         kf.StoreAndClean();
@@ -342,9 +374,9 @@ int main(int argc, char **argv)
         Pose pose_filtered;
         VectorXd pose_filt_wrapper = kf.last_state_estimate;
         pose_filtered.pos = pose_filt_wrapper.head(3);
-        pose_filtered.quat = (  AngleAxisd(pose_filt_wrapper(9) , Vector3d::UnitX()) *
-                                AngleAxisd(pose_filt_wrapper(10), Vector3d::UnitY()) *
-                                AngleAxisd(pose_filt_wrapper(11), Vector3d::UnitZ()) );
+        pose_filtered.quat = (AngleAxisd(pose_filt_wrapper(9), Vector3d::UnitX()) *
+                              AngleAxisd(pose_filt_wrapper(10), Vector3d::UnitY()) *
+                              AngleAxisd(pose_filt_wrapper(11), Vector3d::UnitZ()));
 
         //--------------------------------------------------------------------/
 
@@ -409,4 +441,29 @@ int main(int argc, char **argv)
     }
 
     return 0;
+}
+
+/**
+ * @function CheckValidMeasurement
+ * @brief checks whether measurement input sizing is consistent
+ * @return true if consistent, false if not
+ */
+bool CheckValidMeasurement(const ProtoMeas::Measurements &measurements)
+{
+    unsigned int num_feature_points = measurements.num_feature_points();
+    unsigned int verify_num_ft_pt_1 = measurements.feature_points_size();
+    unsigned int verify_num_ft_pt_2 = measurements.bearings_size();
+
+    if (num_feature_points != verify_num_ft_pt_1 || num_feature_points != verify_num_ft_pt_2)
+    {
+        return false;
+    }
+    else if ((num_feature_points == 0) || (verify_num_ft_pt_1 == 0) || (verify_num_ft_pt_2 == 0))
+    {
+        return false;
+    }
+    else
+    {
+        return true;
+    }
 }
