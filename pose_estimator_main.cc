@@ -10,8 +10,6 @@
 #include <math.h>
 #include <fcntl.h>
 
-#include <google/protobuf/text_format.h>
-
 #include "ceres/ceres.h"
 #include "glog/logging.h"
 
@@ -45,7 +43,7 @@ void exit_handler(int signal)
     finished = 1;
 }
 
-bool CheckValidMeasurement(const ProtoMeas::Measurements &measurements);
+bool CheckValidMeasurement(const ProtoMeas::Measurements& measurements);
 
 /**
  * @function main
@@ -128,9 +126,11 @@ int main(int argc, char **argv)
 
     std::cout << "Waiting for first measurement." << std::endl;
 
-    // initialise pipe
-    int fd_in, rd_in = 0;
+    // set pipe names
+    int fd_in, fd_out, rd_in = 0;
     const char *fifo_path_input = pipe_path_input.c_str();
+    const char *fifo_path_output = pipe_path_output.c_str();
+    
     // Open FIFO for read only, with blocking to receive first measurement
     fd_in = open(fifo_path_input, O_RDONLY);
 
@@ -253,7 +253,7 @@ int main(int argc, char **argv)
     sigIntHandler.sa_flags = 0;
     sigaction(SIGINT, &sigIntHandler, NULL);
 
-    // Open FIFO for read only, without blocking
+    // open FIFO for measurement read only, without blocking
     fd_in = open(fifo_path_input, O_RDONLY | O_NONBLOCK);
 
     auto last_t = std::chrono::high_resolution_clock::now();
@@ -374,7 +374,7 @@ int main(int argc, char **argv)
         Pose pose_filtered;
         VectorXd pose_filt_wrapper = kf.last_state_estimate;
         pose_filtered.pos = pose_filt_wrapper.head(3);
-        pose_filtered.quat = (AngleAxisd(pose_filt_wrapper(9), Vector3d::UnitX()) *
+        pose_filtered.quat = (AngleAxisd(pose_filt_wrapper( 9), Vector3d::UnitX()) *
                               AngleAxisd(pose_filt_wrapper(10), Vector3d::UnitY()) *
                               AngleAxisd(pose_filt_wrapper(11), Vector3d::UnitZ()));
 
@@ -388,6 +388,43 @@ int main(int argc, char **argv)
 
         // set NLS initial guess for next time-step to latest filtered estimate
         pose0 = filtered_poses.back();
+
+        //-- Write Pose to Pipe ----------------------------------------------/
+        ProtoPose::Pose proto_pose;
+        ProtoPose::Position *pos = proto_pose.mutable_pos();
+        ProtoPose::Attitude *att = proto_pose.mutable_att();
+        pos->set_x(pose_filtered.pos(0));
+        pos->set_y(pose_filtered.pos(1));
+        pos->set_z(pose_filtered.pos(2));
+        att->set_qw(pose_filtered.quat.w());
+        att->set_qx(pose_filtered.quat.x());
+        att->set_qy(pose_filtered.quat.y());
+        att->set_qz(pose_filtered.quat.z());
+        proto_pose.set_time_stamp(0.0); // TODO: TIME-STAMP
+
+        // store byte size of pose object
+        size_t size_out = proto_pose.ByteSize();
+
+        // allocate sufficient buffer space
+        void *buffer_out = malloc(size_out);
+
+        // serialise to the buffer array
+        proto_pose.SerializeToArray(buffer_out, size_out);
+
+        // Open FIFO for write only, without blocking
+        fd_out = open(fifo_path_output, O_WRONLY | O_NONBLOCK);
+
+        // write size of pose object to pipe
+        write(fd_out, &size_out, sizeof(size_out));
+
+        // write serialised pose object to pipe
+        write(fd_out, buffer_out, size_out);
+
+        // close FIFO
+        close(fd_out);
+
+        // free memory
+        free(buffer_out);
 
         //-- Handling for Periodic Logging -----------------------------------/
         if (log_to_file && log_periodically && filtered_poses.size() >= vector_reserve_size)
@@ -424,6 +461,7 @@ int main(int argc, char **argv)
                 }
 
                 // write to csv files
+                // TODO TIMESTAMP FILENAME
                 Utilities::WritePosesToCSV(solved_poses, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(solved_poses))), append_mode);
                 Utilities::WritePosesToCSV(filtered_poses, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(filtered_poses))), append_mode);
                 Utilities::WriteKFStatesToCSV(kf_states, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(kf_states))), append_mode);
@@ -448,7 +486,7 @@ int main(int argc, char **argv)
  * @brief checks whether measurement input sizing is consistent
  * @return true if consistent, false if not
  */
-bool CheckValidMeasurement(const ProtoMeas::Measurements &measurements)
+bool CheckValidMeasurement(const ProtoMeas::Measurements& measurements)
 {
     unsigned int num_feature_points = measurements.num_feature_points();
     unsigned int verify_num_ft_pt_1 = measurements.feature_points_size();
