@@ -118,6 +118,10 @@ int main(int argc, char **argv)
     // Kalman Filter object
     KF::KalmanFilter kf;
 
+    // clock object
+    auto init_t = std::chrono::high_resolution_clock::now();
+    double curr_elapsed_t = 0.0;
+
     // TODO: read in initial guess from json or other program
     // initial pose guess
     Pose pose0;
@@ -125,7 +129,7 @@ int main(int argc, char **argv)
     pose0.quat.w() = 1.0;
     pose0.quat.vec() = Vector3d::Zero();
 
-    std::cout << "Waiting for first measurement." << std::endl;
+    std::cout << "Waiting for first measurement..." << std::endl;
 
     // set pipe names
     int fd_in, fd_out, rd_in = 0;
@@ -226,6 +230,7 @@ int main(int argc, char **argv)
                     kf_states.push_back(state0);
                     kf_covars.push_back(covar0);
                     timestamps.push_back(0.0);
+                    init_t = std::chrono::high_resolution_clock::now();
                 }
                 else // if bad measurement received, wait for new one
                 {
@@ -234,7 +239,7 @@ int main(int argc, char **argv)
             }
             else // if message not parsed properly, wait for new one
             {
-                std::cout << "Received bad first measurement, waiting for valid first measurement." << std::endl;
+                std::cout << "Received unparsable first measurement, waiting for valid first measurement." << std::endl;
             }
         }
         else
@@ -379,9 +384,13 @@ int main(int argc, char **argv)
                               AngleAxisd(pose_filt_wrapper(10), Vector3d::UnitY()) *
                               AngleAxisd(pose_filt_wrapper(11), Vector3d::UnitZ()));
 
+        curr_t = std::chrono::high_resolution_clock::now();
+        curr_elapsed_t = (double)std::chrono::duration_cast<std::chrono::nanoseconds>(curr_t - init_t).count();
+        curr_elapsed_t *= pow(10.0, -9.0);
+
         //--------------------------------------------------------------------/
 
-        //-- Data Storage ----------------------------------------------------/
+        //-- Data Storage ----------------------------------------------------/        
         solved_poses.push_back(pose_sol.pose);
         filtered_poses.push_back(pose_filtered);
         kf_states.push_back(kf.last_state_estimate);
@@ -403,7 +412,7 @@ int main(int argc, char **argv)
             att->set_qx(pose_filtered.quat.x());
             att->set_qy(pose_filtered.quat.y());
             att->set_qz(pose_filtered.quat.z());
-            proto_pose.set_time_stamp(0.0); // TODO: TIME-STAMP
+            proto_pose.set_time_stamp(curr_elapsed_t);
 
             // store byte size of pose object
             size_t size_out = proto_pose.ByteSize();
