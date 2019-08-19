@@ -343,3 +343,29 @@ void Utilities::WriteKFCovarsToCSV(const std::vector<MatrixXd>& covars, const st
         std::cout << "Exception was thrown: " << ex.what() << std::endl;
     }
 }
+
+/**
+ * @function WriteTimestampsToFile
+ * @brief TODO
+ * @return TODO
+ */
+void Utilities::WriteTimestampsToFile(const std::vector<double>& timestamps, const std::string& filename, const bool& append_mode)
+{
+    try
+    {
+        csvfile csv(filename, append_mode); // throws exceptions!
+        // header
+        // csv << "X" << "VALUE" << endrow;
+        // data
+        for (double ts_ : timestamps)
+        {
+            csv << ts_;
+            csv << endrow;
+        }
+    }
+    catch (const std::exception &ex)
+    {
+        std::cout << "Exception was thrown: " << ex.what() << std::endl;
+    }
+}
+

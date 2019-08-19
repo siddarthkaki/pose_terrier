@@ -105,14 +105,13 @@ int main(int argc, char **argv)
     std::vector<Pose> solved_poses, filtered_poses;
     std::vector<VectorXd> kf_states;
     std::vector<MatrixXd> kf_covars;
-    std::vector<double> solution_times, timestamps; // [ms]
+    std::vector<double> timestamps; // [s]
 
     // pre-allocate memory
     solved_poses.reserve(vector_reserve_size);
     filtered_poses.reserve(vector_reserve_size);
     kf_states.reserve(vector_reserve_size);
     kf_covars.reserve(vector_reserve_size);
-    solution_times.reserve(vector_reserve_size);
     timestamps.reserve(vector_reserve_size);
 
     // Kalman Filter object
@@ -395,6 +394,7 @@ int main(int argc, char **argv)
         filtered_poses.push_back(pose_filtered);
         kf_states.push_back(kf.last_state_estimate);
         kf_covars.push_back(kf.last_covar_estimate);
+        timestamps.push_back(curr_elapsed_t);
 
         // set NLS initial guess for next time-step to latest filtered estimate
         pose0 = filtered_poses.back();
@@ -449,12 +449,14 @@ int main(int argc, char **argv)
             Utilities::WritePosesToCSV(filtered_poses, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(filtered_poses))), append_mode);
             Utilities::WriteKFStatesToCSV(kf_states, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(kf_states))), append_mode);
             Utilities::WriteKFCovarsToCSV(kf_covars, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(kf_covars))), append_mode);
+            Utilities::WriteTimestampsToFile(timestamps, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(timestamps))), append_mode);
 
             // clear vectors
             solved_poses.clear();
             filtered_poses.clear();
             kf_states.clear();
             kf_covars.clear();
+            timestamps.clear();
         }
 
         //-- Handling for Program Exit ---------------------------------------/
@@ -479,6 +481,7 @@ int main(int argc, char **argv)
                 Utilities::WritePosesToCSV(filtered_poses, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(filtered_poses))), append_mode);
                 Utilities::WriteKFStatesToCSV(kf_states, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(kf_states))), append_mode);
                 Utilities::WriteKFCovarsToCSV(kf_covars, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(kf_covars))), append_mode);
+                Utilities::WriteTimestampsToFile(timestamps, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(timestamps))), append_mode);
                 printf("Logged data to file.\n");
             }
 

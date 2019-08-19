@@ -3,6 +3,8 @@ clear; close all; clc;
 
 %% init
 
+tVec = f_read_timestamps("../data/timestamps.csv");
+
 solvedPosesMat = f_read_poses("../data/solved_poses.csv");
 
 filteredPosesMat = f_read_poses("../data/filtered_poses.csv");
@@ -13,7 +15,7 @@ covarsMat = f_read_covars("../data/kf_covars.csv");
 
 [num_poses,~] = size(filteredPosesMat);
 dt = 0.1;
-tVec = 0:dt:(num_poses-1)*dt;
+%tVec = 0:dt:(num_poses-1)*dt;
 
 %% plotting position
 figure(1)
