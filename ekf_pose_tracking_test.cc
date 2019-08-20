@@ -29,10 +29,6 @@ using nlohmann::json;
 
 #define GET_VARIABLE_NAME(Variable) (#Variable)
 
-//VectorXd KF_NL_f(VectorXd statekk_, double dt_);
-//template <typename T> Eigen::Matrix<T, Eigen::Dynamic, 1> KF_NL_f(Eigen::Matrix<T, Eigen::Dynamic, 1> statekk_ , double dt_);
-//template <typename T> Eigen::Matrix<T, Eigen::Dynamic, 1> KF_NL_h(Eigen::Matrix<T, Eigen::Dynamic, 1> statek1k_, double dt_);
-
 /**
  * @function main
  * @brief main function
@@ -256,20 +252,11 @@ int main(int argc, char **argv)
                 kf.Update(conj_pose_meas_wrapper);
             }
 
-            /*
-            double      meas_att_score = Utilities::AttitudeScore(pose_true.quat, pose_sol.pose.quat);
-            double conj_meas_att_score = Utilities::AttitudeScore(pose_true.quat, conj_pose.quat);
-            if ( meas_att_score < conj_meas_att_score )
-            { kf.Update(pose_meas_wrapper); solved_poses.push_back( pose_sol.pose ); }
-            else
-            { kf.Update(conj_pose_meas_wrapper); solved_poses.push_back( conj_pose ); }
-            */
-
             kf.StoreAndClean();
 
             VectorXd pose_filt_wrapper = kf.last_state_estimate;
             pose_filtered.pos = pose_filt_wrapper.head(3);
-            pose_filtered.quat = AngleAxisd(pose_filt_wrapper(9), Vector3d::UnitX()) *
+            pose_filtered.quat = AngleAxisd(pose_filt_wrapper(9),  Vector3d::UnitX()) *
                                  AngleAxisd(pose_filt_wrapper(10), Vector3d::UnitY()) *
                                  AngleAxisd(pose_filt_wrapper(11), Vector3d::UnitZ());
             pose_filtered.quat.normalize();
@@ -340,44 +327,3 @@ int main(int argc, char **argv)
 
     return 0;
 }
-
-/**
- * @function KF_NL_f
- * @brief performs the non-linear pose (pos + quat) propagation for the ekf
- * @return VectorXd of propagated pose state
- */
-/*
-VectorXd KF_NL_f(VectorXd statekk_, double dt_)
-{
-    VectorXd statek1k_(statekk_.size());
-
-    // position
-    MatrixXd F_pos_ = MatrixXd::Identity(9, 9); // position dynamics_model
-    F_pos_(0,3) = dt_;
-    F_pos_(1,4) = dt_;
-    F_pos_(2,5) = dt_;
-    F_pos_(3,6) = dt_;
-    F_pos_(4,7) = dt_;
-    F_pos_(5,8) = dt_;
-    F_pos_(0,6) = 0.5*pow(dt_,2);
-    F_pos_(1,7) = 0.5*pow(dt_,2);
-    F_pos_(2,8) = 0.5*pow(dt_,2);
-    statek1k_.head(9) = F_pos_*statekk_.head(9);
-
-    // orientation
-    Quaterniond quatk_;
-    quatk_.w() = statekk_(9);
-    quatk_.vec() = statekk_.segment(10,3);
-    quatk_.normalize();
-    Quaterniond dquatk_ =   AngleAxisd(statekk_(13)*dt_, Vector3d::UnitX())*
-                            AngleAxisd(statekk_(14)*dt_, Vector3d::UnitY())*
-                            AngleAxisd(statekk_(15)*dt_, Vector3d::UnitZ());
-    Quaterniond quatk1k_= quatk_*dquatk_;
-    statek1k_(9) = quatk1k_.w();
-    statek1k_.segment(10,3) = quatk1k_.vec();
-    
-    MatrixXd F_att_ = F_pos_.block(0,0, 6,6);
-    statek1k_.tail(6) = F_att_*statekk_.tail(6);
-
-    return statek1k_;
-}*/
