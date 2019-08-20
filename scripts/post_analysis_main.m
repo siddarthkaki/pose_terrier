@@ -15,8 +15,6 @@ statesMat = f_read_covars(prefix + "kf_states.csv");
 covarsMat = f_read_covars(prefix + "kf_covars.csv");
 
 [num_poses,~] = size(filteredPosesMat);
-dt = 0.1;
-%tVec = 0:dt:(num_poses-1)*dt;
 
 %% plotting position
 figure(1)

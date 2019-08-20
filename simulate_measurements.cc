@@ -7,7 +7,7 @@
 #include <chrono>
 #include <iomanip>
 #include <fstream>
-#include <fcntl.h> 
+#include <fcntl.h>
 #include <math.h>
 #include <sys/stat.h>
 #include "Utilities.h"
@@ -21,6 +21,18 @@ using Eigen::Quaterniond;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
 using nlohmann::json;
+
+sig_atomic_t volatile finished = 0;
+
+/**
+ * @function exit_handler
+ * @brief exit_handler function
+ */
+void exit_handler(int signal)
+{
+    printf("Caught signal %d\n", signal);
+    finished = 1;
+}
 
 /**
  * @function main
@@ -72,7 +84,9 @@ int main(int argc, char **argv)
         }
     }
 
-    unsigned int num_poses_test = json_params["num_poses_test"];
+    const unsigned int num_poses_test = json_params["num_poses_test"];
+    const unsigned int vector_reserve_size = json_params["vector_reserve_size"];
+    const bool log_to_file = json_params["log_to_file"];
 
     // FIFO pipe
     int fd;
@@ -81,8 +95,18 @@ int main(int argc, char **argv)
 
     //-- Init ----------------------------------------------------------------/
 
-    // initial pose guess
-    Pose pose0;
+    // declare vectors for storage
+    std::vector<Pose> true_poses;
+    std::vector<double> timestamps;
+
+    // pre-allocate memory
+    true_poses.reserve(vector_reserve_size);
+    timestamps.reserve(vector_reserve_size);
+    
+    // clock object
+    auto init_t = std::chrono::high_resolution_clock::now();
+    auto curr_t = std::chrono::high_resolution_clock::now();
+    double curr_elapsed_t = 0.0;
 
     // true pose
     Pose pose_true;
@@ -95,14 +119,26 @@ int main(int argc, char **argv)
     struct stat buf;
     if (stat(myfifo, &buf) != 0)
     {
-        mkfifo(myfifo, 0666); 
+        mkfifo(myfifo, 0666);
     }
+
+    // set-up exit handler
+    struct sigaction sigIntHandler;
+    sigIntHandler.sa_handler = exit_handler;
+    sigemptyset(&sigIntHandler.sa_mask);
+    sigIntHandler.sa_flags = 0;
+    sigaction(SIGINT, &sigIntHandler, NULL);
+
+    // log path name prefixing and postfixing
+    //std::string init_time_str = std::to_string(std::time(nullptr));
+    std::string prefix = "../data/";
+    std::string postfix = ".csv";
 
     unsigned int meas_count = 1;
 
     //-- Loop ----------------------------------------------------------------/
 
-    while (1)//unsigned int pose_idx = 0; pose_idx < num_poses_test; pose_idx++)
+    while (1) //unsigned int pose_idx = 0; pose_idx < num_poses_test; pose_idx++)
     {
         //-- Simulate Measurements -------------------------------------------/
 
@@ -110,9 +146,9 @@ int main(int argc, char **argv)
         pose_true.pos(0) += 0.001;
         pose_true.pos(1) -= 0.001;
         pose_true.pos(2) += 0.01;
-        Quaterniond quat_step = AngleAxisd( 0.001, Vector3d::UnitX()) *
+        Quaterniond quat_step = AngleAxisd(0.001, Vector3d::UnitX()) *
                                 AngleAxisd(-0.001, Vector3d::UnitY()) *
-                                AngleAxisd( 0.001, Vector3d::UnitZ());
+                                AngleAxisd(0.001, Vector3d::UnitZ());
         pose_true.quat = pose_true.quat * quat_step;
 
         // express feature points in chaser frame at the specified pose
@@ -169,18 +205,45 @@ int main(int argc, char **argv)
         // free memory
         free(buffer);
 
+        // timing
+        curr_t = std::chrono::high_resolution_clock::now();
+        curr_elapsed_t = (double)std::chrono::duration_cast<std::chrono::nanoseconds>(curr_t - init_t).count();
+        curr_elapsed_t *= pow(10.0, -9.0);
+
+        // store data
+        true_poses.push_back(pose_true);
+        timestamps.push_back(curr_elapsed_t);
+
         // write to console
         std::cout << "Sent measurement: " << meas_count << std::endl;
         meas_count++;
+
+        //-- Handling for Program Exit ---------------------------------------/
+        if (finished)
+        {
+            if (log_to_file)
+            {
+                bool append_mode = false;
+
+                // write to csv files
+                Utilities::WritePosesToCSV(true_poses, prefix + "true_poses" + postfix, append_mode);
+                Utilities::WriteTimestampsToFile(timestamps, prefix + "meas_timestamps" + postfix, append_mode);
+
+                printf("Logged data to file.\n");
+            }
+
+            // close pipe
+            close(fd);
+
+            printf("Exiting....\n");
+            exit(1);
+        }
 
         // sleep for 1.0 sec
         usleep(1000000);
     }
 
     //-- Close-out -----------------------------------------------------------/
-    
-    // close FIFO
-    close(fd);
 
     return 0;
 }
