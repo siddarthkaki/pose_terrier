@@ -10,7 +10,7 @@
 ## Build instructions
 Clone the repository:
 ```
-git clone https://github.com/autognc/seeker_pose_estimator
+git clone [repository url]
 ```
 
 CMake is employed for building. From the cloned directory, execute:
