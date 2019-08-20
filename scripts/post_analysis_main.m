@@ -2,16 +2,17 @@
 clear; close all; clc;
 
 %% init
+prefix = "../data/" + "1566312462" + "_";
 
-tVec = f_read_timestamps("../data/timestamps.csv");
+tVec = f_read_timestamps(prefix + "timestamps.csv");
 
-solvedPosesMat = f_read_poses("../data/solved_poses.csv");
+solvedPosesMat = f_read_poses(prefix + "solved_poses.csv");
 
-filteredPosesMat = f_read_poses("../data/filtered_poses.csv");
+filteredPosesMat = f_read_poses(prefix + "filtered_poses.csv");
 
-statesMat = f_read_covars("../data/kf_states.csv");
+statesMat = f_read_covars(prefix + "kf_states.csv");
 
-covarsMat = f_read_covars("../data/kf_covars.csv");
+covarsMat = f_read_covars(prefix + "kf_covars.csv");
 
 [num_poses,~] = size(filteredPosesMat);
 dt = 0.1;

@@ -102,6 +102,11 @@ int main(int argc, char **argv)
 
     //-- Init sequence -------------------------------------------------------/
 
+    // log path name prefixing and postfixing
+    std::string init_time_str = std::to_string(std::time(nullptr));
+    std::string prefix = "../data/" + init_time_str + "_";
+    std::string postfix = ".csv";
+
     // declare vectors for storage
     std::vector<Pose> solved_poses, filtered_poses;
     std::vector<VectorXd> kf_states;
@@ -456,12 +461,11 @@ int main(int argc, char **argv)
         {
             // write to csv files
             bool append_mode = true;
-            // TODO TIMESTAMP FILENAME
-            Utilities::WritePosesToCSV(solved_poses, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(solved_poses))), append_mode);
-            Utilities::WritePosesToCSV(filtered_poses, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(filtered_poses))), append_mode);
-            Utilities::WriteKFStatesToCSV(kf_states, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(kf_states))), append_mode);
-            Utilities::WriteKFCovarsToCSV(kf_covars, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(kf_covars))), append_mode);
-            Utilities::WriteTimestampsToFile(timestamps, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(timestamps))), append_mode);
+            Utilities::WritePosesToCSV(solved_poses, prefix + "solved_poses" + postfix, append_mode);
+            Utilities::WritePosesToCSV(filtered_poses, prefix + "filtered_poses" + postfix, append_mode);
+            Utilities::WriteKFStatesToCSV(kf_states, prefix + "kf_states" + postfix, append_mode);
+            Utilities::WriteKFCovarsToCSV(kf_covars, prefix + "kf_covars" + postfix, append_mode);
+            Utilities::WriteTimestampsToFile(timestamps, prefix + "timestamps" + postfix, append_mode);
 
             // clear vectors
             solved_poses.clear();
@@ -488,12 +492,11 @@ int main(int argc, char **argv)
                 }
 
                 // write to csv files
-                // TODO TIMESTAMP FILENAME
-                Utilities::WritePosesToCSV(solved_poses, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(solved_poses))), append_mode);
-                Utilities::WritePosesToCSV(filtered_poses, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(filtered_poses))), append_mode);
-                Utilities::WriteKFStatesToCSV(kf_states, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(kf_states))), append_mode);
-                Utilities::WriteKFCovarsToCSV(kf_covars, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(kf_covars))), append_mode);
-                Utilities::WriteTimestampsToFile(timestamps, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(timestamps))), append_mode);
+                Utilities::WritePosesToCSV(solved_poses, prefix + "solved_poses" + postfix, append_mode);
+                Utilities::WritePosesToCSV(filtered_poses, prefix + "filtered_poses" + postfix, append_mode);
+                Utilities::WriteKFStatesToCSV(kf_states, prefix + "kf_states" + postfix, append_mode);
+                Utilities::WriteKFCovarsToCSV(kf_covars, prefix + "kf_covars" + postfix, append_mode);
+                Utilities::WriteTimestampsToFile(timestamps, prefix + "timestamps" + postfix, append_mode);
                 printf("Logged data to file.\n");
             }
 
