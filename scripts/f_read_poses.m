@@ -2,7 +2,6 @@ function poseMat = f_read_poses(filename)
 %% Import data from text file.
 %
 %% Initialize variables.
-%filename = '/home/siddarthkaki/workspace/research/seeker/seeker_pose_estimator/data/true_poses.csv';
 delimiter = ',';
 
 %% Format for each line of text:
