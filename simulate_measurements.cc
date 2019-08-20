@@ -9,6 +9,7 @@
 #include <fstream>
 #include <fcntl.h> 
 #include <math.h>
+#include <sys/stat.h>
 #include "Utilities.h"
 #include "measurement.pb.h"
 
@@ -20,8 +21,6 @@ using Eigen::Quaterniond;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
 using nlohmann::json;
-
-#define GET_VARIABLE_NAME(Variable) (#Variable)
 
 /**
  * @function main
@@ -77,13 +76,10 @@ int main(int argc, char **argv)
 
     // FIFO pipe
     int fd;
-    std::string pipe_path_input  = json_params["pipe_path_input"];
-    std::string pipe_path_output = json_params["pipe_path_output"];
-    const char *myfifo = pipe_path_input.c_str();
+    std::string pipe_path_meas = json_params["pipe_path_input"];
+    const char *myfifo = pipe_path_meas.c_str();
 
-    //------------------------------------------------------------------------/
-
-    //-- Loop ----------------------------------------------------------------/
+    //-- Init ----------------------------------------------------------------/
 
     // initial pose guess
     Pose pose0;
@@ -95,9 +91,18 @@ int main(int argc, char **argv)
     pose_true.quat.w() = 1.0;
     pose_true.quat.vec() = Vector3d::Zero();
 
+    // if pipe does not exist, create it
+    struct stat buf;
+    if (stat(myfifo, &buf) != 0)
+    {
+        mkfifo(myfifo, 0666); 
+    }
+
     unsigned int meas_count = 1;
 
-    for (;;)//unsigned int pose_idx = 0; pose_idx < num_poses_test; pose_idx++)
+    //-- Loop ----------------------------------------------------------------/
+
+    while (1)//unsigned int pose_idx = 0; pose_idx < num_poses_test; pose_idx++)
     {
         //-- Simulate Measurements -------------------------------------------/
 
@@ -105,9 +110,9 @@ int main(int argc, char **argv)
         pose_true.pos(0) += 0.001;
         pose_true.pos(1) -= 0.001;
         pose_true.pos(2) += 0.01;
-        Quaterniond quat_step = AngleAxisd(0.001, Vector3d::UnitX()) *
+        Quaterniond quat_step = AngleAxisd( 0.001, Vector3d::UnitX()) *
                                 AngleAxisd(-0.001, Vector3d::UnitY()) *
-                                AngleAxisd(0.001, Vector3d::UnitZ());
+                                AngleAxisd( 0.001, Vector3d::UnitZ());
         pose_true.quat = pose_true.quat * quat_step;
 
         // express feature points in chaser frame at the specified pose
@@ -161,6 +166,9 @@ int main(int argc, char **argv)
         // close FIFO
         close(fd);
 
+        // free memory
+        free(buffer);
+
         // write to console
         std::cout << "Sent measurement: " << meas_count << std::endl;
         meas_count++;
@@ -168,6 +176,11 @@ int main(int argc, char **argv)
         // sleep for 1.0 sec
         usleep(1000000);
     }
+
+    //-- Close-out -----------------------------------------------------------/
+    
+    // close FIFO
+    close(fd);
 
     return 0;
 }
