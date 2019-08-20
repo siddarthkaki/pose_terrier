@@ -22,3 +22,7 @@ add_executable(simulate_measurements simulate_measurements.cc Utilities.cc pose.
 target_include_directories(simulate_measurements PUBLIC ${PROTOBUF_INCLUDE_DIR})
 target_link_libraries(simulate_measurements glog ${PROTOBUF_LIBRARY})
 
+add_executable(pose_reader_example pose_reader_example.cc pose.pb.cc)
+target_include_directories(pose_reader_example PUBLIC ${PROTOBUF_INCLUDE_DIR})
+target_link_libraries(pose_reader_example glog ${PROTOBUF_LIBRARY})
+
