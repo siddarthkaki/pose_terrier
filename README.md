@@ -38,7 +38,6 @@ The `pose_estimator_main` executable has two forms of outputs: 1) publishing the
 
 As an example, poses published by `pose_estimator_main` over the output named pipe can be read and outputted to console by executing the following from the `build` directory:
 ```
-./pose_reader_example 
-
+./pose_reader_example
 ```
 To analyse data logged to csv files on disk, some MATLAB scripts are provided. From the `scripts` directory, run `post_analysis_main.m` when true pose data is unavailable, or run `post_analysis_main_with_truth.m` when true pose data is available and is logged to csv file.
