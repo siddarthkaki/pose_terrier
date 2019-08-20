@@ -9,6 +9,7 @@
 #include <fstream>
 #include <math.h>
 #include <fcntl.h>
+#include <sys/stat.h>
 
 #include "ceres/ceres.h"
 #include "glog/logging.h"
@@ -134,8 +135,19 @@ int main(int argc, char **argv)
     int fd_in, fd_out, rd_in = 0;
     const char *fifo_path_input = pipe_path_input.c_str();
     const char *fifo_path_output = pipe_path_output.c_str();
+
+    // if pipes do not exist, create them
+    struct stat buf;
+    if (stat(fifo_path_input, &buf) != 0)
+    {
+        mkfifo(fifo_path_input, 0666); 
+    }
+    if (stat(fifo_path_output, &buf) != 0)
+    {
+        mkfifo(fifo_path_output, 0666); 
+    }
     
-    // Open FIFO for read only, with blocking to receive first measurement
+    // open FIFO for read only, with blocking to receive first measurement
     fd_in = open(fifo_path_input, O_RDONLY);
 
     // loop for waiting for first measurement to initialise filter
