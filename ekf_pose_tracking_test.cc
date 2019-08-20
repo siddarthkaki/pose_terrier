@@ -235,12 +235,14 @@ int main(int argc, char **argv)
             // wrap NLS pose solution as KF measurement
             VectorXd pose_meas_wrapper(7);
             pose_meas_wrapper.head(3) = pose_sol.pose.pos;
-            pose_meas_wrapper.tail(4) = pose_sol.pose.quat.normalized();
+            pose_meas_wrapper(3) = pose_sol.pose.quat.normalized().w();
+            pose_meas_wrapper.tail(3) = pose_sol.pose.quat.normalized().vec();
 
             // wrap NLS conjugate pose solution as KF measurement
             VectorXd conj_pose_meas_wrapper(7);
             conj_pose_meas_wrapper.head(3) = conj_pose.pos;
-            conj_pose_meas_wrapper.tail(4) = conj_pose.quat.normalized()
+            conj_pose_meas_wrapper(3) = conj_pose.quat.normalized().w();
+            conj_pose_meas_wrapper.tail(3) = conj_pose.quat.normalized().vec();
 
             // choose as measurement whichever pose produces the smallest measurement residual norm
             double pose_meas_norm = (pose_meas_wrapper - kf.H_ * kf.statek1k_).norm();

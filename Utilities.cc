@@ -370,4 +370,3 @@ void Utilities::WriteTimestampsToFile(const std::vector<double>& timestamps, con
         std::cout << "Exception was thrown: " << ex.what() << std::endl;
     }
 }
-
