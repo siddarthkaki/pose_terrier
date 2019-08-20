@@ -144,6 +144,8 @@ namespace KF {
         covarkk_   = MatrixXd::Zero(num_states_, num_states_);
         covark1k_  = MatrixXd::Zero(num_states_, num_states_);
         covark1k1_ = MatrixXd::Zero(num_states_, num_states_);
+
+        processed_measurement_ = false;
     }
 
     void KalmanFilter::SetInitialStateAndCovar(const VectorXd &state0, MatrixXd &covar0)
@@ -151,8 +153,10 @@ namespace KF {
         statekk_ = state0;
         covarkk_ = covar0;
 
-        states.push_back(statekk_);
-        covars.push_back(covarkk_);
+        last_state_estimate = statekk_;
+        last_covar_estimate = covarkk_;
+        //states.push_back(statekk_);
+        //covars.push_back(covarkk_);
     }
 
     // Linear prediction step
@@ -186,6 +190,8 @@ namespace KF {
 
         // Update for linear Gaussian systems
         covark1k1_ = covark1k_ - K*H_*covark1k_;
+
+        processed_measurement_ = true;
     }
 
     // Non-linear update step (takes in pointer to function h that performs nonlinear measurement update)
@@ -220,16 +226,20 @@ namespace KF {
     {
         if(processed_measurement_)
         {
-            states.push_back(statek1k1_);
-            covars.push_back(covark1k1_);
+            last_state_estimate = statek1k1_;
+            last_covar_estimate = covark1k1_;
+            //states.push_back(statek1k1_);
+            //covars.push_back(covark1k1_);
 
             statekk_ = statek1k1_;
             covarkk_ = covark1k1_;
         }
         else
         {
-            states.push_back(statek1k_);
-            covars.push_back(covark1k_);
+            last_state_estimate = statek1k_;
+            last_covar_estimate = covark1k_;
+            //states.push_back(statek1k_);
+            //covars.push_back(covark1k_);
 
             statekk_ = statek1k_;
             covarkk_ = covark1k_;

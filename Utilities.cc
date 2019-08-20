@@ -269,11 +269,11 @@ std::string Utilities::WrapVarToPath(std::string varname)
  * @brief TODO
  * @return TODO
  */
-void Utilities::WritePosesToCSV(const std::vector<Pose>& vec, const std::string& filename)
+void Utilities::WritePosesToCSV(const std::vector<Pose>& vec, const std::string& filename, const bool& append_mode)
 {
     try
     {
-        csvfile csv(filename); // throws exceptions!
+        csvfile csv(filename, append_mode); // throws exceptions!
         // header
         // csv << "X" << "VALUE" << endrow;
         // data
@@ -297,11 +297,11 @@ void Utilities::WritePosesToCSV(const std::vector<Pose>& vec, const std::string&
  * @brief TODO
  * @return TODO
  */
-void Utilities::WriteKFStatesToCSV(const std::vector<VectorXd>& states, const std::string& filename)
+void Utilities::WriteKFStatesToCSV(const std::vector<VectorXd>& states, const std::string& filename, const bool& append_mode)
 {
     try
     {
-        csvfile csv(filename); // throws exceptions!
+        csvfile csv(filename, append_mode); // throws exceptions!
         // header
         // csv << "X" << "VALUE" << endrow;
         // data
@@ -323,11 +323,11 @@ void Utilities::WriteKFStatesToCSV(const std::vector<VectorXd>& states, const st
  * @brief TODO
  * @return TODO
  */
-void Utilities::WriteKFCovarsToCSV(const std::vector<MatrixXd>& covars, const std::string& filename)
+void Utilities::WriteKFCovarsToCSV(const std::vector<MatrixXd>& covars, const std::string& filename, const bool& append_mode)
 {
     try
     {
-        csvfile csv(filename); // throws exceptions!
+        csvfile csv(filename, append_mode); // throws exceptions!
         // header
         // csv << "X" << "VALUE" << endrow;
         // data
@@ -346,19 +346,28 @@ void Utilities::WriteKFCovarsToCSV(const std::vector<MatrixXd>& covars, const st
     }
 }
 
-MatrixXd Utilities::ConvertToEigenMatrix(double **data)
+/**
+ * @function WriteTimestampsToFile
+ * @brief TODO
+ * @return TODO
+ */
+void Utilities::WriteTimestampsToFile(const std::vector<double>& timestamps, const std::string& filename, const bool& append_mode)
 {
-    unsigned int rows = LEN(data);
-    unsigned int cols = LEN(data[0]);
-    Eigen::MatrixXd eig_mat(rows, cols);
-
-    for (unsigned int idx = 0; idx < rows; idx++)
+    try
     {
-        for (unsigned int jdx = 0; jdx < cols; jdx++)
+        csvfile csv(filename, append_mode); // throws exceptions!
+        // header
+        // csv << "X" << "VALUE" << endrow;
+        // data
+        for (double ts_ : timestamps)
         {
-            eig_mat(idx,jdx) = data[idx][jdx];
+            csv << ts_;
+            csv << endrow;
         }
     }
-
-    return eig_mat;
+    catch (const std::exception &ex)
+    {
+        std::cout << "Exception was thrown: " << ex.what() << std::endl;
+    }
 }
+

@@ -99,7 +99,7 @@ class MeasResidCostFunctorQuat
 
             Eigen::Matrix<T,3,1> rFeaVeciRotated = quat*rFeaVeciJet;
             
-            // position vector of feature point 1 wrt chaser in chaser frame
+            // position vector of feature point idx wrt chaser in chaser frame
             Eigen::Matrix<T,3,1> rFeaVeciRotatedTranslated = posVec - rCamVec_ + rFeaVeciRotated;
             
             residuals[2*idx+0] = yVec_(2*idx+0) - static_cast<T>(atan2( rFeaVeciRotatedTranslated(0), rFeaVeciRotatedTranslated(2) ));

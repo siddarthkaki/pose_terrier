@@ -14,19 +14,24 @@ class csvfile
 {
     std::ofstream fs_;
     bool is_first_;
+    bool append_mode_;
     const std::string separator_;
     const std::string escape_seq_;
     const std::string special_chars_;
 public:
-    csvfile(const std::string filename, const std::string separator = ", ")
+    csvfile(const std::string filename, const bool append_mode, const std::string separator = ", ")
         : fs_()
         , is_first_(true)
+        , append_mode_(append_mode)
         , separator_(separator)
         , escape_seq_("\"")
         , special_chars_("\"")
     {
         fs_.exceptions(std::ios::failbit | std::ios::badbit);
-        fs_.open(filename);
+        if(append_mode_)
+        { fs_.open(filename, std::ios::app); }
+        else
+        { fs_.open(filename); }
     }
 
     ~csvfile()

@@ -37,13 +37,15 @@ class KalmanFilter
         VectorXd statekk_;
         VectorXd statek1k_;
         VectorXd statek1k1_;
+        VectorXd last_state_estimate;
 
         MatrixXd covarkk_;
         MatrixXd covark1k_;
         MatrixXd covark1k1_;
+        MatrixXd last_covar_estimate;
 
-        std::vector<VectorXd> states;
-        std::vector<MatrixXd> covars;
+        //std::vector<VectorXd> states;
+        //std::vector<MatrixXd> covars;
 
         KalmanFilter();
         KalmanFilter(const unsigned int &num_states, const unsigned int &num_measurements, const unsigned int &num_inputs, const double &dt);

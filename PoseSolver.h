@@ -11,6 +11,7 @@
 #include <math.h>
 
 #include "ceres/ceres.h"
+#include "glog/logging.h"
 #include "cost_functor.h"
 #include "Utilities.h"
 

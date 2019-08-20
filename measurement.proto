@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package ProtoMeas;
+
+message Position
+{
+    double x = 1;
+    double y = 2;
+    double z = 3;
+}
+
+message Bearing
+{
+    double az = 1;
+    double el = 2;
+}
+
+message Measurements
+{
+    uint32 num_feature_points = 1;
+    repeated Position feature_points = 2;
+    repeated Bearing bearings = 3;
+}
