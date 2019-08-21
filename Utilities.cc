@@ -209,8 +209,8 @@ double Utilities::PositionScore(const Vector3d& pos, const Vector3d& posHat)
 {
     Vector3d posErrVec = pos - posHat;
 
-    double pos_score = posErrVec.squaredNorm()/pos.squaredNorm();
-    //double pos_score = posErrVec.norm();
+    //double pos_score = posErrVec.squaredNorm()/pos.squaredNorm();
+    double pos_score = posErrVec.norm();
     return pos_score;
 }
 
