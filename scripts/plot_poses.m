@@ -27,8 +27,8 @@ for idx = 1:num_poses,
     posErr         = truePosesMat(idx,1:3) - solvedPosesMat(idx,1:3);
     posErrFiltered = truePosesMat(idx,1:3) - filteredPosesMat(idx,1:3);
 
-    posScoreVec(idx)         = norm(posErr)/norm(truePosesMat(idx,1:3));
-    posScoreVecFiltered(idx) = norm(posErrFiltered)/norm(truePosesMat(idx,1:3));
+    posScoreVec(idx)         = norm(posErr);%/norm(truePosesMat(idx,1:3));
+    posScoreVecFiltered(idx) = norm(posErrFiltered);%/norm(truePosesMat(idx,1:3));
 end
 
 %% compute attitude score
