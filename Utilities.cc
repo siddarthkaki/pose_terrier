@@ -155,11 +155,20 @@ VectorXd Utilities::AddGaussianNoiseToVector(const VectorXd& vec, const double& 
 {
     const unsigned int numMeas = vec.size();
 
-    MatrixXd covarMat = pow(std,2)*MatrixXd::Identity(numMeas, numMeas);
+    //MatrixXd covarMat = pow(std,2)*MatrixXd::Identity(numMeas, numMeas);
 
-    Eigen::EigenMultivariateNormal<double> normX_solver(vec, covarMat);
-    
-    VectorXd vecNoise = normX_solver.samples(1);
+    //Eigen::EigenMultivariateNormal<double> normX_solver(vec, covarMat);
+
+    unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+    std::default_random_engine generator (seed);
+
+    std::normal_distribution<double> distribution(0.0, std);
+
+    VectorXd vecNoise = vec;
+    for (unsigned int idx = 0; idx < numMeas; idx++)
+    {
+        vecNoise(idx) += distribution(generator);
+    }
 
     return vecNoise;
 }

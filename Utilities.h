@@ -8,6 +8,7 @@
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
+#include <chrono>
 #include <random>
 #include <algorithm>
 #include <math.h>
