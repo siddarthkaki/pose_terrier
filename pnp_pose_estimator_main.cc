@@ -14,12 +14,9 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/core/eigen.hpp>
 
-#include "ceres/ceres.h"
 #include "glog/logging.h"
 
-#include "cost_functor.h"
 #include "Utilities.h"
-#include "PoseSolver.h"
 #include "KalmanFilter.h"
 #include "pose.pb.h"
 #include "measurement.pb.h"

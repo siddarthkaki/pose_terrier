@@ -13,12 +13,7 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/core/eigen.hpp>
 
-#include "ceres/ceres.h"
-//#include "glog/logging.h"
-
-#include "cost_functor.h"
 #include "Utilities.h"
-#include "PoseSolver.h"
 
 #include "third_party/json.hpp"
 
@@ -34,10 +29,7 @@ using nlohmann::json;
  */
 int main(int argc, char **argv)
 {
-
     std::srand((unsigned int) time(NULL));
-
-    //google::InitGoogleLogging(argv[0]);
 
     //-- Read-in problem geometry and params ---------------------------------/
 
@@ -68,8 +60,8 @@ int main(int argc, char **argv)
 
     /*
     // TEMPORARY
-    unsigned int num_features = 11;
-    MatrixXd rFeaMat = 2.5 * MatrixXd::Random(num_features, 3);
+    int num_features = 11;
+    rFeaMat = 2.5 * MatrixXd::Random(num_features, 3);
     std::cout << rFeaMat << std::endl << std::endl;
     */
 
@@ -126,6 +118,7 @@ int main(int argc, char **argv)
 
             image_points.push_back(cv::Point2d(imgPti(0), imgPti(1)));
         }
+        // TODO: ADD NOISE!
 
         //--------------------------------------------------------------------/
 
