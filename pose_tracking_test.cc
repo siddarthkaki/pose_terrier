@@ -35,6 +35,8 @@ using nlohmann::json;
 int main(int argc, char **argv)
 {
 
+    std::srand((unsigned int) time(NULL));
+
     //google::InitGoogleLogging(argv[0]);
 
     //-- Read-in problem geometry and params ---------------------------------/
@@ -77,6 +79,9 @@ int main(int argc, char **argv)
             rFeaMat(idx, jdx) = json_params["rFeaMat"][idx]["fea" + std::to_string(idx + 1)][jdx];
         }
     }
+
+    //num_features = 11;
+    //rFeaMat = 2.5 * MatrixXd::Random(num_features, 3);
 
     unsigned int num_poses_test = json_params["num_poses_test"];
 
