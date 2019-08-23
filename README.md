@@ -1,4 +1,4 @@
-# seeker_pose_estimator
+# pose_terrier
 
 ## Dependencies
 * C++11 or later
