@@ -158,18 +158,23 @@ int main(int argc, char **argv)
         // express feature points in chaser frame at the specified pose
         MatrixXd rMat = Utilities::FeaPointsTargetToChaser(pose_true, rCamVec, rFeaMat);
 
+        // generate simulated measurements
+        VectorXd yVec = Utilities::SimulateMeasurements(rMat, focal_length);
+
+        // add Gaussian noise to simulated measurements
+        VectorXd yVecNoise = Utilities::AddGaussianNoiseToVector(yVec, meas_std);
+
         // 2D image points
         std::vector<cv::Point2d> image_points;
 
         // project feature points to image plane
         for (unsigned int idx = 0; idx < num_features; idx++)
         {
-            Vector3d rVeci = rMat.row(idx);
-            Vector2d imgPti = Utilities::CameraProjection(rVeci, focal_length);
+            double az = yVecNoise(idx * 2 + 0);
+            double el = yVecNoise(idx * 2 + 1);
 
-            image_points.push_back(cv::Point2d(imgPti(0), imgPti(1)));
+            image_points.push_back(cv::Point2d(tan(az)*focal_length, tan(el)*focal_length));
         }
-        // TODO: ADD NOISE!
 
         //--------------------------------------------------------------------/
 
