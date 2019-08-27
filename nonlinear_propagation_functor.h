@@ -31,7 +31,8 @@ class NonLinearPropagationFunctor
 
         Eigen::Matrix<T, Eigen::Dynamic, 1> statek1k = this->KF_NL_f(statekk, dt_);
 
-        residuals = statek1k.data();
+        for (unsigned int idx = 0; idx < 19; idx++)
+        { residuals[idx] = statek1k(idx); }
 
         return true;
     }

@@ -32,7 +32,7 @@ PoseSolution PoseSolver::SolvePose(const Pose& pose0, const VectorXd& yVec, cons
     ceres::Problem problem;
 
     // Specify parameterisation for quaternion block.
-    ceres::LocalParameterization *quaternion_parameterization = new ceres::QuaternionParameterization;
+    ceres::LocalParameterization* quaternion_parameterization = new ceres::QuaternionParameterization;
 
     // Specify loss function.
     ceres::LossFunction* loss_function = NULL; //new ceres::HuberLoss(0.1);

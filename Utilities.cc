@@ -210,6 +210,38 @@ Pose Utilities::ConjugatePose(const Pose& state)
 }
 
 /**
+ * @function ConvertToEigenMatrix
+ * @brief TODO
+ * @return TODO
+ */
+MatrixXd Utilities::ConvertToEigenMatrix(double **data, unsigned int rows, unsigned int cols)
+{
+    //unsigned int rows = LEN(&data);
+    //unsigned int cols = LEN(&data[0]);
+    Eigen::MatrixXd eig_mat(rows, cols);
+
+    // Notes:
+    // http://ceres-solver.org/nnls_modeling.html#_CPPv2N5ceres12CostFunction8EvaluateEPPCdPdPPd
+    // jacobians[i][r * parameter_block_sizes_[i] + c] =
+    // partial residual[r]
+    // -------------------
+    // partial parameters[i][c]
+    //
+    // There is only one parameter block: the state vector. Thus, the first dimension
+    // of the jacobian is always 0.
+
+    for (unsigned int residual_idx = 0; residual_idx < rows; residual_idx++)
+    {
+        for (unsigned int parameter_idx = 0; parameter_idx < cols; parameter_idx++)
+        {
+            eig_mat(residual_idx, parameter_idx) = data[0][residual_idx * cols + parameter_idx];
+        }
+    }
+
+    return eig_mat;
+}
+
+/**
  * @function PositionScore
  * @brief Computes the position score for a position state estimate
  * @return Position score value for provided state estimate

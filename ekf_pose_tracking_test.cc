@@ -19,6 +19,7 @@
 #include "KalmanFilter.h"
 
 #include "third_party/json.hpp"
+#include "third_party/SmartBuffer.h"
 
 using Eigen::AngleAxisd;
 using Eigen::MatrixXd;
@@ -27,7 +28,7 @@ using Eigen::Vector3d;
 using Eigen::VectorXd;
 using nlohmann::json;
 
-#define GET_VARIABLE_NAME(Variable) (#Variable)
+#define GET_VAR_NAME(Variable) (#Variable)
 
 /**
  * @function main
@@ -117,8 +118,6 @@ int main(int argc, char **argv)
 
     // set-up for Jacobian computation with ceres
     constexpr unsigned int num_states = 19;
-    // prediction step
-    ceres::CostFunction *nonlinear_propagation_auto_diff_wrapper;
 
     bool first_run = true;
 
@@ -127,9 +126,9 @@ int main(int argc, char **argv)
         //-- Simulate Measurements -------------------------------------------/
 
         // generate true pose values for ith run
-        pose_true.pos(0) += 0.001;
-        pose_true.pos(1) -= 0.001;
-        pose_true.pos(2) += 0.01;
+        pose_true.pos(0) += 0.01;
+        pose_true.pos(1) -= 0.01;
+        pose_true.pos(2) += 0.05;
         Quaterniond quat_step = AngleAxisd(0.001, Vector3d::UnitX()) *
                                 AngleAxisd(-0.001, Vector3d::UnitY()) *
                                 AngleAxisd(0.001, Vector3d::UnitZ());
@@ -206,24 +205,46 @@ int main(int argc, char **argv)
             pose_filtered.pos = pose_sol.pose.pos;
             pose_filtered.quat = pose_sol.pose.quat;
 
-            // set-up for Jacobian computation with ceres
-            nonlinear_propagation_auto_diff_wrapper = new ceres::AutoDiffCostFunction<NonLinearPropagationFunctor, num_states, num_states>(
-                new NonLinearPropagationFunctor(kf.dt_));
         }
         else // else, perform KF tracking
         {
+            // prediction step
+            
+            // set-up for Jacobian computation with ceres
+            ceres::CostFunction *nonlinear_propagation_auto_diff_wrapper = new ceres::AutoDiffCostFunction<NonLinearPropagationFunctor, num_states, num_states>(
+                new NonLinearPropagationFunctor(kf.dt_));
+
+            /*
+            auto nonlinear_propagation_auto_diff_wrapper =
+            new ceres::DynamicAutoDiffCostFunction<NonLinearPropagationFunctor>(
+                new NonLinearPropagationFunctor(kf.dt_));
+            nonlinear_propagation_auto_diff_wrapper->AddParameterBlock(num_states);
+            nonlinear_propagation_auto_diff_wrapper->SetNumResiduals(num_states);
+            */
+
             // set-up for computing and storing F Jacobian matrix for current time-step
-            double statekkArr[num_states];
-            double *parameters[1] = {statekkArr};
-            double statek1kArr[num_states];
-            double **jacobians;
-            jacobians = new double *[num_states];
-            for (unsigned int idx = 0; idx < num_states; idx++)
+            
+            // prepare statekk_ accessor; need pointer to pointer
+            const double *parameters = kf.statekk_.data();
+
+            // structures for autodiff evaluation
+            SmartBuffer1D residuals(num_states);
+            SmartBuffer2D jacobian(1, num_states*num_states);
+
+            // Evaluate jacobian
+            bool success = nonlinear_propagation_auto_diff_wrapper->Evaluate(
+                &parameters,
+                residuals.Get(),
+                jacobian.Get());
+
+            if (success == true)
             {
-                jacobians[idx] = new double[num_states];
+                kf.F_ = Utilities::ConvertToEigenMatrix(jacobian.Get(), num_states, num_states);
             }
-            //nonlinear_propagation_auto_diff_wrapper->Evaluate(parameters, statek1kArr, jacobians);
-            //kf.F_ = Utilities::ConvertToEigenMatrix(jacobians);
+            else
+            {
+                std::cout << "Jacobian computation failed!" << std::endl;
+            }
 
             // prediction step
             kf.Predict(VectorXd::Zero(kf.num_inputs_), NonLinearPropagationFunctor::KF_NL_f);
@@ -260,6 +281,19 @@ int main(int argc, char **argv)
                                  AngleAxisd(pose_filt_wrapper(10), Vector3d::UnitY()) *
                                  AngleAxisd(pose_filt_wrapper(11), Vector3d::UnitZ());
             pose_filtered.quat.normalize();
+
+            // delete pointers after use
+            /*
+            for (unsigned int idx = 0; idx < num_states; idx++)
+            {
+                delete jacobians[idx];
+            }
+            delete parameters[0];
+            delete jacobians;
+            delete parameters;
+            delete nonlinear_propagation_auto_diff_wrapper;
+            */
+           delete nonlinear_propagation_auto_diff_wrapper;
         }
 
         // timing
@@ -296,11 +330,11 @@ int main(int argc, char **argv)
     //-- Performance Metric Stats & Output -----------------------------------/
 
     // write to csv file
-    Utilities::WritePosesToCSV(true_poses, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(true_poses))), false);
-    Utilities::WritePosesToCSV(solved_poses, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(solved_poses))), false);
-    Utilities::WritePosesToCSV(filtered_poses, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(filtered_poses))), false);
-    Utilities::WriteKFStatesToCSV(kf_states, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(kf_states))), false);
-    Utilities::WriteKFCovarsToCSV(kf_covars, Utilities::WrapVarToPath(std::string(GET_VARIABLE_NAME(kf_covars))), false);
+    Utilities::WritePosesToCSV(true_poses, Utilities::WrapVarToPath(std::string(GET_VAR_NAME(true_poses))), false);
+    Utilities::WritePosesToCSV(solved_poses, Utilities::WrapVarToPath(std::string(GET_VAR_NAME(solved_poses))), false);
+    Utilities::WritePosesToCSV(filtered_poses, Utilities::WrapVarToPath(std::string(GET_VAR_NAME(filtered_poses))), false);
+    Utilities::WriteKFStatesToCSV(kf_states, Utilities::WrapVarToPath(std::string(GET_VAR_NAME(kf_states))), false);
+    Utilities::WriteKFCovarsToCSV(kf_covars, Utilities::WrapVarToPath(std::string(GET_VAR_NAME(kf_covars))), false);
 
     double pos_score_mean = Utilities::StdVectorMean(pos_scores);
     double att_score_mean = Utilities::StdVectorMean(att_scores);
@@ -313,8 +347,8 @@ int main(int argc, char **argv)
     std::cout << "num_runs :\t" << num_poses_test << std::endl
               << std::endl;
 
-    std::cout << "pos_score_mean :\t" << pos_score_mean << /*" [m]" <<*/ std::endl;
-    std::cout << "pos_score_std  :\t" << pos_score_std << /*" [m]" <<*/ std::endl
+    std::cout << "pos_score_mean :\t" << pos_score_mean << " [m]" << std::endl;
+    std::cout << "pos_score_std  :\t" << pos_score_std << " [m]" << std::endl
               << std::endl;
 
     std::cout << "att_score_mean :\t" << att_score_mean * Utilities::RAD2DEG << " [deg]" << std::endl;

@@ -53,6 +53,7 @@ class Utilities
         static VectorXd SimulateMeasurements(const MatrixXd& rMat, const double& focal_length);
         static VectorXd AddGaussianNoiseToVector(const VectorXd& vec, const double& std);
         static Pose ConjugatePose(const Pose& state);
+        static MatrixXd ConvertToEigenMatrix(double **data, unsigned int rows, unsigned int cols);
         static double PositionScore(const Vector3d& pos, const Vector3d& posHat);
         static double AttitudeScore(const Quaterniond& quat, const Quaterniond& quatHat);
         static double StdVectorMean(const std::vector<double>& vec);
