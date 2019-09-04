@@ -3,8 +3,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-#ifndef NONLINEAR_PROPAGATION_FUNCTOR_H_
-#define NONLINEAR_PROPAGATION_FUNCTOR_H_
+#ifndef EKF_F_FUNCTOR_H_
+#define EKF_F_FUNCTOR_H_
 
 #include <Eigen/Core>
 #include <math.h>
@@ -16,9 +16,9 @@ using Eigen::VectorXd;
 using Eigen::Vector3d;
 
 // A templated cost functor for automatic differentiation
-class NonLinearPropagationFunctor
+class EKF_f_Functor
 {
-    public: NonLinearPropagationFunctor(double dt): dt_(dt) {}
+    public: EKF_f_Functor(double dt): dt_(dt) {}
 
     template <typename T>
     bool operator()(const T* const stateArr,
@@ -85,4 +85,4 @@ class NonLinearPropagationFunctor
         double dt_;
 };
 
-#endif // NONLINEAR_PROPAGATION_FUNCTOR_H_
+#endif // EKF_F_FUNCTOR_H_

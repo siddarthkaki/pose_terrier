@@ -13,7 +13,7 @@
 //#include "glog/logging.h"
 
 #include "cost_functor.h"
-#include "nonlinear_propagation_functor.h"
+#include "ekf_f_functor.h"
 #include "Utilities.h"
 #include "PoseSolver.h"
 #include "KalmanFilter.h"
@@ -211,13 +211,13 @@ int main(int argc, char **argv)
             // prediction step
             
             // set-up for Jacobian computation with ceres
-            ceres::CostFunction *nonlinear_propagation_auto_diff_wrapper = new ceres::AutoDiffCostFunction<NonLinearPropagationFunctor, num_states, num_states>(
-                new NonLinearPropagationFunctor(kf.dt_));
+            ceres::CostFunction *nonlinear_propagation_auto_diff_wrapper = new ceres::AutoDiffCostFunction<EKF_f_Functor, num_states, num_states>(
+                new EKF_f_Functor(kf.dt_));
 
             /*
             auto nonlinear_propagation_auto_diff_wrapper =
-            new ceres::DynamicAutoDiffCostFunction<NonLinearPropagationFunctor>(
-                new NonLinearPropagationFunctor(kf.dt_));
+            new ceres::DynamicAutoDiffCostFunction<EKF_f_Functor>(
+                new EKF_f_Functor(kf.dt_));
             nonlinear_propagation_auto_diff_wrapper->AddParameterBlock(num_states);
             nonlinear_propagation_auto_diff_wrapper->SetNumResiduals(num_states);
             */
@@ -247,7 +247,7 @@ int main(int argc, char **argv)
             }
 
             // prediction step
-            kf.Predict(VectorXd::Zero(kf.num_inputs_), NonLinearPropagationFunctor::KF_NL_f);
+            kf.Predict(VectorXd::Zero(kf.num_inputs_), EKF_f_Functor::KF_NL_f);
 
             // wrap NLS pose solution as KF measurement
             VectorXd pose_meas_wrapper(7);
