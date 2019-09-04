@@ -24,6 +24,9 @@ target_link_libraries(pnp_pose_tracking_test ceres ${OpenCV_LIBS})
 add_executable(ekf_pose_tracking_test ekf_pose_tracking_test.cc Utilities.cc PoseSolver.cc KalmanFilter.cc)
 target_link_libraries(ekf_pose_tracking_test ceres glog)
 
+add_executable(mekf_pose_tracking_test mekf_pose_tracking_test.cc Utilities.cc PoseSolver.cc KalmanFilter.cc MEKF.cc)
+target_link_libraries(mekf_pose_tracking_test ceres glog)
+
 add_executable(pose_estimator_main pose_estimator_main.cc Utilities.cc PoseSolver.cc KalmanFilter.cc pose.pb.cc measurement.pb.cc)
 target_include_directories(pose_estimator_main PUBLIC ${PROTOBUF_INCLUDE_DIR})
 target_link_libraries(pose_estimator_main ceres glog ${PROTOBUF_LIBRARY})
