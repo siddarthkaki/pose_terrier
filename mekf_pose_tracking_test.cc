@@ -81,14 +81,14 @@ int main(int argc, char **argv)
         }
     }
     
-    num_features = 11;
-    rFeaMat = 2.5 * MatrixXd::Random(num_features, 3);
+    //num_features = 11;
+    //rFeaMat = 2.5 * MatrixXd::Random(num_features, 3);
 
     unsigned int num_poses_test = json_params["num_poses_test"];
 
     double kf_process_noise_std = 0.01;
     double kf_measurement_noise_std = 0.05;
-    double kf_dt = 0.5;
+    double kf_dt = 0.01;
 
     //------------------------------------------------------------------------/
 
@@ -128,7 +128,8 @@ int main(int argc, char **argv)
     pose_true.quat.vec() = Vector3d::Zero();
 
     // set-up for Jacobian computation with ceres
-    constexpr unsigned int num_states_F = 9; // eul (3), omega (3), alpha (3)
+    //constexpr unsigned int num_states_F = 9; // eul (3), omega (3), alpha (3)
+    constexpr unsigned int num_states_F = 6; // eul (3), omega (3)
 
     bool first_run = true;
 
@@ -191,7 +192,8 @@ int main(int argc, char **argv)
             att_state0(1) = pose_sol.pose.quat.x();
             att_state0(2) = pose_sol.pose.quat.y();
             att_state0(3) = pose_sol.pose.quat.z();
-            MatrixXd att_covar0 = 10.0 * MatrixXd::Identity(mekf.num_states_covar_, mekf.num_states_covar_);
+            att_state0.tail(3) = Vector3d::Random();
+            MatrixXd att_covar0 = 1.0 * MatrixXd::Identity(mekf.num_states_covar_, mekf.num_states_covar_);
             att_covar0(0,0) = 0.1;
             att_covar0(1,1) = 0.1;
             att_covar0(2,2) = 0.1;
@@ -221,7 +223,8 @@ int main(int argc, char **argv)
             // set-up for computing and storing F Jacobian matrix for current time-step
             
             // prepare statekk_ accessor; need pointer to pointer
-            Eigen::Matrix<double, 9, 1> parameters_state_buffer; // eul (3), omega (3), alpha (3)
+            //Eigen::Matrix<double, 9, 1> parameters_state_buffer; // eul (3), omega (3), alpha (3)
+            Eigen::Matrix<double, 6, 1> parameters_state_buffer; // eul (3), omega (3)
             Quaterniond quatkk_buffer;
             quatkk_buffer.w() = mekf.statekk_(0);
             quatkk_buffer.x() = mekf.statekk_(1);
@@ -229,7 +232,8 @@ int main(int argc, char **argv)
             quatkk_buffer.z() = mekf.statekk_(3);
             Vector3d eulkk_buffer = quatkk_buffer.toRotationMatrix().eulerAngles(0, 1, 2);
             parameters_state_buffer.head(3) = eulkk_buffer;
-            parameters_state_buffer.tail(6) = mekf.statekk_.tail(6);
+            //parameters_state_buffer.tail(6) = mekf.statekk_.tail(6);
+            parameters_state_buffer.tail(3) = mekf.statekk_.tail(3);
             const double *parameters = parameters_state_buffer.data();
 
             // structures for autodiff evaluation

@@ -42,13 +42,17 @@ namespace MEKF {
 
     void MEKF::Init(const double &process_noise_std, const double &measurement_noise_std, const double &dt)
     {
-        num_states_ = 10; // quat(4), omega(3), alpha(3)
-        num_states_covar_ = num_states_ - 1; // eul(3), omega(3), alpha(3)
+        //num_states_ = 10; // quat(4), omega(3), alpha(3)
+        num_states_ = 7; // quat(4), omega(3)
+        num_states_covar_ = num_states_ - 1; // eul(3), omega(3), // alpha(3)
         num_measurements_ = 3; // attitude error (delta_eul)
         num_inputs_ = 0;
         dt_ = dt;
 
         Q_ = MatrixXd::Identity(num_states_covar_, num_states_covar_)*pow(process_noise_std,2); // process_noise_covariance
+        Q_(3,3) *= 10.0;
+        Q_(4,4) *= 10.0;
+        Q_(5,5) *= 10.0;
         
         R_ = MatrixXd::Identity(num_measurements_, num_measurements_)*pow(measurement_noise_std,2); // measurement_noise_covariance
 
@@ -101,7 +105,8 @@ namespace MEKF {
         VectorXd state_correction = K*( (*meas_resid)(measurement, statek1k_, dt_) );
         
         // implicit reset as part of measurement update for non-attitude states (omega, alpha)
-        statek1k1_.tail(6) = statek1k_.tail(6) + state_correction.tail(6);
+        //statek1k1_.tail(6) = statek1k_.tail(6) + state_correction.tail(6);
+        statek1k1_.tail(3) = statek1k_.tail(3) + state_correction.tail(3);
 
         delta_eul_angles = state_correction.head(3);
                 
@@ -182,6 +187,7 @@ namespace MEKF {
         quatk1k.z() = statek1k(3);
 
         Quaterniond quat_resid = quat_meas * (quatk1k.inverse());
+        //Quaterniond quat_resid = (quatk1k.inverse()) * quat_meas;
 
         Vector3d eul_resid = quat_resid.toRotationMatrix().eulerAngles(0, 1, 2);
         VectorXd eul_resid_return = eul_resid;

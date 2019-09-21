@@ -24,7 +24,8 @@ class MEKF_f_Functor
     bool operator()(const T* const stateArr,
                     T* residuals) const
     {
-        unsigned int num_states = 9; // eul (3), omega (3), alpha (3)
+        //unsigned int num_states = 9; // eul (3), omega (3), alpha (3)
+        unsigned int num_states = 6; // eul (3), omega (3)
         Eigen::Matrix<T, Eigen::Dynamic, 1> statekk(num_states);
         for (unsigned int idx = 0; idx < num_states; idx++)
         { statekk(idx) = stateArr[idx]; }
@@ -53,16 +54,19 @@ class MEKF_f_Functor
                                 AngleAxisT(statekk_(1), Vector3T::UnitY()) *
                                 AngleAxisT(statekk_(2), Vector3T::UnitZ());
 
+        //TODO: 1st order gauss markov model for omega dynamics /////////////////////////////////////////////////////////////////////////////
         // dynamics_model for omega and alpha
-        MatrixXT F_ = MatrixXT::Identity(6, 6);
-        F_(0,3) = static_cast<T>(dt_);
-        F_(1,4) = static_cast<T>(dt_);
-        F_(2,5) = static_cast<T>(dt_);
+        double tau = 0.075;
+        MatrixXT F_ = MatrixXT::Identity(3, 3) * static_cast<T>(exp( - dt_ / tau ));
+        //MatrixXT F_ = MatrixXT::Identity(6, 6);
+        //F_(0,3) = static_cast<T>(dt_);
+        //F_(1,4) = static_cast<T>(dt_);
+        //F_(2,5) = static_cast<T>(dt_);
 
         // propagation
-        T delta_eul1 = statekk_(3)*static_cast<T>(dt_) + statekk_(6)*static_cast<T>( pow(dt_,2)/2.0 );
-        T delta_eul2 = statekk_(4)*static_cast<T>(dt_) + statekk_(7)*static_cast<T>( pow(dt_,2)/2.0 );
-        T delta_eul3 = statekk_(5)*static_cast<T>(dt_) + statekk_(8)*static_cast<T>( pow(dt_,2)/2.0 );
+        T delta_eul1 = statekk_(3)*static_cast<T>(dt_);// + statekk_(6)*static_cast<T>( pow(dt_,2)/2.0 );
+        T delta_eul2 = statekk_(4)*static_cast<T>(dt_);// + statekk_(7)*static_cast<T>( pow(dt_,2)/2.0 );
+        T delta_eul3 = statekk_(5)*static_cast<T>(dt_);// + statekk_(8)*static_cast<T>( pow(dt_,2)/2.0 );
 
         QuaternionT quat_step = AngleAxisT(delta_eul1, Vector3T::UnitX()) *
                                 AngleAxisT(delta_eul2, Vector3T::UnitY()) *
@@ -75,7 +79,8 @@ class MEKF_f_Functor
         statek1k_(0) = eulk1k_(0);
         statek1k_(1) = eulk1k_(1);
         statek1k_(2) = eulk1k_(2);
-        statek1k_.tail(6) = F_*statekk_.tail(6);
+        //statek1k_.tail(6) = F_*statekk_.tail(6);
+        statek1k_.tail(3) = F_*statekk_.tail(3);
 
         return statek1k_;
     }
@@ -100,15 +105,17 @@ class MEKF_f_Functor
 
 
         // dynamics_model for omega and alpha
-        MatrixXT F_ = MatrixXT::Identity(6, 6);
-        F_(0,3) = static_cast<T>(dt_);
-        F_(1,4) = static_cast<T>(dt_);
-        F_(2,5) = static_cast<T>(dt_);
+        double tau = 0.075;
+        MatrixXT F_ = MatrixXT::Identity(3, 3) * static_cast<T>(exp( - dt_ / tau ));
+        //MatrixXT F_ = MatrixXT::Identity(6, 6);
+        //F_(0,3) = static_cast<T>(dt_);
+        //F_(1,4) = static_cast<T>(dt_);
+        //F_(2,5) = static_cast<T>(dt_);
 
         // propagation
-        T delta_eul1 = statekk_(4)*static_cast<T>(dt_) + statekk_(7)*static_cast<T>( pow(dt_,2)/2.0 );
-        T delta_eul2 = statekk_(5)*static_cast<T>(dt_) + statekk_(8)*static_cast<T>( pow(dt_,2)/2.0 );
-        T delta_eul3 = statekk_(6)*static_cast<T>(dt_) + statekk_(9)*static_cast<T>( pow(dt_,2)/2.0 );
+        T delta_eul1 = statekk_(4)*static_cast<T>(dt_);// + statekk_(7)*static_cast<T>( pow(dt_,2)/2.0 );
+        T delta_eul2 = statekk_(5)*static_cast<T>(dt_);// + statekk_(8)*static_cast<T>( pow(dt_,2)/2.0 );
+        T delta_eul3 = statekk_(6)*static_cast<T>(dt_);// + statekk_(9)*static_cast<T>( pow(dt_,2)/2.0 );
 
         QuaternionT quat_step = AngleAxisT(delta_eul1, Vector3T::UnitX()) *
                                 AngleAxisT(delta_eul2, Vector3T::UnitY()) *
@@ -120,7 +127,8 @@ class MEKF_f_Functor
         statek1k_(1) = quatk1k_.x();
         statek1k_(2) = quatk1k_.y();
         statek1k_(3) = quatk1k_.z();
-        statek1k_.tail(6) = F_*statekk_.tail(6);
+        //statek1k_.tail(6) = F_*statekk_.tail(6);
+        statek1k_.tail(3) = F_*statekk_.tail(3);
 
         return statek1k_;
     }
