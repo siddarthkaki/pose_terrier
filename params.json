@@ -7,10 +7,19 @@
     "pipe_path_output": "pipe_dream_pose",
     "output_to_pipe": true,
     "log_to_file": true,
-    "log_periodically": true,
+    "log_periodically": false,
     "vector_reserve_size": 1000,
     "kf_dt": 0.1,
     "rFeaMat":
+    [
+        {"fea1": [0.0, 0.0, 6.8152]},
+        {"fea2": [0.0, 0.0, 0.0]},
+        {"fea3": [0.0,-3.3931, 0.13]},
+        {"fea4": [0.0, 3.3931, 0.13]},
+        {"fea5": [1.524, 0.0, 4.5013]},
+        {"fea6": [1.524, 0.0, 3.8654]}
+    ],
+    "rFeaMatDeprecated":
     [
         {"fea1": [0.0, 0.0, 0.5]},
         {"fea2": [0.0, 0.0,-1.5]},
