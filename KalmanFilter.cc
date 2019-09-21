@@ -189,7 +189,11 @@ namespace KF {
         //statek1k1_ = statek1k_ + covark1k_*H_.transpose()*( ( H_*covark1k_*H_.transpose() + R_ ).colPivHouseholderQr().solve(measurement - H_*statek1k_) );
 
         // Update for linear Gaussian systems
-        covark1k1_ = covark1k_ - K*H_*covark1k_;
+        //covark1k1_ = covark1k_ - K*H_*covark1k_;
+
+        // Joseph update (general)
+        MatrixXd I = MatrixXd::Identity(num_states_, num_states_);
+        covark1k1_ = (I - K*H_)*covark1k_*((I - K*H_).transpose()) + K*R_*(K.transpose());
 
         processed_measurement_ = true;
     }
