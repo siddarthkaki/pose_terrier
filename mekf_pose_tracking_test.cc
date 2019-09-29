@@ -12,15 +12,12 @@
 #include "ceres/ceres.h"
 //#include "glog/logging.h"
 
-#include "cost_functor.h"
-#include "mekf_f_functor.h"
 #include "Utilities.h"
 #include "PoseSolver.h"
 #include "KalmanFilter.h"
 #include "MEKF.h"
 
 #include "third_party/json.hpp"
-#include "third_party/SmartBuffer.h"
 #include "third_party/CppRot/cpprot.h"
 
 using Eigen::AngleAxisd;

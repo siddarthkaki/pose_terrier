@@ -13,33 +13,6 @@ namespace MEKF {
         processed_measurement_ = false;
     }
 
-/*
-    MEKF::MEKF(const unsigned int &num_states, const unsigned int &num_measurements, const unsigned int &num_inputs, const double &dt)
-    {
-        
-        num_states_ = num_states;
-        num_measurements_ = num_measurements;
-        num_inputs_ = num_inputs;
-        dt_ = dt;
-
-        Q_ = MatrixXd::Identity(num_states_, num_states_); // process_noise_covariance
-        R_ = MatrixXd::Identity(num_measurements_, num_measurements_); // measurement_noise_covariance
-        F_ = MatrixXd::Identity(num_states_, num_states_); // dynamics_model
-        G_ = MatrixXd::Identity(num_states_, num_inputs_);; // input_model
-        H_ = MatrixXd::Identity(num_measurements_, num_states_); // measurement_model
-        
-        err_statekk_   = VectorXd::Zero(num_states_);
-        err_statek1k_  = VectorXd::Zero(num_states_);
-        err_statek1k1_ = VectorXd::Zero(num_states_);
-
-        covarkk_   = MatrixXd::Zero(num_states_, num_states_);
-        covark1k_  = MatrixXd::Zero(num_states_, num_states_);
-        covark1k1_ = MatrixXd::Zero(num_states_, num_states_);
-
-        processed_measurement_ = false;
-    }
-*/
-
     void MEKF::Init(const double &process_noise_std, const double &measurement_noise_std, const double &dt)
     {
         num_states_ = 9; // delta_gibbs(3), omega(3), alpha(3)
@@ -187,30 +160,6 @@ namespace MEKF {
         */
     }
 
-/*
-    VectorXd MEKF::MeasResidFunction(const VectorXd &measurement, const VectorXd &statek1k, const double &dt)
-    {
-        Quaterniond quat_meas;
-        quat_meas.w() = measurement(0);
-        quat_meas.x() = measurement(1);
-        quat_meas.y() = measurement(2);
-        quat_meas.z() = measurement(3);
-
-        Quaterniond quatk1k;
-        quatk1k.w() = statek1k(0);
-        quatk1k.x() = statek1k(1);
-        quatk1k.y() = statek1k(2);
-        quatk1k.z() = statek1k(3);
-
-        Quaterniond quat_resid = quat_meas * (quatk1k.inverse());
-        //Quaterniond quat_resid = (quatk1k.inverse()) * quat_meas;
-
-        Vector3d eul_resid = quat_resid.toRotationMatrix().eulerAngles(0, 1, 2);
-        VectorXd eul_resid_return = eul_resid;
-
-        return eul_resid_return;
-    }
-*/
     void MEKF::PrintModelMatrices()
     {
         std::cout << "A:\t" << std::endl << A_ << std::endl << std::endl;
