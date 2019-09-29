@@ -154,9 +154,9 @@ int main(int argc, char **argv)
         pose_true.pos(0) += 0.001;
         pose_true.pos(1) -= 0.001;
         pose_true.pos(2) += 0.01;
-        Quaterniond quat_step = AngleAxisd(0.001, Vector3d::UnitX()) *
-                                AngleAxisd(-0.001, Vector3d::UnitY()) *
-                                AngleAxisd(0.001, Vector3d::UnitZ());
+        Quaterniond quat_step = AngleAxisd(0.01, Vector3d::UnitX()) *
+                                AngleAxisd(-0.01, Vector3d::UnitY()) *
+                                AngleAxisd(0.01, Vector3d::UnitZ());
         pose_true.quat = pose_true.quat * quat_step;
 
         // express feature points in chaser frame at the specified pose

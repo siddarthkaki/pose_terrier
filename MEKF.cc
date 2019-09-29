@@ -113,12 +113,15 @@ namespace MEKF {
         
         
         // NOTE: heuristic method to ignore 180 deg pose ambiguities
+        /*
         Quaterniond dq = CppRot::QuatMult_S(quat_est_, quat_star.inverse());
         double dangle = 2.0*acos( abs( dq.w() ) );
         if (dangle < 20.0*Utilities::DEG2RAD)
         {
             quat_est_ = quat_star;
         }
+        */
+        quat_est_ = quat_star;
         
        
         processed_measurement_ = true;
