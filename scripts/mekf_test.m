@@ -78,7 +78,7 @@ mekf_H = zeros(mekf_num_measurements, mekf_num_states); % measurement_model init
 mekf_H(1:3, 1:3) = eye(3);
 
 % init states + covariance matrix
-mekf_state_quat = [1 0 0 0].';
+mekf_state_quat = quatMatSolved(1,:).';%eul2quat(rand(1,3)).';
 mekf_state_omega = 0.01*ones(3,1);
 mekf_state_alpha = 0.1*ones(3,1);
 mekf_state_delta_gibbs = zeros(3,1);
@@ -138,9 +138,15 @@ for idx = 1:num_poses,
     mekf_covar = (mekf_I -mekf_K * mekf_H) * mekf_covar * ((mekf_I - mekf_K * mekf_H).') + mekf_K * mekf_R * (mekf_K.');
     
     %% reset
-    mekf_quat_star = rot.quatmult_S([1; 0.5*mekf_state_delta_gibbs], mekf_state_quat);
+    mekf_quat_star_temp = rot.quatmult_S([1; 0.5*mekf_state_delta_gibbs], mekf_state_quat);
+    mekf_state_quat_temp = mekf_quat_star_temp / norm(mekf_quat_star_temp);
     
-    mekf_state_quat = mekf_quat_star / norm(mekf_quat_star);
+    % NOTE: heuristic method to ignore 180 deg pose ambiguities
+    dquat = rot.quatmult_S( rot.normedQuat(mekf_state_quat), quatconj(rot.normedQuat(mekf_state_quat_temp).').' );
+    dangle = 2*acos( abs( dquat(1) ) );
+    if dangle < deg2rad(20) && idx > 10,
+        mekf_state_quat = mekf_state_quat_temp;
+    end
     
     mekf_state_delta_gibbs = zeros(3,1);
     
@@ -150,7 +156,6 @@ for idx = 1:num_poses,
 end
 
 %% post-analysis
-
 % compute attitude score
 attScoreVec         = 1000*ones(num_poses,1);
 attScoreVecFiltered = 1000*ones(num_poses,1);
@@ -169,9 +174,7 @@ for idx = 1:num_poses,
     attScoreVecFiltered(idx) = 2*acos( abs( dquatFiltered(1) ) ); % rad
 end
 
-
 %% plotting attitude
-
 tVec = mekf_dt:mekf_dt:mekf_dt*num_poses;
 tVecF = 0:mekf_dt:mekf_dt*num_poses;
 
