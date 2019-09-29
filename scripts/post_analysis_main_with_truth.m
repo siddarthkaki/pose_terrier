@@ -3,7 +3,7 @@ clear; close all; clc;
 
 %% init
 
-prefix = "../data/" + "1566322132" + "_";
+prefix = "../data/" + "1569774849" + "_";
 
 tVec = f_read_timestamps(prefix + "timestamps.csv");
 
@@ -13,9 +13,9 @@ solvedPosesMat = f_read_poses(prefix + "solved_poses.csv");
 
 filteredPosesMat = f_read_poses(prefix + "filtered_poses.csv");
 
-statesMat = f_read_covars(prefix + "kf_states.csv");
+%statesMat = f_read_covars(prefix + "kf_states.csv");
 
-covarsMat = f_read_covars(prefix + "kf_covars.csv");
+%covarsMat = f_read_covars(prefix + "kf_covars.csv");
 
 [num_poses,~] = size(filteredPosesMat);
 
