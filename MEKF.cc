@@ -64,6 +64,7 @@ namespace MEKF {
          quat_est_ = Quaterniond::Identity();
         omega_est_ = Vector3d::Zero();
         alpha_est_ = Vector3d::Zero();
+        delta_gibbs_est_ = Vector3d::Zero();
 
         covar_est_ = MatrixXd::Zero(num_states_, num_states_);
 
@@ -137,7 +138,7 @@ namespace MEKF {
         delta_quat.vec() = 0.5*delta_gibbs_est_;
         Quaterniond quat_star = CppRot::QuatMult_S(delta_quat, quat_est_).normalized();
         
-        /*
+        
         // NOTE: heuristic method to ignore 180 deg pose ambiguities
         Quaterniond dq = CppRot::QuatMult_S(quat_est_, quat_star.inverse());
         double dangle = 2.0*acos( abs( dq.w() ) );
@@ -145,8 +146,8 @@ namespace MEKF {
         {
             quat_est_ = quat_star;
         }
-        */
-
+        
+       
         processed_measurement_ = true;
     }
 
@@ -209,14 +210,14 @@ namespace MEKF {
 
         return eul_resid_return;
     }
-
+*/
     void MEKF::PrintModelMatrices()
     {
+        std::cout << "A:\t" << std::endl << A_ << std::endl << std::endl;
         std::cout << "F:\t" << std::endl << F_ << std::endl << std::endl;
         std::cout << "Q:\t" << std::endl << Q_ << std::endl << std::endl;
         std::cout << "H:\t" << std::endl << H_ << std::endl << std::endl;
         std::cout << "R:\t" << std::endl << R_ << std::endl << std::endl;
     }
-*/
 
 } // end namespace

@@ -42,7 +42,6 @@ class MEKF
         MatrixXd R_; // measurement_noise_covariance
         MatrixXd F_; // covariance_propagation_dynamics_model
         MatrixXd A_; // quaternion_propagation_dynamics_model
-        MatrixXd G_; // input_model
         MatrixXd H_; // measurement_model
 
         Quaterniond quat_est_;
