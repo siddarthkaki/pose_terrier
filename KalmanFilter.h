@@ -49,6 +49,7 @@ class KalmanFilter
 
         KalmanFilter();
         KalmanFilter(const unsigned int &num_states, const unsigned int &num_measurements, const unsigned int &num_inputs, const double &dt);
+        void InitLinearPositionTracking(const double &process_noise_std, const double &measurement_noise_std, const double &dt);
         void InitLinearPoseTracking(const double &process_noise_std, const double &measurement_noise_std, const double &dt);
         void InitNonLinearPoseTracking(const double &process_noise_std, const double &measurement_noise_std, const double &dt);
         void SetInitialStateAndCovar(const VectorXd &state0, MatrixXd &covar0);
