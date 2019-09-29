@@ -8,9 +8,14 @@
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
+#include <unsupported/Eigen/MatrixFunctions>
 #include <vector>
 #include <iostream>
 #include <math.h>
+
+#include "Utilities.h"
+
+#include "third_party/CppRot/cpprot.h"
 
 using Eigen::Vector3d;
 using Eigen::VectorXd;
@@ -25,47 +30,44 @@ class MEKF
 {
     private:
         bool processed_measurement_;
-        Vector3d delta_eul_angles;
+        Vector3d delta_gibbs_est_;
 
     public:
         unsigned int num_states_;
-        unsigned int num_states_covar_;
         unsigned int num_measurements_;
-        unsigned int num_inputs_;
         double dt_;
+        double tau_;
 
         MatrixXd Q_; // process_noise_covariance
         MatrixXd R_; // measurement_noise_covariance
-        MatrixXd F_; // dynamics_model
+        MatrixXd F_; // covariance_propagation_dynamics_model
+        MatrixXd A_; // quaternion_propagation_dynamics_model
         MatrixXd G_; // input_model
         MatrixXd H_; // measurement_model
 
-        VectorXd statekk_;
-        VectorXd statek1k_;
-        VectorXd statek1k1_;
+        Quaterniond quat_est_;
+        Vector3d omega_est_;
+        Vector3d alpha_est_;
 
-        VectorXd last_state_estimate;
+        MatrixXd covar_est_;
 
-        MatrixXd covarkk_;
-        MatrixXd covark1k_;
-        MatrixXd covark1k1_;
-        MatrixXd last_covar_estimate;
+        //MatrixXd covarkk_;
+        //MatrixXd covark1k_;
+        //MatrixXd covark1k1_;
 
         //std::vector<VectorXd> states;
         //std::vector<MatrixXd> covars;
 
         MEKF(const double &dt);
-        MEKF(const unsigned int &num_states, const unsigned int &num_measurements, const unsigned int &num_inputs, const double &dt);
+        MEKF(const unsigned int &num_states, const unsigned int &num_measurements, const double &dt);
         void Init(const double &process_noise_std, const double &measurement_noise_std, const double &dt);
-        void SetInitialStateAndCovar(const VectorXd &state0, const MatrixXd &covar0);
-        void Predict(const VectorXd &input);
-        void Predict(const VectorXd &input, VectorXd (*f)(VectorXd, double));
+        void SetInitialStateAndCovar(const Quaterniond &quat0, const Vector3d &omega0, const Vector3d &alpha0, const MatrixXd &covar0);
+        void Predict();
         void Update(const VectorXd &measurement);
-        void Update(const VectorXd &measurement, VectorXd (*h)(const VectorXd&, const VectorXd&, const double&));
         void Reset();
         void StoreAndClean();
 
-        static VectorXd MeasResidFunction(const VectorXd &measurement, const VectorXd &statek1k, const double &dt);
+        //static VectorXd MeasResidFunction(const VectorXd &measurement, const VectorXd &statek1k, const double &dt);
 
         void PrintModelMatrices();
         //static double StdVectorVar(const std::vector<double>& vec);

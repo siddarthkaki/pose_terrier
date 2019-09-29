@@ -53,8 +53,8 @@ class CppRot
          */
         static inline Quaterniond QuatMult_S(const Quaterniond &quat1, const Quaterniond &quat2)
         {
-            Quaterniond q1 = quat1.normalized();
-            Quaterniond q2 = quat2.normalized();
+            Quaterniond q1 = quat1;//.normalized();
+            Quaterniond q2 = quat2;//.normalized();
             
             double q1w = q1.w(); // scalar
             double q2w = q2.w(); // scalar
@@ -91,8 +91,8 @@ class CppRot
          */
         static inline Quaterniond QuatMult_H(const Quaterniond &quat2, const Quaterniond &quat1)
         {
-            Quaterniond q1 = quat1.normalized();
-            Quaterniond q2 = quat2.normalized();
+            Quaterniond q1 = quat1;//.normalized();
+            Quaterniond q2 = quat2;//.normalized();
             
             double q1w = q1.w(); // scalar
             double q2w = q2.w(); // scalar

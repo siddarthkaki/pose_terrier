@@ -24,6 +24,7 @@ using Eigen::VectorXd;
 using Eigen::Matrix3d;
 using Eigen::MatrixXd;
 using Eigen::Quaterniond;
+typedef Eigen::Matrix<double, 4, 1> Vector4d;
 
 struct Pose
 {
@@ -54,6 +55,8 @@ class Utilities
         static VectorXd AddGaussianNoiseToVector(const VectorXd& vec, const double& std);
         static Pose ConjugatePose(const Pose& state);
         static MatrixXd ConvertToEigenMatrix(double **data, unsigned int rows, unsigned int cols);
+        static Vector4d QuatToVec4(const Quaterniond& quat);
+        static Quaterniond Vec4ToQuat(const Vector4d& vec4);
         static double PositionScore(const Vector3d& pos, const Vector3d& posHat);
         static double AttitudeScore(const Quaterniond& quat, const Quaterniond& quatHat);
         static double StdVectorMean(const std::vector<double>& vec);

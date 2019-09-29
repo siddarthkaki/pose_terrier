@@ -42,106 +42,117 @@ namespace MEKF {
 
     void MEKF::Init(const double &process_noise_std, const double &measurement_noise_std, const double &dt)
     {
-        //num_states_ = 10; // quat(4), omega(3), alpha(3)
-        num_states_ = 7; // quat(4), omega(3)
-        num_states_covar_ = num_states_ - 1; // eul(3), omega(3), // alpha(3)
-        num_measurements_ = 3; // attitude error (delta_eul)
-        num_inputs_ = 0;
+        num_states_ = 9; // delta_gibbs(3), omega(3), alpha(3)
+        num_measurements_ = 3; // delta_gibbs (3)
         dt_ = dt;
+        tau_ = 1.0; // TODO PASS AS ARGUMENT
 
-        Q_ = MatrixXd::Identity(num_states_covar_, num_states_covar_)*pow(process_noise_std,2); // process_noise_covariance
-        Q_(3,3) *= 10.0;
-        Q_(4,4) *= 10.0;
-        Q_(5,5) *= 10.0;
+        Q_ = MatrixXd::Identity(num_states_, num_states_)*pow(process_noise_std,2); // process_noise_covariance
+        Q_(6,6) *= 1e3;
+        Q_(7,7) *= 1e3;
+        Q_(8,8) *= 1e3;
         
         R_ = MatrixXd::Identity(num_measurements_, num_measurements_)*pow(measurement_noise_std,2); // measurement_noise_covariance
 
-        F_ = MatrixXd::Identity(num_states_covar_, num_states_covar_); // dynamics_model init; MUST EXTERNALLY UPDATE
+        A_ = MatrixXd::Identity(4, 4); // quaternion_propagation
 
-        G_ = MatrixXd::Zero(num_states_, num_inputs_); // input_model
+        F_ = MatrixXd::Identity(num_states_, num_states_); // covariance_propagation
 
-        H_ = MatrixXd::Zero(num_measurements_, num_states_covar_); // measurement_model init
+        H_ = MatrixXd::Zero(num_measurements_, num_states_); // measurement_model
         H_.block(0,0,num_measurements_,num_measurements_) = Matrix3d::Identity();
 
-        statekk_   = VectorXd::Zero(num_states_);
-        statek1k_  = VectorXd::Zero(num_states_);
-        statek1k1_ = VectorXd::Zero(num_states_);
+         quat_est_ = Quaterniond::Identity();
+        omega_est_ = Vector3d::Zero();
+        alpha_est_ = Vector3d::Zero();
 
-        covarkk_   = MatrixXd::Zero(num_states_covar_, num_states_covar_);
-        covark1k_  = MatrixXd::Zero(num_states_covar_, num_states_covar_);
-        covark1k1_ = MatrixXd::Zero(num_states_covar_, num_states_covar_);
+        covar_est_ = MatrixXd::Zero(num_states_, num_states_);
 
         processed_measurement_ = false;
     }
 
-    void MEKF::SetInitialStateAndCovar(const VectorXd &state0, const MatrixXd &covar0)
+    void MEKF::SetInitialStateAndCovar(const Quaterniond &quat0, const Vector3d &omega0, const Vector3d &alpha0, const MatrixXd &covar0)
     {
-        statekk_ = state0;
-        covarkk_ = covar0;
-
-        last_state_estimate = statekk_;
-        last_covar_estimate = covarkk_;
-        //states.push_back(err_statekk_);
-        //covars.push_back(covarkk_);
+         quat_est_ =  quat0;
+        omega_est_ = omega0;
+        alpha_est_ = alpha0;
+        covar_est_ = covar0;
     }
 
-    // Non-linear prediction step (takes in pointer to function f that performs nonlinear state propagation)
-    void MEKF::Predict(const VectorXd &input, VectorXd (*f)(VectorXd, double))
+    // Prediction step
+    void MEKF::Predict()
     {
-        // TODO automatically determine F_ for time-step k from (*f)
-        statek1k_ = (*f)(statekk_, dt_) + G_*input;
-        covark1k_ = F_*covarkk_*F_.transpose() + Q_;
+        double omega_norm = omega_est_.norm();
+        Vector3d omega_hat = omega_est_ / omega_norm;
 
-        statekk_ = statek1k_;
-        covarkk_ = covark1k_;
+        Matrix3d I33 = Matrix3d::Identity();
+        MatrixXd I44 = MatrixXd::Identity(4, 4);
+        MatrixXd omega_hat_44_equivalent = MatrixXd::Zero(4, 4);
+        omega_hat_44_equivalent.block(0, 1, 1, 3) = -omega_hat.transpose();
+        omega_hat_44_equivalent.block(1, 0, 3, 1) =  omega_hat;
+        omega_hat_44_equivalent.block(1, 1, 3, 3) = -CppRot::CrossProductEquivalent(omega_hat);
+
+        double phi = 0.5 * omega_norm * dt_;
+
+        A_ = cos(phi) * I44 + sin(phi) * omega_hat_44_equivalent;
+        F_.block(0, 0, 3, 3) = (-CppRot::CrossProductEquivalent(omega_est_) * dt_).exp();
+        F_.block(3, 3, 3, 3) = I33;
+        F_.block(3, 6, 3, 3) = I33 * dt_;
+        F_.block(6, 6, 3, 3) = I33 * exp(-dt_ / tau_);
+
+        // propagate quaternion
+        quat_est_ = Utilities::Vec4ToQuat( A_ * Utilities::QuatToVec4(quat_est_) );
+
+        // propagate omega vector
+        omega_est_ = F_.block(3, 3, 3, 3)*omega_est_ + F_.block(3, 6, 3, 3)*alpha_est_;
+
+        // propagate alpha vector
+        alpha_est_ = F_.block(6, 6, 3, 3)*alpha_est_;
+
+        // propagate covariance
+        covar_est_ = F_ * covar_est_ * F_.transpose() + Q_;
     }
 
-    // Non-linear update step (takes in pointer to function meas_resid that performs nonlinear measurement update residual computation)
-    void MEKF::Update(const VectorXd &measurement, VectorXd (*meas_resid)(const VectorXd&, const VectorXd&, const double&))
+    // Update step
+    void MEKF::Update(const VectorXd &measurement)
     {
-        // TODO automatically determine H_ for time-step k from (*h)
-        MatrixXd K = covark1k_*H_.transpose()*( ( H_*covark1k_*H_.transpose() + R_ ).inverse() );
-        
-        VectorXd state_correction = K*( (*meas_resid)(measurement, statek1k_, dt_) );
-        
-        // implicit reset as part of measurement update for non-attitude states (omega, alpha)
-        //statek1k1_.tail(6) = statek1k_.tail(6) + state_correction.tail(6);
-        statek1k1_.tail(3) = statek1k_.tail(3) + state_correction.tail(3);
+        // Kalman gain
+        MatrixXd K = covar_est_ * H_.transpose() * ((H_ * covar_est_ * H_.transpose() + R_).inverse());
 
-        delta_eul_angles = state_correction.head(3);
-                
+        // delta Gibbs update
+        Quaterniond quat_meas = Utilities::Vec4ToQuat(measurement.head(4));
+        Quaterniond delta_quat = CppRot::QuatMult_S(quat_meas, quat_est_.inverse());
+        Vector3d meas_innovation = 2.0 * delta_quat.vec() / delta_quat.w();
+        delta_gibbs_est_ = K.block(0, 0, 3, 3)*meas_innovation;
+        
         // Joseph update (general)
-        MatrixXd I = MatrixXd::Identity(num_states_covar_, num_states_covar_);
-        covark1k1_ = (I - K*H_)*covark1k_*((I - K*H_).transpose()) + K*R_*(K.transpose());
+        MatrixXd I = MatrixXd::Identity(num_states_, num_states_);
+        covar_est_ = (I - K * H_) * covar_est_ * ((I - K * H_).transpose()) + K * R_ * (K.transpose());
     }
 
     // Reset step
     void MEKF::Reset()
     {
-        Quaterniond delta_quat = AngleAxisd(delta_eul_angles(0), Vector3d::UnitX()) *
-                                 AngleAxisd(delta_eul_angles(1), Vector3d::UnitY()) *
-                                 AngleAxisd(delta_eul_angles(2), Vector3d::UnitZ());
-
-        Quaterniond quatk1k;
-        quatk1k.w() = statek1k_(0);
-        quatk1k.x() = statek1k_(1);
-        quatk1k.y() = statek1k_(2);
-        quatk1k.z() = statek1k_(3);
-
-        Quaterniond quatk1k1 = quatk1k * delta_quat;
-
-        statek1k1_(0) = quatk1k1.w();
-        statek1k1_(1) = quatk1k1.x();
-        statek1k1_(2) = quatk1k1.y();
-        statek1k1_(3) = quatk1k1.z();
-
-        delta_eul_angles = Vector3d::Zero();
+        Quaterniond delta_quat = Quaterniond::Identity();
+        delta_quat.w() = 1.0;
+        delta_quat.vec() = 0.5*delta_gibbs_est_;
+        Quaterniond quat_star = CppRot::QuatMult_S(delta_quat, quat_est_).normalized();
+        
+        /*
+        // NOTE: heuristic method to ignore 180 deg pose ambiguities
+        Quaterniond dq = CppRot::QuatMult_S(quat_est_, quat_star.inverse());
+        double dangle = 2.0*acos( abs( dq.w() ) );
+        if (dangle < 20.0*Utilities::DEG2RAD)
+        {
+            quat_est_ = quat_star;
+        }
+        */
 
         processed_measurement_ = true;
     }
 
     void MEKF::StoreAndClean()
     {
+        /*
         if(processed_measurement_)
         {
             last_state_estimate = statek1k1_;
@@ -162,16 +173,20 @@ namespace MEKF {
             statekk_ = statek1k_;
             covarkk_ = covark1k_;
         }
+        */
         
         processed_measurement_ = false;
 
+        /*
         statek1k_  = VectorXd::Zero(num_states_);
         statek1k1_ = VectorXd::Zero(num_states_);
 
         covark1k_  = MatrixXd::Zero(num_states_covar_, num_states_covar_);
         covark1k1_ = MatrixXd::Zero(num_states_covar_, num_states_covar_);
+        */
     }
 
+/*
     VectorXd MEKF::MeasResidFunction(const VectorXd &measurement, const VectorXd &statek1k, const double &dt)
     {
         Quaterniond quat_meas;
@@ -202,5 +217,6 @@ namespace MEKF {
         std::cout << "H:\t" << std::endl << H_ << std::endl << std::endl;
         std::cout << "R:\t" << std::endl << R_ << std::endl << std::endl;
     }
+*/
 
 } // end namespace

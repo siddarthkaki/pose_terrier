@@ -242,6 +242,40 @@ MatrixXd Utilities::ConvertToEigenMatrix(double **data, unsigned int rows, unsig
 }
 
 /**
+ * @function QuatToVec4
+ * @brief TODO
+ * @return TODO
+ */
+Vector4d Utilities::QuatToVec4(const Quaterniond &quat)
+{
+    Vector4d vec4;
+
+    vec4(0) = quat.w();
+    vec4(1) = quat.x();
+    vec4(2) = quat.y();
+    vec4(3) = quat.z();
+
+    return vec4;
+}
+
+/**
+ * @function Vec4ToQuat
+ * @brief TODO
+ * @return TODO
+ */
+Quaterniond Utilities::Vec4ToQuat(const Vector4d &vec4)
+{
+    Quaterniond quat;
+
+    quat.w() = vec4(0);
+    quat.x() = vec4(1);
+    quat.y() = vec4(2);
+    quat.z() = vec4(3);
+
+    return quat;
+}
+
+/**
  * @function PositionScore
  * @brief Computes the position score for a position state estimate
  * @return Position score value for provided state estimate
