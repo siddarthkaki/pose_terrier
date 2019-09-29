@@ -21,9 +21,6 @@ target_link_libraries(pose_tracking_test ceres glog)
 add_executable(pnp_pose_tracking_test pnp_pose_tracking_test.cc Utilities.cc KalmanFilter.cc)
 target_link_libraries(pnp_pose_tracking_test ceres ${OpenCV_LIBS})
 
-add_executable(ekf_pose_tracking_test ekf_pose_tracking_test.cc Utilities.cc PoseSolver.cc KalmanFilter.cc)
-target_link_libraries(ekf_pose_tracking_test ceres glog)
-
 add_executable(mekf_pose_tracking_test mekf_pose_tracking_test.cc Utilities.cc PoseSolver.cc KalmanFilter.cc MEKF.cc)
 target_link_libraries(mekf_pose_tracking_test ceres glog)
 
