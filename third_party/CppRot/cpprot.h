@@ -51,11 +51,8 @@ class CppRot
          * @return  Equivalent quaternion representation for the composite 
          *          rotating-space rotation: q_return = q1 * q2
          */
-        static inline Quaterniond QuatMult_S(const Quaterniond &quat1, const Quaterniond &quat2)
+        static inline Quaterniond QuatMult_S(const Quaterniond &q1, const Quaterniond &q2)
         {
-            Quaterniond q1 = quat1;//.normalized();
-            Quaterniond q2 = quat2;//.normalized();
-            
             double q1w = q1.w(); // scalar
             double q2w = q2.w(); // scalar
             
@@ -89,11 +86,8 @@ class CppRot
          * @return  Equivalent quaternion representation for the composite 
          *          fixed-space rotation: q_return = q2 * q1
          */
-        static inline Quaterniond QuatMult_H(const Quaterniond &quat2, const Quaterniond &quat1)
-        {
-            Quaterniond q1 = quat1;//.normalized();
-            Quaterniond q2 = quat2;//.normalized();
-            
+        static inline Quaterniond QuatMult_H(const Quaterniond &q2, const Quaterniond &q1)
+        {            
             double q1w = q1.w(); // scalar
             double q2w = q2.w(); // scalar
             
