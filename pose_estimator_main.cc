@@ -246,8 +246,8 @@ int main(int argc, char **argv)
 
                     // MEKF priors
                     Quaterniond init_quat = pose_sol.pose.quat;
-                    Vector3d init_omega = 0.01 * Vector3d::Ones();
-                    Vector3d init_alpha = 0.1 * Vector3d::Ones();
+                    Vector3d init_omega = 0.01 * Vector3d::Random();
+                    Vector3d init_alpha = 0.1 * Vector3d::Random();
                     MatrixXd init_covar = MatrixXd::Identity(mekf.num_states_, mekf.num_states_);
                     init_covar(0, 0) = 0.1;
                     init_covar(1, 1) = 0.1;
