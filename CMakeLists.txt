@@ -31,7 +31,7 @@ add_executable(pose_estimator_main pose_estimator_main.cc Utilities.cc PoseSolve
 target_include_directories(pose_estimator_main PUBLIC ${PROTOBUF_INCLUDE_DIR})
 target_link_libraries(pose_estimator_main ceres glog ${PROTOBUF_LIBRARY})
 
-add_executable(pnp_pose_estimator_main pnp_pose_estimator_main.cc Utilities.cc KalmanFilter.cc pose.pb.cc measurement.pb.cc)
+add_executable(pnp_pose_estimator_main pnp_pose_estimator_main.cc Utilities.cc KalmanFilter.cc MEKF.cc pose.pb.cc measurement.pb.cc)
 target_include_directories(pnp_pose_estimator_main PUBLIC ${PROTOBUF_INCLUDE_DIR})
 target_link_libraries(pnp_pose_estimator_main ceres glog ${PROTOBUF_LIBRARY} ${OpenCV_LIBS})
 

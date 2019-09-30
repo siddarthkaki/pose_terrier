@@ -18,10 +18,12 @@
 
 #include "Utilities.h"
 #include "KalmanFilter.h"
+#include "MEKF.h"
 #include "pose.pb.h"
 #include "measurement.pb.h"
 
 #include "third_party/json.hpp"
+#include "third_party/CppRot/cpprot.h"
 
 using Eigen::AngleAxisd;
 using Eigen::MatrixXd;
@@ -97,8 +99,23 @@ int main(int argc, char **argv)
     const unsigned int vector_reserve_size = json_params["vector_reserve_size"];
 
     const double kf_dt = json_params["kf_dt"];
+    const double mekf_dt = kf_dt;
 
     //------------------------------------------------------------------------/
+
+    //-- Init Filters --------------------------------------------------------/
+    
+    double kf_process_noise_std = 0.01;
+    double kf_measurement_noise_std = 0.05;
+
+    double mekf_process_noise_std = 0.01;
+    double mekf_measurement_noise_std = 0.05;
+
+    KF::KalmanFilter kf;
+    kf.InitLinearPositionTracking(kf_process_noise_std, kf_measurement_noise_std, kf_dt);
+
+    MEKF::MEKF mekf(mekf_dt);
+    mekf.Init(mekf_process_noise_std, mekf_measurement_noise_std, mekf_dt);
 
     //-- Init sequence -------------------------------------------------------/
 
@@ -109,19 +126,16 @@ int main(int argc, char **argv)
 
     // declare vectors for storage
     std::vector<Pose> solved_poses, filtered_poses;
-    std::vector<VectorXd> kf_states;
-    std::vector<MatrixXd> kf_covars;
+    //std::vector<VectorXd> kf_states;
+    //std::vector<MatrixXd> kf_covars;
     std::vector<double> timestamps; // [s]
 
     // pre-allocate memory
     solved_poses.reserve(vector_reserve_size);
     filtered_poses.reserve(vector_reserve_size);
-    kf_states.reserve(vector_reserve_size);
-    kf_covars.reserve(vector_reserve_size);
+    //kf_states.reserve(vector_reserve_size);
+    //kf_covars.reserve(vector_reserve_size);
     timestamps.reserve(vector_reserve_size);
-
-    // Kalman Filter object
-    KF::KalmanFilter kf;
 
     // clock object
     auto init_t = std::chrono::high_resolution_clock::now();
@@ -236,37 +250,41 @@ int main(int argc, char **argv)
 
                     Pose conj_pose = Utilities::ConjugatePose(pose_sol.pose);
                     
-                    // initialise KF
-
-                    double kf_process_noise_std = 0.01;
-                    double kf_measurement_noise_std = 0.05;
-
-                    kf.InitLinearPoseTracking(kf_process_noise_std, kf_measurement_noise_std, kf_dt);
+                    // initialise filter priors
+                    // KF priors
                     VectorXd state0 = VectorXd::Zero(kf.num_states_);
                     state0.head(3) = pose_sol.pose.pos;
-                    state0.segment(3, 3) = pose_sol.pose.quat.toRotationMatrix().eulerAngles(0, 1, 2);
                     MatrixXd covar0 = 10.0 * MatrixXd::Identity(kf.num_states_, kf.num_states_);
-                    covar0( 0,  0) = 1.0;
-                    covar0( 1,  1) = 1.0;
-                    covar0( 2,  2) = 3.0;
-                    covar0( 9,  9) = 10.0 * Utilities::DEG2RAD;
-                    covar0(10, 10) = 10.0 * Utilities::DEG2RAD;
-                    covar0(11, 11) = 10.0 * Utilities::DEG2RAD;
+                    covar0(0, 0) = 1.0;
+                    covar0(1, 1) = 1.0;
+                    covar0(2, 2) = 3.0;
                     kf.SetInitialStateAndCovar(state0, covar0);
-
                     kf.R_(0, 0) = 1.0;
                     kf.R_(1, 1) = 1.0;
                     kf.R_(2, 2) = 3.0;
-                    kf.R_(3, 3) = 10.0 * Utilities::DEG2RAD;
-                    kf.R_(4, 4) = 10.0 * Utilities::DEG2RAD;
-                    kf.R_(5, 5) = 10.0 * Utilities::DEG2RAD;
 
+                    std::cout << "KF Model: " << std::endl;
                     kf.PrintModelMatrices();
+                    std::cout << std::endl;
+
+                    // MEKF priors
+                    Quaterniond init_quat = pose_sol.pose.quat;
+                    Vector3d init_omega = 0.01 * Vector3d::Random();
+                    Vector3d init_alpha = 0.1 * Vector3d::Random();
+                    MatrixXd init_covar = MatrixXd::Identity(mekf.num_states_, mekf.num_states_);
+                    init_covar(0, 0) = 0.1;
+                    init_covar(1, 1) = 0.1;
+                    init_covar(2, 2) = 0.1;
+                    mekf.SetInitialStateAndCovar(init_quat, init_omega, init_alpha, init_covar);
+
+                    std::cout << "MEKF Model: " << std::endl;
+                    mekf.PrintModelMatrices();
+                    std::cout << std::endl;
 
                     solved_poses.push_back(pose_sol.pose);
                     filtered_poses.push_back(pose_sol.pose);
-                    kf_states.push_back(state0);
-                    kf_covars.push_back(covar0);
+                    //kf_states.push_back(state0);
+                    //kf_covars.push_back(covar0);
                     timestamps.push_back(0.0);
                     init_t = std::chrono::high_resolution_clock::now();
                 }
@@ -323,6 +341,9 @@ int main(int argc, char **argv)
 
         // KF prediction step
         kf.Predict(VectorXd::Zero(kf.num_inputs_));
+
+        // MEKF prediction step (state propagation in terms of quaternions, covariance propagation in terms of gibbs vector)
+        mekf.Predict();
 
         PoseSolution pose_sol;
 
@@ -386,27 +407,24 @@ int main(int argc, char **argv)
 
                     Pose conj_pose = Utilities::ConjugatePose(pose_sol.pose);
                     
-                    // wrap PnP pose solution as KF measurement
-                    VectorXd pose_meas_wrapper(6);
-                    pose_meas_wrapper.head(3) = pose_sol.pose.pos;
-                    pose_meas_wrapper.tail(3) = pose_sol.pose.quat.toRotationMatrix().eulerAngles(0, 1, 2);
+                    // wrap NLS position solution as KF measurement
+                    Vector3d pos_meas_wrapper = pose_sol.pose.pos;
 
-                    // wrap PnP conjugate pose solution as KF measurement
-                    VectorXd conj_pose_meas_wrapper(6);
-                    conj_pose_meas_wrapper.head(3) = conj_pose.pos;
-                    conj_pose_meas_wrapper.tail(3) = conj_pose.quat.toRotationMatrix().eulerAngles(0, 1, 2);
+                    // KF measurement update step
+                    kf.Update(pos_meas_wrapper);
 
-                    // choose as measurement whichever pose produces the smallest measurement residual norm
-                    double pose_meas_norm = (pose_meas_wrapper - kf.H_ * kf.statek1k_).norm();
-                    double conj_pose_meas_norm = (conj_pose_meas_wrapper - kf.H_ * kf.statek1k_).norm();
-                    if (pose_meas_norm < conj_pose_meas_norm)
-                    {
-                        kf.Update(pose_meas_wrapper);
-                    }
-                    else
-                    {
-                        kf.Update(conj_pose_meas_wrapper);
-                    }
+                    // wrap NLS attitude solution as MEKF measurement
+                    VectorXd att_meas_wrapper(4);
+                    att_meas_wrapper(0) = pose_sol.pose.quat.normalized().w();
+                    att_meas_wrapper(1) = pose_sol.pose.quat.normalized().x();
+                    att_meas_wrapper(2) = pose_sol.pose.quat.normalized().y();
+                    att_meas_wrapper(3) = pose_sol.pose.quat.normalized().z();
+                    
+                    // MEKF measurement update step
+                    mekf.Update(att_meas_wrapper);
+
+                    // MEKF reset step
+                    mekf.Reset();
                 }
                 else // if bad measurement received, skip measurement update
                 {
@@ -423,13 +441,11 @@ int main(int argc, char **argv)
         }
 
         kf.StoreAndClean();
+        mekf.StoreAndClean();
 
         Pose pose_filtered;
-        VectorXd pose_filt_wrapper = kf.last_state_estimate;
-        pose_filtered.pos = pose_filt_wrapper.head(3);
-        pose_filtered.quat = (AngleAxisd(pose_filt_wrapper( 9), Vector3d::UnitX()) *
-                              AngleAxisd(pose_filt_wrapper(10), Vector3d::UnitY()) *
-                              AngleAxisd(pose_filt_wrapper(11), Vector3d::UnitZ()));
+        pose_filtered.pos = kf.last_state_estimate.head(3);
+        pose_filtered.quat = mekf.quat_est_.normalized();
 
         curr_t = std::chrono::high_resolution_clock::now();
         curr_elapsed_t = (double)std::chrono::duration_cast<std::chrono::nanoseconds>(curr_t - init_t).count();
@@ -440,8 +456,8 @@ int main(int argc, char **argv)
         //-- Data Storage ----------------------------------------------------/        
         solved_poses.push_back(pose_sol.pose);
         filtered_poses.push_back(pose_filtered);
-        kf_states.push_back(kf.last_state_estimate);
-        kf_covars.push_back(kf.last_covar_estimate);
+        //kf_states.push_back(kf.last_state_estimate);
+        //kf_covars.push_back(kf.last_covar_estimate);
         timestamps.push_back(curr_elapsed_t);
 
         // set NLS initial guess for next time-step to latest filtered estimate
@@ -494,15 +510,15 @@ int main(int argc, char **argv)
             bool append_mode = true;
             Utilities::WritePosesToCSV(solved_poses, prefix + "solved_poses" + postfix, append_mode);
             Utilities::WritePosesToCSV(filtered_poses, prefix + "filtered_poses" + postfix, append_mode);
-            Utilities::WriteKFStatesToCSV(kf_states, prefix + "kf_states" + postfix, append_mode);
-            Utilities::WriteKFCovarsToCSV(kf_covars, prefix + "kf_covars" + postfix, append_mode);
+            //Utilities::WriteKFStatesToCSV(kf_states, prefix + "kf_states" + postfix, append_mode);
+            //Utilities::WriteKFCovarsToCSV(kf_covars, prefix + "kf_covars" + postfix, append_mode);
             Utilities::WriteTimestampsToFile(timestamps, prefix + "timestamps" + postfix, append_mode);
 
             // clear vectors
             solved_poses.clear();
             filtered_poses.clear();
-            kf_states.clear();
-            kf_covars.clear();
+            //kf_states.clear();
+            //kf_covars.clear();
             timestamps.clear();
         }
 
@@ -525,8 +541,8 @@ int main(int argc, char **argv)
                 // write to csv files
                 Utilities::WritePosesToCSV(solved_poses, prefix + "solved_poses" + postfix, append_mode);
                 Utilities::WritePosesToCSV(filtered_poses, prefix + "filtered_poses" + postfix, append_mode);
-                Utilities::WriteKFStatesToCSV(kf_states, prefix + "kf_states" + postfix, append_mode);
-                Utilities::WriteKFCovarsToCSV(kf_covars, prefix + "kf_covars" + postfix, append_mode);
+                //Utilities::WriteKFStatesToCSV(kf_states, prefix + "kf_states" + postfix, append_mode);
+                //Utilities::WriteKFCovarsToCSV(kf_covars, prefix + "kf_covars" + postfix, append_mode);
                 Utilities::WriteTimestampsToFile(timestamps, prefix + "timestamps" + postfix, append_mode);
                 printf("Logged data to file.\n");
             }
