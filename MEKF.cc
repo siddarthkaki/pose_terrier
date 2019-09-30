@@ -21,9 +21,11 @@ namespace MEKF {
         tau_ = 1.0; // TODO PASS AS ARGUMENT
 
         Q_ = MatrixXd::Identity(num_states_, num_states_)*pow(process_noise_std,2); // process_noise_covariance
-        Q_(6,6) *= 1e3;
-        Q_(7,7) *= 1e3;
-        Q_(8,8) *= 1e3;
+        double qpsd = 1e5;
+        double pss = qpsd*tau_/2.0;
+        Q_(6,6) *= ( 1.0 - exp(-2.0*dt_/tau_) )*pss;
+        Q_(7,7) *= ( 1.0 - exp(-2.0*dt_/tau_) )*pss;
+        Q_(8,8) *= ( 1.0 - exp(-2.0*dt_/tau_) )*pss;
         
         R_ = MatrixXd::Identity(num_measurements_, num_measurements_)*pow(measurement_noise_std,2); // measurement_noise_covariance
 
