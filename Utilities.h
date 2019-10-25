@@ -16,6 +16,7 @@
 #include "ceres/ceres.h"
 
 #include "third_party/csvfile.h"
+#include "third_party/CppRot/cpprot.h"
 #include "third_party/eigenmvn/eigenmvn.h"
 
 using Eigen::Vector2d;

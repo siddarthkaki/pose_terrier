@@ -354,7 +354,7 @@ void Utilities::WritePosesToCSV(const std::vector<Pose>& vec, const std::string&
         // data
         for (Pose pose : vec)
         {
-            Vector3d eulVec = pose.quat.toRotationMatrix().eulerAngles(0, 1, 2);
+            Vector3d eulVec = CppRot::Quat2Tmat(pose.quat).eulerAngles(0, 1, 2);
             csv << pose.pos(0) << pose.pos(1) << pose.pos(2);
             csv << eulVec(0) << eulVec(1) << eulVec(2);
             //csv << pose.quat.w() << pose.quat.x() << pose.quat.y() << pose.quat.z() << endrow;
