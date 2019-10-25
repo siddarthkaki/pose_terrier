@@ -44,7 +44,7 @@ int main(int argc, char **argv)
 
     // specify rigid position vector of camera wrt chaser in chaser frame
     Vector3d rCamVec;
-    for (unsigned int idx = 0; idx < 2; idx++)
+    for (unsigned int idx = 0; idx < 3; idx++)
     {
         rCamVec(idx) = json_params["rCamVec"].at(idx);
     }
@@ -145,6 +145,7 @@ int main(int argc, char **argv)
         solved_poses_conj.push_back(conj_pose);
         solution_times.push_back((double)duration);
         pos_scores.push_back(pos_score);
+        //att_scores.push_back(att_score);
         att_scores.push_back(std::min(att_score, conj_att_score));
     }
 

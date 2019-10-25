@@ -36,6 +36,9 @@ using nlohmann::json;
 int main(int argc, char **argv)
 {
 
+    // timing
+    std::chrono::high_resolution_clock::time_point t_program_1 = std::chrono::high_resolution_clock::now();
+
     //google::InitGoogleLogging(argv[0]);
 
     //-- Read-in problem geometry and params ---------------------------------/
@@ -57,7 +60,7 @@ int main(int argc, char **argv)
 
     // specify rigid position vector of camera wrt chaser in chaser frame
     Vector3d rCamVec;
-    for (unsigned int idx = 0; idx < 2; idx++)
+    for (unsigned int idx = 0; idx < 3; idx++)
     {
         rCamVec(idx) = json_params["rCamVec"].at(idx);
     }
@@ -286,6 +289,12 @@ int main(int argc, char **argv)
         }
     }
 
+    // timing
+    std::chrono::high_resolution_clock::time_point t_program_2 = std::chrono::high_resolution_clock::now();
+
+    // time taken to perform pose solution
+    auto program_duration = std::chrono::duration_cast<std::chrono::milliseconds>(t_program_2 - t_program_1).count();
+
     //-- Performance Metric Stats & Output -----------------------------------/
 
     // write to csv file
@@ -316,6 +325,9 @@ int main(int argc, char **argv)
 
     std::cout << "mean_time  :\t" << solution_times_mean << " [ms]" << std::endl;
     std::cout << "total_time :\t" << solution_times_mean * num_poses_test << " [ms]" << std::endl;
+
+    std::cout << "total_program_time :\t" << (double)program_duration << " [ms]" << std::endl;
+    
     //------------------------------------------------------------------------/
 
     return 0;

@@ -58,7 +58,7 @@ int main(int argc, char **argv)
 
     // specify rigid position vector of camera wrt chaser in chaser frame
     Vector3d rCamVec;
-    for (unsigned int idx = 0; idx < 2; idx++)
+    for (unsigned int idx = 0; idx < 3; idx++)
     {
         rCamVec(idx) = json_params["rCamVec"].at(idx);
     }

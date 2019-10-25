@@ -13,6 +13,7 @@
 #include "Utilities.h"
 #include "measurement.pb.h"
 
+#include "third_party/CppRot/cpprot.h"
 #include "third_party/json.hpp"
 
 using Eigen::AngleAxisd;
@@ -64,7 +65,7 @@ int main(int argc, char **argv)
 
     // specify rigid position vector of camera wrt chaser in chaser frame
     Vector3d rCamVec;
-    for (unsigned int idx = 0; idx < 2; idx++)
+    for (unsigned int idx = 0; idx < 3; idx++)
     {
         rCamVec(idx) = json_params["rCamVec"].at(idx);
     }
@@ -86,11 +87,11 @@ int main(int argc, char **argv)
         }
     }
     // TEMPORARY
-    /*
+    
     num_features = 11;
     rFeaMat = 2.5 * MatrixXd::Random(num_features, 3);
     std::cout << rFeaMat << std::endl;
-    */
+    
 
     const unsigned int num_poses_test = json_params["num_poses_test"];
     const unsigned int vector_reserve_size = json_params["vector_reserve_size"];
@@ -120,8 +121,15 @@ int main(int argc, char **argv)
     Pose pose_true;
     pose_true.pos << 0.5, -0.25, 30.0;
     //pose_true.quat = Quaterniond::UnitRandom();
+    pose_true.quat.w() =  0.9993;
+    pose_true.quat.x() = -0.0029;
+    pose_true.quat.y() = -0.0298;
+    pose_true.quat.z() = -0.0231;
     pose_true.quat.w() = 1.0;
     pose_true.quat.vec() = Vector3d::Zero();
+
+    pose_true.quat.normalize();
+    //pose_true.quat.vec() = Vector3d::Zero();
 
     // if pipe does not exist, create it
     struct stat buf;
@@ -150,14 +158,17 @@ int main(int argc, char **argv)
     {
         //-- Simulate Measurements -------------------------------------------/
 
-        // generate true pose values for ith run
-        pose_true.pos(0) += 0.001;
-        pose_true.pos(1) -= 0.001;
-        pose_true.pos(2) += 0.01;
-        Quaterniond quat_step = AngleAxisd(0.01, Vector3d::UnitX()) *
-                                AngleAxisd(-0.01, Vector3d::UnitY()) *
-                                AngleAxisd(0.01, Vector3d::UnitZ());
-        pose_true.quat = pose_true.quat * quat_step;
+        if (meas_count > 1)
+        {   
+            // generate true pose values for ith run
+            pose_true.pos(0) += 0.005;
+            pose_true.pos(1) -= 0.005;
+            pose_true.pos(2) += 0.05;
+            Quaterniond quat_step = AngleAxisd(0.01, Vector3d::UnitX()) *
+                                    AngleAxisd(-0.01, Vector3d::UnitY()) *
+                                    AngleAxisd(0.01, Vector3d::UnitZ());
+            pose_true.quat = CppRot::QuatMult_S(quat_step, pose_true.quat);
+        }
 
         // express feature points in chaser frame at the specified pose
         MatrixXd rMat = Utilities::FeaPointsTargetToChaser(pose_true, rCamVec, rFeaMat);
