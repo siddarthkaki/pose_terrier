@@ -76,9 +76,16 @@ int main(int argc, char **argv)
     const std::string pipe_path_input = json_params["pipe_path_input"];
     const std::string pipe_path_output = json_params["pipe_path_output"];
 
+    // specify initial guess of relative position vector of target wrt chaser in chaser frame
+    Vector3d rPos0;
+    for (unsigned int idx = 0; idx < 3; idx++)
+    {
+        rPos0(idx) = json_params["rPos0"].at(idx);
+    }
+
     // specify rigid position vector of camera wrt chaser in chaser frame
     Vector3d rCamVec;
-    for (unsigned int idx = 0; idx < 2; idx++)
+    for (unsigned int idx = 0; idx < 3; idx++)
     {
         rCamVec(idx) = json_params["rCamVec"].at(idx);
     }
@@ -140,12 +147,14 @@ int main(int argc, char **argv)
     auto init_t = std::chrono::high_resolution_clock::now();
     double curr_elapsed_t = 0.0;
 
-    // TODO: read in initial guess from json or other program
     // initial pose guess
     Pose pose0;
-    pose0.pos << 0.0, 0.0, 25.0;
+    pose0.pos = rPos0;
     pose0.quat.w() = 1.0;
     pose0.quat.vec() = Vector3d::Zero();
+
+    std::cout << "Initial pos guess: " << pose0.pos.transpose() << std::endl;
+    std::cout << "Initial att guess: " << pose0.quat.w() << " " << pose0.quat.vec().transpose() << std::endl << std::endl;
 
     std::cout << "Waiting for first measurement..." << std::endl;
 
@@ -240,9 +249,9 @@ int main(int argc, char **argv)
                     kf.R_(1, 1) = 1.0;
                     kf.R_(2, 2) = 3.0;
 
-                    std::cout << "KF Model: " << std::endl;
-                    kf.PrintModelMatrices();
-                    std::cout << std::endl;
+                    //std::cout << "KF Model: " << std::endl;
+                    //kf.PrintModelMatrices();
+                    //std::cout << std::endl;
 
                     // MEKF priors
                     Quaterniond init_quat = pose_sol.pose.quat;
@@ -254,9 +263,9 @@ int main(int argc, char **argv)
                     init_covar(2, 2) = 0.1;
                     mekf.SetInitialStateAndCovar(init_quat, init_omega, init_alpha, init_covar);
 
-                    std::cout << "MEKF Model: " << std::endl;
-                    mekf.PrintModelMatrices();
-                    std::cout << std::endl;
+                    //std::cout << "MEKF Model: " << std::endl;
+                    //mekf.PrintModelMatrices();
+                    //std::cout << std::endl;
 
                     solved_poses.push_back(pose_sol.pose);
                     filtered_poses.push_back(pose_sol.pose);
@@ -294,6 +303,11 @@ int main(int argc, char **argv)
 
     // open FIFO for measurement read only, without blocking
     fd_in = open(fifo_path_input, O_RDONLY | O_NONBLOCK);
+
+    // set NLS initial guess for next time-step to initial filtered estimate
+    pose0 = filtered_poses.back();
+
+    std::cout << "Running estimator..." << std::endl;
 
     auto last_t = std::chrono::high_resolution_clock::now();
     auto curr_t = std::chrono::high_resolution_clock::now();
