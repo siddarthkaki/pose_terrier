@@ -38,6 +38,7 @@ target_link_libraries(pnp_pose_estimator_main ceres glog ${PROTOBUF_LIBRARY} ${O
 add_executable(simulate_measurements simulate_measurements.cc Utilities.cc pose.pb.cc measurement.pb.cc)
 target_include_directories(simulate_measurements PUBLIC ${PROTOBUF_INCLUDE_DIR})
 target_link_libraries(simulate_measurements glog ${PROTOBUF_LIBRARY})
+set_target_properties(simulate_measurements PROPERTIES LINK_FLAGS "-Wl,--no-as-needed")
 
 add_executable(pose_reader_example pose_reader_example.cc pose.pb.cc)
 target_include_directories(pose_reader_example PUBLIC ${PROTOBUF_INCLUDE_DIR})
