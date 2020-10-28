@@ -26,6 +26,9 @@ using Eigen::Matrix3d;
 using Eigen::MatrixXd;
 using Eigen::Quaterniond;
 typedef Eigen::Matrix<double, 4, 1> Vector4d;
+typedef Eigen::Matrix<double, 3, 3, Eigen::RowMajor> Matrix3d_rm;
+typedef Eigen::Matrix<double, 6, 6> Matrix6d;
+typedef Eigen::Matrix<double, 6, 6, Eigen::RowMajor> Matrix6d_rm;
 
 struct Pose
 {
@@ -36,6 +39,7 @@ struct Pose
 struct PoseSolution
 {
     Pose pose;
+    Matrix6d cov_pose;
     ceres::Solver::Summary summary;
 };
 

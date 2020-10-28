@@ -71,6 +71,8 @@ int main(int argc, char **argv)
     // specify measurement noise standard deviation (rad)
     double meas_std = double(json_params["meas_std_deg"]) * Utilities::DEG2RAD;
 
+    const double kf_dt = json_params["kf_dt"];
+
     // specify rigid position vector of feature points wrt target in target frame
     unsigned int num_features = json_params["rFeaMat"].size();
     MatrixXd rFeaMat(num_features, 3);
@@ -82,8 +84,10 @@ int main(int argc, char **argv)
         }
     }
     
-    //num_features = 11;
-    //rFeaMat = 2.5 * MatrixXd::Random(num_features, 3);
+    /**
+    num_features = 11;
+    rFeaMat = 2.5 * MatrixXd::Random(num_features, 3);
+    **/
 
     unsigned int num_poses_test = json_params["num_poses_test"];
 
@@ -93,11 +97,11 @@ int main(int argc, char **argv)
 
     double kf_process_noise_std = 0.01;
     double kf_measurement_noise_std = 0.05;
-    double kf_dt = 0.1;
+    // double kf_dt = 0.1;
 
     double mekf_process_noise_std = 0.01;
     double mekf_measurement_noise_std = 0.05;
-    double mekf_dt = 0.1;
+    double mekf_dt = kf_dt; // 0.1;
 
     KF::KalmanFilter kf;
     kf.InitLinearPositionTracking(kf_process_noise_std, kf_measurement_noise_std, kf_dt);

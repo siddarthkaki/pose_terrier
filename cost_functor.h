@@ -102,8 +102,9 @@ class MeasResidCostFunctorQuat
             // position vector of feature point idx wrt chaser in chaser frame
             Eigen::Matrix<T,3,1> rFeaVeciRotatedTranslated = posVec - rCamVec_ + rFeaVeciRotated;
             
-            residuals[2*idx+0] = yVec_(2*idx+0) - static_cast<T>(atan2( rFeaVeciRotatedTranslated(0), rFeaVeciRotatedTranslated(2) ));
-            residuals[2*idx+1] = yVec_(2*idx+1) - static_cast<T>(atan2( rFeaVeciRotatedTranslated(1), rFeaVeciRotatedTranslated(2) ));
+            // TODO : pass in bearing measurement noise value instead of hard-coding //
+            residuals[2*idx+0] = 1.0/sqrt(1.0*M_PI/180.0) * ( yVec_(2*idx+0) - static_cast<T>(atan2( rFeaVeciRotatedTranslated(0), rFeaVeciRotatedTranslated(2) )) );
+            residuals[2*idx+1] = 1.0/sqrt(1.0*M_PI/180.0) * ( yVec_(2*idx+1) - static_cast<T>(atan2( rFeaVeciRotatedTranslated(1), rFeaVeciRotatedTranslated(2) )) );
             
 //            yHatVec(2*idx+0) = atan2(posVec(0) - rCamVec_(0) + rFeaVeci(0)*(cos(psi)*cos(theta) - sin(psi)*sin(theta)*sin(phi)) + rFeaVeci(1)*(cos(theta)*sin(psi) + cos(psi)*sin(theta)*sin(phi)) - rFeaVeci(2)*sin(theta)*cos(phi), posVec(2) - rCamVec_(2) + rFeaVeci(0)*(cos(psi)*sin(theta) + cos(theta)*sin(psi)*sin(phi)) + rFeaVeci(1)*(sin(psi)*sin(theta) - cos(psi)*cos(theta)*sin(phi)) + rFeaVeci(2)*cos(theta)*cos(phi));
 //            yHatVec(2*idx+1) = atan2(posVec(1) - rCamVec_(1) + rFeaVeci(2)*sin(phi) + rFeaVeci(1)*cos(psi)*cos(phi) - rFeaVeci(0)*sin(psi)*cos(phi), posVec(2) - rCamVec_(2) + rFeaVeci(0)*(cos(psi)*sin(theta) + cos(theta)*sin(psi)*sin(phi)) + rFeaVeci(1)*(sin(psi)*sin(theta) - cos(psi)*cos(theta)*sin(phi)) + rFeaVeci(2)*cos(theta)*cos(phi));

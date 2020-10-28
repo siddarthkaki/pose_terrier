@@ -35,7 +35,7 @@ PoseSolution PoseSolver::SolvePose(const Pose& pose0, const VectorXd& yVec, cons
     ceres::LocalParameterization* quaternion_parameterization = new ceres::QuaternionParameterization;
 
     // Specify loss function.
-    ceres::LossFunction* loss_function = NULL; //new ceres::HuberLoss(0.1);
+    ceres::LossFunction* loss_function = NULL; // new ceres::HuberLoss(0.1);
 
     // Set up the only cost function (also known as residual). This uses
     // auto-differentiation to obtain the derivative (jacobian).    
@@ -58,12 +58,44 @@ PoseSolution PoseSolver::SolvePose(const Pose& pose0, const VectorXd& yVec, cons
     options.minimizer_progress_to_stdout = false;
     ceres::Solve(options, &problem, &poseSol.summary);
 
+    // Retrieve parameter blocks
+    // std::cout << problem.NumParameterBlocks() << std::endl;
+    // std::vector<double*> parameter_blocks;
+    // problem.GetParameterBlocks(&parameter_blocks);
+    // double* posParamBlock = parameter_blocks.at(1);
+    // double* quatParamBlock = parameter_blocks.at(0);
+
+    // Covariance computation
+    ceres::Covariance::Options cov_options;
+    //cov_options.algorithm_type = ceres::DENSE_SVD;
+    //cov_options.null_space_rank = 1;
+    ceres::Covariance covariance(cov_options);
+
+    std::vector<std::pair<const double*, const double*> > covariance_blocks;    
+    covariance_blocks.push_back(std::make_pair(posHatArr, posHatArr));
+    covariance_blocks.push_back(std::make_pair(quatHatArr, quatHatArr));
+    covariance_blocks.push_back(std::make_pair(posHatArr, quatHatArr));
+
+    CHECK(covariance.Compute(covariance_blocks, &problem));
+    Matrix3d_rm cov_xx = Matrix3d_rm::Zero();
+    Matrix3d_rm cov_yy = Matrix3d_rm::Zero();
+    Matrix3d_rm cov_xy = Matrix3d_rm::Zero();
+    covariance.GetCovarianceBlock(posHatArr, posHatArr, cov_xx.data());
+    covariance.GetCovarianceBlockInTangentSpace(quatHatArr, quatHatArr, cov_yy.data());
+    covariance.GetCovarianceBlockInTangentSpace(posHatArr, quatHatArr, cov_xy.data());
+    
     // convert estimated state information from double arrays to Eigen
     poseSol.pose.pos  = posHatVec;
     poseSol.pose.quat.w() = quatHatVec(0);
     poseSol.pose.quat.x() = quatHatVec(1);
     poseSol.pose.quat.y() = quatHatVec(2);
     poseSol.pose.quat.z() = quatHatVec(3);
+    
+    // store pose covariance estimate
+    poseSol.cov_pose.topLeftCorner(3,3) = cov_xx;
+    poseSol.cov_pose.topRightCorner(3,3) = cov_xy;
+    poseSol.cov_pose.bottomLeftCorner(3,3) = cov_xy.transpose();
+    poseSol.cov_pose.bottomRightCorner(3,3) = cov_yy;
 
     return poseSol;
 }
@@ -118,4 +150,6 @@ Twist PoseSolver::TwoPointDiffTwistEstimator(const Pose& posei, const Pose& pose
     dqdt.vec() /= T;
 
     twist_j.ang_vel = 2*( dqdt*posej.quat.conjugate() ).vec();
+
+    return twist_j;
 }
