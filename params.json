@@ -2,7 +2,7 @@
     "rPos0": [0.0, 0.0, 20.0],
     "rCamVec": [0.0, 0.0, 0.0],
     "focal_length": 0.0055,
-    "meas_std_deg": 1.0,
+    "bearing_meas_std_deg": 1.0,
     "num_poses_test": 500,
     "pipe_path_input": "pipe_dream_meas",
     "pipe_path_output": "pipe_dream_pose",

@@ -62,7 +62,7 @@ int main(int argc, char **argv)
     double focal_length = json_params["focal_length"]; //5.5*pow(10,-3);
 
     // specify measurement noise standard deviation (rad)
-    double meas_std = double(json_params["meas_std_deg"]) * Utilities::DEG2RAD;
+    double bearing_meas_std = double(json_params["bearing_meas_std_deg"]) * Utilities::DEG2RAD;
 
     // specify rigid position vector of feature points wrt target in target frame
     unsigned int num_features = json_params["rFeaMat"].size();
@@ -162,7 +162,7 @@ int main(int argc, char **argv)
         VectorXd yVec = Utilities::SimulateMeasurements(rMat, focal_length);
 
         // add Gaussian noise to simulated measurements
-        VectorXd yVecNoise = Utilities::AddGaussianNoiseToVector(yVec, meas_std);
+        VectorXd yVecNoise = Utilities::AddGaussianNoiseToVector(yVec, bearing_meas_std);
 
         // 2D image points
         std::vector<cv::Point2d> image_points;

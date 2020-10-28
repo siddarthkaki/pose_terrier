@@ -94,7 +94,7 @@ int main(int argc, char **argv)
     //double focal_length = json_params["focal_length"]; //5.5*pow(10,-3);
 
     // specify measurement noise standard deviation (rad)
-    //double meas_std = double(json_params["meas_std_deg"]) * Utilities::DEG2RAD;
+    double bearing_meas_std = double(json_params["bearing_meas_std_deg"]) * Utilities::DEG2RAD;
 
     // specify expected number of time-steps for memory pre-allocation
     const unsigned int num_poses_test = json_params["num_poses_test"];
@@ -231,10 +231,10 @@ int main(int argc, char **argv)
                     }
 
                     // solve for pose with ceres (via wrapper)
-                    PoseSolution pose_sol = PoseSolver::SolvePoseReinit(pose0, yVec, rCamVec, rFeaMat);
+                    PoseSolution pose_sol = PoseSolver::SolvePoseReinit(pose0, yVec, rCamVec, rFeaMat, bearing_meas_std);
 
                     Pose conj_pose_temp = Utilities::ConjugatePose(pose_sol.pose);
-                    Pose conj_pose = PoseSolver::SolvePose(conj_pose_temp, yVec, rCamVec, rFeaMat).pose;
+                    Pose conj_pose = PoseSolver::SolvePose(conj_pose_temp, yVec, rCamVec, rFeaMat, bearing_meas_std).pose;
 
                     // initialise filter priors
                     // KF priors
@@ -384,7 +384,7 @@ int main(int argc, char **argv)
                     //       the last filtered estimate by this point
 
                     // solve for pose with ceres (via wrapper)
-                    pose_sol = PoseSolver::SolvePoseReinit(pose0, yVec, rCamVec, rFeaMat);
+                    pose_sol = PoseSolver::SolvePoseReinit(pose0, yVec, rCamVec, rFeaMat, bearing_meas_std);
 
                     // wrap NLS position solution as KF measurement
                     Vector3d pos_meas_wrapper = pose_sol.pose.pos;

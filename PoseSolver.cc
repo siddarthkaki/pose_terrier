@@ -12,7 +12,7 @@
  *        2D-3D Correspondences A-Priori
  * @return VectorXd of estimate state (pose)
  */
-PoseSolution PoseSolver::SolvePose(const Pose& pose0, const VectorXd& yVec, const Vector3d& rCamVec, const MatrixXd& rFeaMat)
+PoseSolution PoseSolver::SolvePose(const Pose& pose0, const VectorXd& yVec, const Vector3d& rCamVec, const MatrixXd& rFeaMat, const double bearing_meas_std)
 {
     PoseSolution poseSol;
 
@@ -40,7 +40,7 @@ PoseSolution PoseSolver::SolvePose(const Pose& pose0, const VectorXd& yVec, cons
     // Set up the only cost function (also known as residual). This uses
     // auto-differentiation to obtain the derivative (jacobian).    
     ceres::CostFunction* cost_function = new ceres::AutoDiffCostFunction<MeasResidCostFunctorQuat, ceres::DYNAMIC, 3, 4>(
-            new MeasResidCostFunctorQuat(yVec, rFeaMat, rCamVec), numPts*2);
+            new MeasResidCostFunctorQuat(yVec, rFeaMat, rCamVec, bearing_meas_std), numPts*2);
 
     problem.AddResidualBlock(cost_function, loss_function, posHatArr, quatHatArr);
 
@@ -108,7 +108,7 @@ PoseSolution PoseSolver::SolvePose(const Pose& pose0, const VectorXd& yVec, cons
  *        Correspondences 
  * @return VectorXd of estimate state (pose)
  */
-PoseSolution PoseSolver::SolvePoseReinit(const Pose& pose0, const VectorXd& yVec, const Vector3d& rCamVec, const MatrixXd& rFeaMat)
+PoseSolution PoseSolver::SolvePoseReinit(const Pose& pose0, const VectorXd& yVec, const Vector3d& rCamVec, const MatrixXd& rFeaMat, const double bearing_meas_std)
 {
     unsigned int num_init = 5;
 
@@ -120,7 +120,7 @@ PoseSolution PoseSolver::SolvePoseReinit(const Pose& pose0, const VectorXd& yVec
         Pose pose0i = pose0;
         if (init_idx > 0)
         { pose0i.quat = Quaterniond::UnitRandom(); }
-        PoseSolution posSoli = SolvePose(pose0i, yVec, rCamVec, rFeaMat);   
+        PoseSolution posSoli = SolvePose(pose0i, yVec, rCamVec, rFeaMat, bearing_meas_std);   
     
         double curr_cost = posSoli.summary.final_cost;
         if (curr_cost < min_cost)

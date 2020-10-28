@@ -49,7 +49,7 @@ int main(int argc, char** argv)
     double focal_length = json_params["focal_length"];//5.5*pow(10,-3);
 
     // specify measurement noise standard deviation (rad)
-    double meas_std = double(json_params["meas_std_deg"])*Utilities::DEG2RAD;
+    double bearing_meas_std = double(json_params["bearing_meas_std_deg"])*Utilities::DEG2RAD;
 
     // specify rigid position vector of feature points wrt target in target frame
     unsigned int num_features = json_params["rFeaMat"].size();
@@ -100,7 +100,7 @@ int main(int argc, char** argv)
     VectorXd yVec = Utilities::SimulateMeasurements(rMat, focal_length);
 
     // add Gaussian noise to simulated measurements
-    VectorXd yVecNoise = Utilities::AddGaussianNoiseToVector(yVec, meas_std);
+    VectorXd yVecNoise = Utilities::AddGaussianNoiseToVector(yVec, bearing_meas_std);
 
     //------------------------------------------------------------------------/
 
@@ -110,10 +110,10 @@ int main(int argc, char** argv)
     std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
 
     // solve for pose with ceres (via wrapper)
-    PoseSolution poseSol = PoseSolver::SolvePoseReinit(pose0, yVecNoise, rCamVec, rFeaMat);
+    PoseSolution poseSol = PoseSolver::SolvePoseReinit(pose0, yVecNoise, rCamVec, rFeaMat, bearing_meas_std);
 
     Pose conj_pose_temp = Utilities::ConjugatePose(poseSol.pose);
-    Pose conj_pose = PoseSolver::SolvePose(conj_pose_temp, yVecNoise, rCamVec, rFeaMat).pose;
+    Pose conj_pose = PoseSolver::SolvePose(conj_pose_temp, yVecNoise, rCamVec, rFeaMat, bearing_meas_std).pose;
 
     // timing
     std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();

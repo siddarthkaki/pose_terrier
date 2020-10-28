@@ -88,7 +88,7 @@ int main(int argc, char **argv)
     double focal_length = json_params["focal_length"]; //5.5*pow(10,-3);
 
     // specify measurement noise standard deviation (rad)
-    //double meas_std = double(json_params["meas_std_deg"]) * Utilities::DEG2RAD;
+    // double bearing_meas_std = double(json_params["bearing_meas_std_deg"]) * Utilities::DEG2RAD;
 
     // specify expected number of time-steps for memory pre-allocation
     const unsigned int num_poses_test = json_params["num_poses_test"];
