@@ -13,6 +13,12 @@ Clone the repository:
 git clone [repository url]
 ```
 
+Link Eigen libraries to proper directory (if needed). For example:
+```
+sudo ln -s /usr/include/eigen3/Eigen /usr/include/Eigen
+sudo ln -s /usr/include/eigen3/unsupported/ /usr/include/unsupported
+```
+
 CMake is employed for building. From the cloned directory, execute:
 ```
 mkdir build
