@@ -28,6 +28,11 @@ make -j4
 ```
 
 ## Usage
+Before the first usage, link the `params.json` file to the build directory. Execute from the `build` directory:
+```
+ln -s ../params.json params.json
+```
+
 To run the non-linear least-squares pose estimator + Kalman filter, execute from the `build` directory:
 ```
 ./pose_estimator_main
