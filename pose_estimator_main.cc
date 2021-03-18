@@ -390,6 +390,7 @@ int main(int argc, char **argv)
                     Vector3d pos_meas_wrapper = pose_sol.pose.pos;
 
                     // KF measurement update step
+                    kf.R_ = pose_sol.cov_pose.topLeftCorner(3,3);
                     kf.Update(pos_meas_wrapper);
 
                     // wrap NLS attitude solution as MEKF measurement
@@ -400,6 +401,7 @@ int main(int argc, char **argv)
                     att_meas_wrapper(3) = pose_sol.pose.quat.normalized().z();
                     
                     // MEKF measurement update step
+                    mekf.R_ = pose_sol.cov_pose.bottomRightCorner(3,3);
                     mekf.Update(att_meas_wrapper);
 
                     // MEKF reset step
