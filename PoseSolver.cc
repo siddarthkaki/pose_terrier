@@ -8,8 +8,8 @@
 /**
  * @function SolvePose
  * @brief Non-linear Least-Squares Levenberg–Marquardt Solver for Pose based on
- *        Relative Bearing Measurements to Specified Feature Points with Known
- *        2D-3D Correspondences A-Priori
+ *        Relative Bearing Measurements to Specified Feature Points with A-Priori 
+ *        Known 2D-3D Correspondences 
  * @return VectorXd of estimate state (pose)
  */
 PoseSolution PoseSolver::SolvePose(const Pose& pose0, const VectorXd& yVec, const Vector3d& rCamVec, const MatrixXd& rFeaMat, const double bearing_meas_std)
@@ -67,7 +67,7 @@ PoseSolution PoseSolver::SolvePose(const Pose& pose0, const VectorXd& yVec, cons
 
     // Covariance computation
     ceres::Covariance::Options cov_options;
-    //cov_options.algorithm_type = ceres::DENSE_SVD;
+    cov_options.algorithm_type = ceres::DENSE_SVD;
     //cov_options.null_space_rank = 1;
     ceres::Covariance covariance(cov_options);
 
@@ -103,7 +103,7 @@ PoseSolution PoseSolver::SolvePose(const Pose& pose0, const VectorXd& yVec, cons
 /**
  * @function SolvePoseReinit
  * @brief Non-linear Least-Squares Levenberg–Marquardt Solver with Multiple
- *        Random Reinitialisationsfor Pose based on Relative Bearing
+ *        Random Reinitialisations for Pose based on Relative Bearing
  *        Measurements to Specified Feature Points with A-Priori Known 2D-3D
  *        Correspondences 
  * @return VectorXd of estimate state (pose)
