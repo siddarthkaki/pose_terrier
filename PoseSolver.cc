@@ -16,14 +16,14 @@ PoseSolution PoseSolver::SolvePose(const Pose& pose0, const VectorXd& yVec, cons
 {
     PoseSolution poseSol;
 
-    Vector3d  posHatVec = pose0.pos;
     VectorXd quatHatVec(4); 
     quatHatVec << pose0.quat.w(), pose0.quat.x(), pose0.quat.y(), pose0.quat.z();
-
+    Vector3d  posHatVec = pose0.pos;
+    
     // The variables to solve for with initial values.
     // The variables will be mutated in place by the solver.
-    double*  posHatArr =  posHatVec.data();
     double* quatHatArr = quatHatVec.data();
+    double*  posHatArr =  posHatVec.data();
     
     // number of feature points
     int numPts = rFeaMat.rows();
@@ -39,10 +39,10 @@ PoseSolution PoseSolver::SolvePose(const Pose& pose0, const VectorXd& yVec, cons
 
     // Set up the only cost function (also known as residual). This uses
     // auto-differentiation to obtain the derivative (jacobian).    
-    ceres::CostFunction* cost_function = new ceres::AutoDiffCostFunction<MeasResidCostFunctorQuat, ceres::DYNAMIC, 3, 4>(
+    ceres::CostFunction* cost_function = new ceres::AutoDiffCostFunction<MeasResidCostFunctorQuat, ceres::DYNAMIC, 4, 3>(
             new MeasResidCostFunctorQuat(yVec, rFeaMat, rCamVec, bearing_meas_std), numPts*2);
 
-    problem.AddResidualBlock(cost_function, loss_function, posHatArr, quatHatArr);
+    problem.AddResidualBlock(cost_function, loss_function, quatHatArr, posHatArr);
 
     problem.SetParameterization(quatHatArr, quaternion_parameterization);
 
@@ -72,24 +72,24 @@ PoseSolution PoseSolver::SolvePose(const Pose& pose0, const VectorXd& yVec, cons
     ceres::Covariance covariance(cov_options);
 
     std::vector<std::pair<const double*, const double*> > covariance_blocks;    
-    covariance_blocks.push_back(std::make_pair(posHatArr, posHatArr));
     covariance_blocks.push_back(std::make_pair(quatHatArr, quatHatArr));
-    covariance_blocks.push_back(std::make_pair(posHatArr, quatHatArr));
+    covariance_blocks.push_back(std::make_pair(posHatArr, posHatArr));
+    covariance_blocks.push_back(std::make_pair(quatHatArr, posHatArr));
 
     CHECK(covariance.Compute(covariance_blocks, &problem));
     Matrix3d_rm cov_xx = Matrix3d_rm::Zero();
     Matrix3d_rm cov_yy = Matrix3d_rm::Zero();
     Matrix3d_rm cov_xy = Matrix3d_rm::Zero();
-    covariance.GetCovarianceBlock(posHatArr, posHatArr, cov_xx.data());
-    covariance.GetCovarianceBlockInTangentSpace(quatHatArr, quatHatArr, cov_yy.data());
-    covariance.GetCovarianceBlockInTangentSpace(posHatArr, quatHatArr, cov_xy.data());
+    covariance.GetCovarianceBlockInTangentSpace(quatHatArr, quatHatArr, cov_xx.data());
+    covariance.GetCovarianceBlock(posHatArr, posHatArr, cov_yy.data());
+    covariance.GetCovarianceBlockInTangentSpace(quatHatArr, posHatArr, cov_xy.data());
     
     // convert estimated state information from double arrays to Eigen
-    poseSol.pose.pos  = posHatVec;
     poseSol.pose.quat.w() = quatHatVec(0);
     poseSol.pose.quat.x() = quatHatVec(1);
     poseSol.pose.quat.y() = quatHatVec(2);
     poseSol.pose.quat.z() = quatHatVec(3);
+    poseSol.pose.pos  = posHatVec;
     
     // store pose covariance estimate
     poseSol.cov_pose.topLeftCorner(3,3) = cov_xx;

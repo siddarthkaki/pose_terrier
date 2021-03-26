@@ -63,21 +63,17 @@ class MeasResidCostFunctor
 // Measurements: yVec
 // Feature Points: rFeaMat
 // Camera Location: rCamVec
-// States: posVec, quatVec
+// States: quatVec, posVec
 class MeasResidCostFunctorQuat
 {
     public: MeasResidCostFunctorQuat(VectorXd yVec, MatrixXd rFeaMat, Vector3d rCamVec, double bearing_meas_std): yVec_(yVec), rFeaMat_(rFeaMat), rCamVec_(rCamVec), bearing_meas_std_(bearing_meas_std) {}
 
     template <typename T>
-    bool operator()(const T* const posArr,
-                    const T* const quatArr,
+    bool operator()(const T* const quatArr,
+                    const T* const posArr,
                     T* residuals) const
     {
 
-        Eigen::Matrix<T, 3, 1> posVec;
-        posVec(0) = posArr[0];
-        posVec(1) = posArr[1];
-        posVec(2) = posArr[2];
 
         Eigen::Quaternion<T> quat;
         quat.w() = quatArr[0];
@@ -85,6 +81,11 @@ class MeasResidCostFunctorQuat
         quat.y() = quatArr[2];
         quat.z() = quatArr[3];
         quat.normalize();
+
+        Eigen::Matrix<T, 3, 1> posVec;
+        posVec(0) = posArr[0];
+        posVec(1) = posArr[1];
+        posVec(2) = posArr[2];
 
         int numPts = rFeaMat_.rows();
         int numMeas = yVec_.rows();

@@ -14,8 +14,9 @@
 
 #include "Utilities.h"
 #include "PoseSolver.h"
-#include "KalmanFilter.h"
-#include "MEKF.h"
+//#include "KalmanFilter.h"
+//#include "MEKF.h"
+#include "MEKF2.h"
 
 #include "third_party/json.hpp"
 #include "third_party/CppRot/cpprot.h"
@@ -103,10 +104,10 @@ int main(int argc, char **argv)
     double mekf_measurement_noise_std = 0.05;
     double mekf_dt = kf_dt; // 0.1;
 
-    KF::KalmanFilter kf;
-    kf.InitLinearPositionTracking(kf_process_noise_std, kf_measurement_noise_std, kf_dt);
+    //KF::KalmanFilter kf;
+    //kf.InitLinearPositionTracking(kf_process_noise_std, kf_measurement_noise_std, kf_dt);
 
-    MEKF::MEKF mekf(mekf_dt);
+    MEKF2::MEKF2 mekf(mekf_dt);
     mekf.Init(mekf_process_noise_std, mekf_measurement_noise_std, mekf_dt);
 
     //------------------------------------------------------------------------/
@@ -135,10 +136,10 @@ int main(int argc, char **argv)
 
     // true pose
     Pose pose_true;
-    pose_true.pos << 0.5, -0.25, 30.0;
     //pose_true.quat = Quaterniond::UnitRandom();
     pose_true.quat.w() = 1.0;
     pose_true.quat.vec() = Vector3d::Zero();
+    pose_true.pos << 0.5, -0.25, 30.0;
 
     bool first_run = true;
 
@@ -147,13 +148,14 @@ int main(int argc, char **argv)
         //-- Simulate Measurements -------------------------------------------/
 
         // generate true pose values for ith run
-        pose_true.pos(0) += 0.01;
-        pose_true.pos(1) -= 0.01;
-        pose_true.pos(2) += 0.05;
         Quaterniond quat_step = AngleAxisd( 0.001, Vector3d::UnitX()) *
                                 AngleAxisd(-0.001, Vector3d::UnitY()) *
                                 AngleAxisd( 0.001, Vector3d::UnitZ());
         pose_true.quat = pose_true.quat * quat_step;
+
+        pose_true.pos(0) += 0.01;
+        pose_true.pos(1) -= 0.01;
+        pose_true.pos(2) += 0.05;
 
         // express feature points in chaser frame at the specified pose
         MatrixXd rMat = Utilities::FeaPointsTargetToChaser(pose_true, rCamVec, rFeaMat);
@@ -194,6 +196,7 @@ int main(int argc, char **argv)
         // if first time-step, then set KF priors
         if (first_run)
         {
+            /*
             // KF priors
             VectorXd state0 = VectorXd::Zero(kf.num_states_);
             state0.head(3) = pose_sol.pose.pos;
@@ -207,16 +210,19 @@ int main(int argc, char **argv)
             kf.R_(2, 2) = 3.0;
             
             kf.PrintModelMatrices();
+            *///
 
             // MEKF priors
             Quaterniond init_quat = pose_sol.pose.quat;
             Vector3d init_omega = 0.01*Vector3d::Ones();
             Vector3d init_alpha = 0.1*Vector3d::Ones();
             MatrixXd init_covar = MatrixXd::Identity(mekf.num_states_, mekf.num_states_);
-            init_covar(0, 0) = 0.1;
-            init_covar(1, 1) = 0.1;
-            init_covar(2, 2) = 0.1;
-            mekf.SetInitialStateAndCovar(init_quat, init_omega, init_alpha, init_covar);
+            VectorXd x0 = VectorXd::Zero(mekf.num_pos_states_);
+            x0.head(3) = pose_sol.pose.pos;
+            // init_covar(0, 0) = 0.1;
+            // init_covar(1, 1) = 0.1;
+            // init_covar(2, 2) = 0.1;
+            mekf.SetInitialStateAndCovar(init_quat, init_omega, init_alpha, x0, init_covar);
 
             mekf.PrintModelMatrices();
 
@@ -225,6 +231,8 @@ int main(int argc, char **argv)
         }
         else // else, perform KF tracking
         {
+
+            /*
             // KF prediction step
             kf.Predict(VectorXd::Zero(kf.num_inputs_));
 
@@ -236,31 +244,40 @@ int main(int argc, char **argv)
             kf.Update(pos_meas_wrapper);
             
             kf.StoreAndClean();
-
-
+            */
 
             // MEKF prediction step (state propagation in terms of quaternions, covariance propagation in terms of gibbs vector)
             mekf.Predict();
 
+            /*
             // wrap NLS attitude solution as MEKF measurement
             VectorXd att_meas_wrapper(4);
             att_meas_wrapper(0) = pose_sol.pose.quat.normalized().w();
             att_meas_wrapper(1) = pose_sol.pose.quat.normalized().x();
             att_meas_wrapper(2) = pose_sol.pose.quat.normalized().y();
             att_meas_wrapper(3) = pose_sol.pose.quat.normalized().z();
+            */
+
+            // wrap NLS pose solution as MEKF measurement
+            VectorXd meas_wrapper(7);
+            meas_wrapper(0) = pose_sol.pose.quat.normalized().w();
+            meas_wrapper(1) = pose_sol.pose.quat.normalized().x();
+            meas_wrapper(2) = pose_sol.pose.quat.normalized().y();
+            meas_wrapper(3) = pose_sol.pose.quat.normalized().z();
+            meas_wrapper.tail(3) = pose_sol.pose.pos;
+
             
             // MEKF measurement update step
-            mekf.R_ = pose_sol.cov_pose.bottomRightCorner(3,3);
-            mekf.Update(att_meas_wrapper);
+            mekf.R_ = pose_sol.cov_pose;//.bottomRightCorner(3,3);
+            std::cout << mekf.R_ << std::endl << std::endl;
+            mekf.Update(meas_wrapper);
 
             // MEKF reset step
             mekf.Reset();
             mekf.StoreAndClean();
-
-
             
             // storage
-            pose_filtered.pos = kf.last_state_estimate.head(3);
+            pose_filtered.pos = mekf.pos_est_;//.head(3);
             pose_filtered.quat = mekf.quat_est_.normalized();
         }
 

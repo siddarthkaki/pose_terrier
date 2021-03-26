@@ -16,8 +16,8 @@
 
 #include "Utilities.h"
 #include "PoseSolver.h"
-#include "KalmanFilter.h"
-#include "MEKF.h"
+//#include "KalmanFilter.h"
+#include "MEKF2.h"
 #include "pose.pb.h"
 #include "measurement.pb.h"
 
@@ -111,16 +111,16 @@ int main(int argc, char **argv)
 
     //-- Init Filters --------------------------------------------------------/
     
-    double kf_process_noise_std = 0.01;
-    double kf_measurement_noise_std = 0.05;
+    // double kf_process_noise_std = 0.01;
+    // double kf_measurement_noise_std = 0.05;
 
     double mekf_process_noise_std = 0.01;
     double mekf_measurement_noise_std = 0.05;
 
-    KF::KalmanFilter kf;
-    kf.InitLinearPositionTracking(kf_process_noise_std, kf_measurement_noise_std, kf_dt);
+    // KF::KalmanFilter kf;
+    // kf.InitLinearPositionTracking(kf_process_noise_std, kf_measurement_noise_std, kf_dt);
 
-    MEKF::MEKF mekf(mekf_dt);
+    MEKF2::MEKF2 mekf(mekf_dt);
     mekf.Init(mekf_process_noise_std, mekf_measurement_noise_std, mekf_dt);
 
     //-- Init sequence -------------------------------------------------------/
@@ -238,16 +238,16 @@ int main(int argc, char **argv)
 
                     // initialise filter priors
                     // KF priors
-                    VectorXd state0 = VectorXd::Zero(kf.num_states_);
-                    state0.head(3) = pose_sol.pose.pos;
-                    MatrixXd covar0 = 10.0 * MatrixXd::Identity(kf.num_states_, kf.num_states_);
-                    covar0(0, 0) = 1.0;
-                    covar0(1, 1) = 1.0;
-                    covar0(2, 2) = 3.0;
-                    kf.SetInitialStateAndCovar(state0, covar0);
-                    kf.R_(0, 0) = 1.0;
-                    kf.R_(1, 1) = 1.0;
-                    kf.R_(2, 2) = 3.0;
+                    // VectorXd state0 = VectorXd::Zero(kf.num_states_);
+                    // state0.head(3) = pose_sol.pose.pos;
+                    // MatrixXd covar0 = 10.0 * MatrixXd::Identity(kf.num_states_, kf.num_states_);
+                    // covar0(0, 0) = 1.0;
+                    // covar0(1, 1) = 1.0;
+                    // covar0(2, 2) = 3.0;
+                    // kf.SetInitialStateAndCovar(state0, covar0);
+                    // kf.R_(0, 0) = 1.0;
+                    // kf.R_(1, 1) = 1.0;
+                    // kf.R_(2, 2) = 3.0;
 
                     //std::cout << "KF Model: " << std::endl;
                     //kf.PrintModelMatrices();
@@ -258,10 +258,12 @@ int main(int argc, char **argv)
                     Vector3d init_omega = 0.01 * Vector3d::Random();
                     Vector3d init_alpha = 0.1 * Vector3d::Random();
                     MatrixXd init_covar = MatrixXd::Identity(mekf.num_states_, mekf.num_states_);
-                    init_covar(0, 0) = 0.1;
-                    init_covar(1, 1) = 0.1;
-                    init_covar(2, 2) = 0.1;
-                    mekf.SetInitialStateAndCovar(init_quat, init_omega, init_alpha, init_covar);
+                    VectorXd x0 = VectorXd::Zero(mekf.num_pos_states_);
+                    x0.head(3) = pose_sol.pose.pos;
+                    // init_covar(0, 0) = 0.1;
+                    // init_covar(1, 1) = 0.1;
+                    // init_covar(2, 2) = 0.1;
+                    mekf.SetInitialStateAndCovar(init_quat, init_omega, init_alpha, x0, init_covar);
 
                     //std::cout << "MEKF Model: " << std::endl;
                     //mekf.PrintModelMatrices();
@@ -327,7 +329,7 @@ int main(int argc, char **argv)
         last_t = curr_t;
 
         // KF prediction step
-        kf.Predict(VectorXd::Zero(kf.num_inputs_));
+        // kf.Predict(VectorXd::Zero(kf.num_inputs_));
 
         // MEKF prediction step (state propagation in terms of quaternions, covariance propagation in terms of gibbs vector)
         mekf.Predict();
@@ -390,19 +392,27 @@ int main(int argc, char **argv)
                     Vector3d pos_meas_wrapper = pose_sol.pose.pos;
 
                     // KF measurement update step
-                    kf.R_ = pose_sol.cov_pose.topLeftCorner(3,3);
-                    kf.Update(pos_meas_wrapper);
+                    // kf.R_ = pose_sol.cov_pose.topLeftCorner(3,3);
+                    // kf.Update(pos_meas_wrapper);
 
-                    // wrap NLS attitude solution as MEKF measurement
-                    VectorXd att_meas_wrapper(4);
-                    att_meas_wrapper(0) = pose_sol.pose.quat.normalized().w();
-                    att_meas_wrapper(1) = pose_sol.pose.quat.normalized().x();
-                    att_meas_wrapper(2) = pose_sol.pose.quat.normalized().y();
-                    att_meas_wrapper(3) = pose_sol.pose.quat.normalized().z();
+                    // // wrap NLS attitude solution as MEKF measurement
+                    // VectorXd att_meas_wrapper(4);
+                    // att_meas_wrapper(0) = pose_sol.pose.quat.normalized().w();
+                    // att_meas_wrapper(1) = pose_sol.pose.quat.normalized().x();
+                    // att_meas_wrapper(2) = pose_sol.pose.quat.normalized().y();
+                    // att_meas_wrapper(3) = pose_sol.pose.quat.normalized().z();
+
+                    // wrap NLS pose solution as MEKF measurement
+                    VectorXd meas_wrapper(7);
+                    meas_wrapper(0) = pose_sol.pose.quat.normalized().w();
+                    meas_wrapper(1) = pose_sol.pose.quat.normalized().x();
+                    meas_wrapper(2) = pose_sol.pose.quat.normalized().y();
+                    meas_wrapper(3) = pose_sol.pose.quat.normalized().z();
+                    meas_wrapper.tail(3) = pose_sol.pose.pos;
                     
                     // MEKF measurement update step
-                    mekf.R_ = pose_sol.cov_pose.bottomRightCorner(3,3);
-                    mekf.Update(att_meas_wrapper);
+                    mekf.R_ = pose_sol.cov_pose; //.bottomRightCorner(3,3);
+                    mekf.Update(meas_wrapper);
 
                     // MEKF reset step
                     mekf.Reset();
@@ -422,11 +432,11 @@ int main(int argc, char **argv)
         {
         }
 
-        kf.StoreAndClean();
+        // kf.StoreAndClean();
         mekf.StoreAndClean();
 
         Pose pose_filtered;
-        pose_filtered.pos = kf.last_state_estimate.head(3);
+        pose_filtered.pos = mekf.pos_est_; //.last_state_estimate.head(3);
         pose_filtered.quat = mekf.quat_est_.normalized();
 
         curr_t = std::chrono::high_resolution_clock::now();
