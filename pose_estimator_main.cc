@@ -117,9 +117,6 @@ int main(int argc, char **argv)
     double mekf_process_noise_std = 0.01;
     double mekf_measurement_noise_std = 0.05;
 
-    // KF::KalmanFilter kf;
-    // kf.InitLinearPositionTracking(kf_process_noise_std, kf_measurement_noise_std, kf_dt);
-
     MEKF2::MEKF2 mekf(mekf_dt);
     mekf.Init(mekf_process_noise_std, mekf_measurement_noise_std, mekf_dt);
 
@@ -132,15 +129,11 @@ int main(int argc, char **argv)
 
     // declare vectors for storage
     std::vector<Pose> solved_poses, filtered_poses;
-    //std::vector<VectorXd> kf_states;
-    //std::vector<MatrixXd> kf_covars;
     std::vector<double> timestamps; // [s]
 
     // pre-allocate memory
     solved_poses.reserve(vector_reserve_size);
     filtered_poses.reserve(vector_reserve_size);
-    //kf_states.reserve(vector_reserve_size);
-    //kf_covars.reserve(vector_reserve_size);
     timestamps.reserve(vector_reserve_size);
 
     // clock object
@@ -236,43 +229,19 @@ int main(int argc, char **argv)
                     Pose conj_pose_temp = Utilities::ConjugatePose(pose_sol.pose);
                     Pose conj_pose = PoseSolver::SolvePose(conj_pose_temp, yVec, rCamVec, rFeaMat, bearing_meas_std).pose;
 
-                    // initialise filter priors
-                    // KF priors
-                    // VectorXd state0 = VectorXd::Zero(kf.num_states_);
-                    // state0.head(3) = pose_sol.pose.pos;
-                    // MatrixXd covar0 = 10.0 * MatrixXd::Identity(kf.num_states_, kf.num_states_);
-                    // covar0(0, 0) = 1.0;
-                    // covar0(1, 1) = 1.0;
-                    // covar0(2, 2) = 3.0;
-                    // kf.SetInitialStateAndCovar(state0, covar0);
-                    // kf.R_(0, 0) = 1.0;
-                    // kf.R_(1, 1) = 1.0;
-                    // kf.R_(2, 2) = 3.0;
-
-                    //std::cout << "KF Model: " << std::endl;
-                    //kf.PrintModelMatrices();
-                    //std::cout << std::endl;
-
                     // MEKF priors
                     Quaterniond init_quat = pose_sol.pose.quat;
-                    Vector3d init_omega = 0.01 * Vector3d::Random();
-                    Vector3d init_alpha = 0.1 * Vector3d::Random();
+                    Vector3d init_omega = 0.005 * Vector3d::Random();
+                    Vector3d init_alpha = 0.01 * Vector3d::Random();
                     MatrixXd init_covar = MatrixXd::Identity(mekf.num_states_, mekf.num_states_);
                     VectorXd x0 = VectorXd::Zero(mekf.num_pos_states_);
                     x0.head(3) = pose_sol.pose.pos;
-                    // init_covar(0, 0) = 0.1;
-                    // init_covar(1, 1) = 0.1;
-                    // init_covar(2, 2) = 0.1;
+                    x0.segment(3,3) = 0.005 * Vector3d::Random();
+                    x0.tail(3) = 0.001 * Vector3d::Random();
                     mekf.SetInitialStateAndCovar(init_quat, init_omega, init_alpha, x0, init_covar);
-
-                    //std::cout << "MEKF Model: " << std::endl;
-                    //mekf.PrintModelMatrices();
-                    //std::cout << std::endl;
 
                     solved_poses.push_back(pose_sol.pose);
                     filtered_poses.push_back(pose_sol.pose);
-                    //kf_states.push_back(state0);
-                    //kf_covars.push_back(covar0);
                     timestamps.push_back(0.0);
                     init_t = std::chrono::high_resolution_clock::now();
                 }
@@ -288,7 +257,7 @@ int main(int argc, char **argv)
         }
         else
         { // if no size message found
-            //std::cout << "Awaiting first measurement..." << std::endl;
+            // std::cout << "Awaiting first measurement..." << std::endl;
         }
     }
 
@@ -325,11 +294,8 @@ int main(int argc, char **argv)
             curr_delta_t = (double)std::chrono::duration_cast<std::chrono::nanoseconds>(curr_t - last_t).count();
             curr_delta_t *= pow(10.0, -9.0);
         }
-        //std::cout << "Predict." << std::endl;
-        last_t = curr_t;
 
-        // KF prediction step
-        // kf.Predict(VectorXd::Zero(kf.num_inputs_));
+        last_t = curr_t;
 
         // MEKF prediction step (state propagation in terms of quaternions, covariance propagation in terms of gibbs vector)
         mekf.Predict();
@@ -391,17 +357,6 @@ int main(int argc, char **argv)
                     // wrap NLS position solution as KF measurement
                     Vector3d pos_meas_wrapper = pose_sol.pose.pos;
 
-                    // KF measurement update step
-                    // kf.R_ = pose_sol.cov_pose.topLeftCorner(3,3);
-                    // kf.Update(pos_meas_wrapper);
-
-                    // // wrap NLS attitude solution as MEKF measurement
-                    // VectorXd att_meas_wrapper(4);
-                    // att_meas_wrapper(0) = pose_sol.pose.quat.normalized().w();
-                    // att_meas_wrapper(1) = pose_sol.pose.quat.normalized().x();
-                    // att_meas_wrapper(2) = pose_sol.pose.quat.normalized().y();
-                    // att_meas_wrapper(3) = pose_sol.pose.quat.normalized().z();
-
                     // wrap NLS pose solution as MEKF measurement
                     VectorXd meas_wrapper(7);
                     meas_wrapper(0) = pose_sol.pose.quat.normalized().w();
@@ -411,7 +366,7 @@ int main(int argc, char **argv)
                     meas_wrapper.tail(3) = pose_sol.pose.pos;
                     
                     // MEKF measurement update step
-                    mekf.R_ = pose_sol.cov_pose; //.bottomRightCorner(3,3);
+                    mekf.R_ = pose_sol.cov_pose;
                     mekf.Update(meas_wrapper);
 
                     // MEKF reset step
@@ -432,11 +387,10 @@ int main(int argc, char **argv)
         {
         }
 
-        // kf.StoreAndClean();
         mekf.StoreAndClean();
 
         Pose pose_filtered;
-        pose_filtered.pos = mekf.pos_est_; //.last_state_estimate.head(3);
+        pose_filtered.pos = mekf.pos_est_;
         pose_filtered.quat = mekf.quat_est_.normalized();
 
         curr_t = std::chrono::high_resolution_clock::now();
@@ -448,8 +402,6 @@ int main(int argc, char **argv)
         //-- Data Storage ----------------------------------------------------/        
         solved_poses.push_back(pose_sol.pose);
         filtered_poses.push_back(pose_filtered);
-        //kf_states.push_back(kf.last_state_estimate);
-        //kf_covars.push_back(kf.last_covar_estimate);
         timestamps.push_back(curr_elapsed_t);
 
         // set NLS initial guess for next time-step to latest filtered estimate
@@ -502,15 +454,11 @@ int main(int argc, char **argv)
             bool append_mode = true;
             Utilities::WritePosesToCSV(solved_poses, prefix + "solved_poses" + postfix, append_mode);
             Utilities::WritePosesToCSV(filtered_poses, prefix + "filtered_poses" + postfix, append_mode);
-            //Utilities::WriteKFStatesToCSV(kf_states, prefix + "kf_states" + postfix, append_mode);
-            //Utilities::WriteKFCovarsToCSV(kf_covars, prefix + "kf_covars" + postfix, append_mode);
             Utilities::WriteTimestampsToFile(timestamps, prefix + "timestamps" + postfix, append_mode);
 
             // clear vectors
             solved_poses.clear();
             filtered_poses.clear();
-            //kf_states.clear();
-            //kf_covars.clear();
             timestamps.clear();
         }
 
@@ -533,8 +481,6 @@ int main(int argc, char **argv)
                 // write to csv files
                 Utilities::WritePosesToCSV(solved_poses, prefix + "solved_poses" + postfix, append_mode);
                 Utilities::WritePosesToCSV(filtered_poses, prefix + "filtered_poses" + postfix, append_mode);
-                //Utilities::WriteKFStatesToCSV(kf_states, prefix + "kf_states" + postfix, append_mode);
-                //Utilities::WriteKFCovarsToCSV(kf_covars, prefix + "kf_covars" + postfix, append_mode);
                 Utilities::WriteTimestampsToFile(timestamps, prefix + "timestamps" + postfix, append_mode);
                 printf("Logged data to file.\n");
             }
