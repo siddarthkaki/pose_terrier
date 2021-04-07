@@ -91,11 +91,11 @@ int main(int argc, char **argv)
     }
     // TEMPORARY
     
-    /*
+    ///*
     num_features = 11;
     rFeaMat = 2.5 * MatrixXd::Random(num_features, 3);
     std::cout << rFeaMat << std::endl;
-    */
+    //*/
 
     const unsigned int num_poses_test = json_params["num_poses_test"];
     const unsigned int vector_reserve_size = json_params["vector_reserve_size"];

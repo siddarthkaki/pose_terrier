@@ -2,7 +2,7 @@
 clear; close all; clc;
 
 %% init
-prefix = "../data/" + "1598028404" + "_";
+prefix = "../data/" + "1617822191" + "_";
 
 tVec = f_read_timestamps(prefix + "timestamps.csv");
 
@@ -104,6 +104,8 @@ legend('NLS','KF')
 xlabel('time [s]')
 ylabel('pos\_score [m]')
 
+boldify;
+
 %% plotting attitude
 figure('DefaultAxesFontSize',15)
 subplot(4,1,1)
@@ -143,7 +145,9 @@ plot(tVec, rad2deg(attScoreVec),'color',[0.8500, 0.3250, 0.0980])
 hold on
 plot(tVec, rad2deg(attScoreVecFiltered),'color',[0.4940, 0.1840, 0.5560],'LineWidth',2)
 grid on
-%ylim([0 50])
+ylim([0 25])
 legend('NLS','KF')
 xlabel('time [s]')
 ylabel('att\_score [deg]')
+
+boldify;
