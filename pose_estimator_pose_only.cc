@@ -94,7 +94,7 @@ int main(int argc, char **argv)
     //double focal_length = json_params["focal_length"]; //5.5*pow(10,-3);
 
     // specify measurement noise standard deviation (rad)
-    double bearing_meas_std = double(json_params["bearing_meas_std_deg"]) * Utilities::DEG2RAD;
+    //double bearing_meas_std = double(json_params["bearing_meas_std_deg"]) * Utilities::DEG2RAD;
 
     // specify expected number of time-steps for memory pre-allocation
     const unsigned int num_poses_test = json_params["num_poses_test"];
@@ -114,25 +114,12 @@ int main(int argc, char **argv)
     // double kf_process_noise_std = 0.01;
     // double kf_measurement_noise_std = 0.05;
 
-    double mekf_process_noise_std = double(json_params["process_noise_std"]);//0.01;
+    double mekf_process_noise_std = 0.01;
     double mekf_measurement_noise_std = double(json_params["measurement_noise_std"]);//0.05;
-    double tau = double(json_params["tau"]);
-    double max_flip_thresh_deg = double(json_params["max_flip_thresh_deg"]);
-    double pos_uw_threshold = double(json_params["pos_uw_threshold"]);
-    double pos_uw_pct = double(json_params["pos_uw_pct"]);
-    double qpsd = double(json_params["qpsd"]);
 
     MEKF2::MEKF2 mekf(mekf_dt);
-    mekf.Init(
-        mekf_process_noise_std, 
-        mekf_measurement_noise_std, 
-        mekf_dt, 
-        tau,
-        qpsd,  
-        max_flip_thresh_deg, 
-        pos_uw_threshold, 
-        pos_uw_pct
-    );
+    mekf.Init(mekf_process_noise_std, mekf_measurement_noise_std, mekf_dt);
+
     //-- Init sequence -------------------------------------------------------/
 
     // log path name prefixing and postfixing
@@ -190,7 +177,6 @@ int main(int argc, char **argv)
         // read byte size of measurement object from pipe
         size_t size;
         rd_in = read(fd_in, &size, sizeof(size));
-
         if (rd_in == sizeof(size)) // if successfully received size
         {
             // allocate sufficient buffer space
@@ -203,65 +189,47 @@ int main(int argc, char **argv)
             close(fd_in);
 
             // deserialise from buffer array
-            ProtoMeas::Measurements measurements;
-            const bool protomeas_ok = measurements.ParseFromArray(buffer, size);
+            ProtoPose::Pose pose_in;
+            const bool protopose_ok = pose_in.ParseFromArray(buffer, size);
 
             // free memory
             free(buffer);
 
-            if (protomeas_ok) // if measurement parsed properly from pipe
+            if (protopose_ok) // if measurement parsed properly from pipe
             {
                 // sanitise measurement inputs
-                if (CheckValidMeasurement(measurements))
-                {
-                    std::cout << "Received first measurement." << std::endl;
-                    received_first_meas = true;
+                // TODO: add back in check if (CheckValidMeasurement(measurements))
+                // {
+                std::cout << "Received first measurement." << std::endl;
+                received_first_meas = true;
+                Pose pose;
+                pose.pos(0) = pose_in.pos().x();
+                pose.pos(1) = pose_in.pos().y();
+                pose.pos(2) = pose_in.pos().z();
+                pose.quat.w() = pose_in.att().qw();
+                pose.quat.x() = pose_in.att().qx();
+                pose.quat.y() = pose_in.att().qy();
+                pose.quat.z() = pose_in.att().qz();
+                // MEKF priors
+                Quaterniond init_quat = pose.quat;
+                Vector3d init_omega = 0.005 * Vector3d::Random();
+                Vector3d init_alpha = 0.01 * Vector3d::Random();
+                MatrixXd init_covar = MatrixXd::Identity(mekf.num_states_, mekf.num_states_);
+                VectorXd x0 = VectorXd::Zero(mekf.num_pos_states_);
+                x0.head(3) = pose.pos;
+                x0.segment(3,3) = 0.005 * Vector3d::Random();
+                x0.tail(3) = 0.001 * Vector3d::Random();
+                mekf.SetInitialStateAndCovar(init_quat, init_omega, init_alpha, x0, init_covar);
 
-                    unsigned int num_feature_points = measurements.num_feature_points();
-
-                    // Construct Eigen::MatrixXd out of feature point locations
-                    MatrixXd rFeaMat(num_feature_points, 3);
-                    for (unsigned int idx = 0; idx < num_feature_points; idx++)
-                    {
-                        rFeaMat(idx, 0) = measurements.feature_points(idx).x();
-                        rFeaMat(idx, 1) = measurements.feature_points(idx).y();
-                        rFeaMat(idx, 2) = measurements.feature_points(idx).z();
-                    }
-
-                    // Construct Eigen::VectorXd out of measurements
-                    VectorXd yVec(2 * num_feature_points);
-                    for (unsigned int idx = 0; idx < num_feature_points; idx++)
-                    {
-                        yVec(2 * idx + 0) = measurements.bearings(idx).az();
-                        yVec(2 * idx + 1) = measurements.bearings(idx).el();
-                    }
-
-                    // solve for pose with ceres (via wrapper)
-                    PoseSolution pose_sol = PoseSolver::SolvePoseReinit(pose0, yVec, rCamVec, rFeaMat, bearing_meas_std);
-
-                    Pose conj_pose_temp = Utilities::ConjugatePose(pose_sol.pose);
-                    Pose conj_pose = PoseSolver::SolvePose(conj_pose_temp, yVec, rCamVec, rFeaMat, bearing_meas_std).pose;
-
-                    // MEKF priors
-                    Quaterniond init_quat = pose_sol.pose.quat;
-                    Vector3d init_omega = 0.005 * Vector3d::Random();
-                    Vector3d init_alpha = 0.01 * Vector3d::Random();
-                    MatrixXd init_covar = MatrixXd::Identity(mekf.num_states_, mekf.num_states_);
-                    VectorXd x0 = VectorXd::Zero(mekf.num_pos_states_);
-                    x0.head(3) = pose_sol.pose.pos;
-                    x0.segment(3,3) = 0.005 * Vector3d::Random();
-                    x0.tail(3) = 0.001 * Vector3d::Random();
-                    mekf.SetInitialStateAndCovar(init_quat, init_omega, init_alpha, x0, init_covar);
-
-                    solved_poses.push_back(pose_sol.pose);
-                    filtered_poses.push_back(pose_sol.pose);
-                    timestamps.push_back(0.0);
-                    init_t = std::chrono::high_resolution_clock::now();
-                }
+                solved_poses.push_back(pose);
+                filtered_poses.push_back(pose);
+                timestamps.push_back(0.0);
+                init_t = std::chrono::high_resolution_clock::now();
+                /*}
                 else // if bad measurement received, wait for new one
                 {
                     std::cout << "Received bad first measurement, waiting for valid first measurement." << std::endl;
-                }
+                }*/
             }
             else // if message not parsed properly, wait for new one
             {
@@ -313,13 +281,13 @@ int main(int argc, char **argv)
         // MEKF prediction step (state propagation in terms of quaternions, covariance propagation in terms of gibbs vector)
         mekf.Predict();
 
-        PoseSolution pose_sol;
+        Pose pose;
 
         //-- Check for new measurement ---------------------------------------/
         // read byte size of measurement object from pipe
         size_t size;
         rd_in = read(fd_in, &size, sizeof(size));
-
+        
         if (rd_in == sizeof(size)) // if successfully received size
         {
             // allocate sufficient buffer space
@@ -328,69 +296,49 @@ int main(int argc, char **argv)
             // read serialised measurement object from pipe
             rd_in = read(fd_in, buffer, size);
 
-            // deserialise from buffer array
-            ProtoMeas::Measurements measurements;
-            const bool protomeas_ok = measurements.ParseFromArray(buffer, size);
+            ProtoPose::Pose pose_in;
+            const bool protopose_ok = pose_in.ParseFromArray(buffer, size);
 
             // free memory
             free(buffer);
 
-            if (protomeas_ok) // if measurement parsed properly from pipe
+            if (protopose_ok) // if measurement parsed properly from pipe
             {
                 // sanitise measurement inputs
-                if (CheckValidMeasurement(measurements))
-                {
-                    unsigned int num_feature_points = measurements.num_feature_points();
+                // TODO: add back in check if (CheckValidMeasurement(measurements))
+                // {
+                received_first_meas = true;
+                
+                pose.pos(0) = pose_in.pos().x();
+                pose.pos(1) = pose_in.pos().y();
+                pose.pos(2) = pose_in.pos().z();
+                pose.quat.w() = pose_in.att().qw();
+                pose.quat.x() = pose_in.att().qx();
+                pose.quat.y() = pose_in.att().qy();
+                pose.quat.z() = pose_in.att().qz();
 
-                    // Construct Eigen::MatrixXd out of feature point locations
-                    MatrixXd rFeaMat(num_feature_points, 3);
-                    for (unsigned int idx = 0; idx < num_feature_points; idx++)
-                    {
-                        rFeaMat(idx, 0) = measurements.feature_points(idx).x();
-                        rFeaMat(idx, 1) = measurements.feature_points(idx).y();
-                        rFeaMat(idx, 2) = measurements.feature_points(idx).z();
-                    }
+                Vector3d pos_meas_wrapper = pose.pos;
 
-                    // Construct Eigen::VectorXd out of measurements
-                    VectorXd yVec(2 * num_feature_points);
-                    for (unsigned int idx = 0; idx < num_feature_points; idx++)
-                    {
-                        yVec(2 * idx + 0) = measurements.bearings(idx).az();
-                        yVec(2 * idx + 1) = measurements.bearings(idx).el();
-                    }
+                // wrap pose solution as MEKF measurement
+                VectorXd meas_wrapper(7);
+                meas_wrapper(0) = pose.quat.normalized().w();
+                meas_wrapper(1) = pose.quat.normalized().x();
+                meas_wrapper(2) = pose.quat.normalized().y();
+                meas_wrapper(3) = pose.quat.normalized().z();
+                meas_wrapper.tail(3) = pose.pos;
+                
+                // MEKF measurement update step
+                //mekf.R_ = pose_sol.cov_pose;
+                mekf.Update(meas_wrapper);
 
-                    //-- Measurement update ----------------------------------/
-
-                    // Note: NLS initial guess for this time-step (pose0) is set to
-                    //       the last filtered estimate by this point
-
-                    // solve for pose with ceres (via wrapper)
-                    pose_sol = PoseSolver::SolvePoseReinit(pose0, yVec, rCamVec, rFeaMat, bearing_meas_std);
-
-                    // wrap NLS position solution as KF measurement
-                    Vector3d pos_meas_wrapper = pose_sol.pose.pos;
-
-                    // wrap NLS pose solution as MEKF measurement
-                    VectorXd meas_wrapper(7);
-                    meas_wrapper(0) = pose_sol.pose.quat.normalized().w();
-                    meas_wrapper(1) = pose_sol.pose.quat.normalized().x();
-                    meas_wrapper(2) = pose_sol.pose.quat.normalized().y();
-                    meas_wrapper(3) = pose_sol.pose.quat.normalized().z();
-                    meas_wrapper.tail(3) = pose_sol.pose.pos;
-                    
-                    // MEKF measurement update step
-                    mekf.R_ = pose_sol.cov_pose;
-                    mekf.Update(meas_wrapper);
-
-                    // MEKF reset step
-                    mekf.Reset();
-                    
-                }
-                else // if bad measurement received, skip measurement update
+                // MEKF reset step
+                mekf.Reset();
+                /*else // if bad measurement received, skip measurement update
                 {
                     std::cout << "Received bad measurement, skipping measurement update." << std::endl;
-                }
+                }*/
             }
+                
             else // if message not parsed properly, skip measurement update
             {
                 std::cout << "Received unparsable measurement, skipping measurement update." << std::endl;
@@ -413,7 +361,7 @@ int main(int argc, char **argv)
         //--------------------------------------------------------------------/
 
         //-- Data Storage ----------------------------------------------------/        
-        solved_poses.push_back(pose_sol.pose);
+        solved_poses.push_back(pose);
         filtered_poses.push_back(pose_filtered);
         timestamps.push_back(curr_elapsed_t);
 
