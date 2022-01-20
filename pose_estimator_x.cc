@@ -19,7 +19,8 @@
 //#include "KalmanFilter.h"
 #include "MEKF2.h"
 #include "pose.pb.h"
-#include "measurement.pb.h"
+//#include "measurement.pb.h"
+#include "measurementx.pb.h"
 
 #include "third_party/json.hpp"
 #include "third_party/CppRot/cpprot.h"
@@ -45,7 +46,7 @@ void exit_handler(int signal)
     finished = 1;
 }
 
-bool CheckValidMeasurement(const ProtoMeas::Measurements& measurements);
+bool CheckValidMeasurement(const ProtoMeasX::Measurements& measurements);
 
 /**
  * @function main
@@ -203,15 +204,16 @@ int main(int argc, char **argv)
             close(fd_in);
 
             // deserialise from buffer array
-            ProtoMeas::Measurements measurements;
-            const bool protomeas_ok = measurements.ParseFromArray(buffer, size);
+            ProtoMeasX::MeasurementX measurementx;
+            const bool protomeas_ok = measurementx.ParseFromArray(buffer, size);
 
             // free memory
             free(buffer);
 
-            if (protomeas_ok) // if measurement parsed properly from pipe
+            if (protomeas_ok && measurementx.meastype_case() == ProtoMeasX::MeasurementX::MeastypeCase::kMeasurements) // if measurement parsed properly from pipe
             {
                 // sanitise measurement inputs
+                ProtoMeasX::Measurements measurements = measurementx.measurements();
                 if (CheckValidMeasurement(measurements))
                 {
                     std::cout << "Received first measurement." << std::endl;
@@ -262,6 +264,38 @@ int main(int argc, char **argv)
                 {
                     std::cout << "Received bad first measurement, waiting for valid first measurement." << std::endl;
                 }
+            }
+            else if(protomeas_ok && measurementx.meastype_case() == ProtoMeasX::MeasurementX::MeasurementX::MeastypeCase::kPose)
+            {
+                // TODO: add back in check if (CheckValidMeasurement(measurements))
+                // {
+                ProtoMeasX::Pose pose_in = measurementx.pose();
+                std::cout << "Received first measurement." << std::endl;
+                received_first_meas = true;
+                Pose pose;
+                pose.pos(0) = pose_in.pos().x();
+                pose.pos(1) = pose_in.pos().y();
+                pose.pos(2) = pose_in.pos().z();
+                pose.quat.w() = pose_in.att().qw();
+                pose.quat.x() = pose_in.att().qx();
+                pose.quat.y() = pose_in.att().qy();
+                pose.quat.z() = pose_in.att().qz();
+
+                // MEKF priors
+                Quaterniond init_quat = pose.quat;
+                Vector3d init_omega = 0.005 * Vector3d::Random();
+                Vector3d init_alpha = 0.01 * Vector3d::Random();
+                MatrixXd init_covar = MatrixXd::Identity(mekf.num_states_, mekf.num_states_);
+                VectorXd x0 = VectorXd::Zero(mekf.num_pos_states_);
+                x0.head(3) = pose.pos;
+                x0.segment(3,3) = 0.005 * Vector3d::Random();
+                x0.tail(3) = 0.001 * Vector3d::Random();
+                mekf.SetInitialStateAndCovar(init_quat, init_omega, init_alpha, x0, init_covar);
+
+                solved_poses.push_back(pose);
+                filtered_poses.push_back(pose);
+                timestamps.push_back(0.0);
+                init_t = std::chrono::high_resolution_clock::now();
             }
             else // if message not parsed properly, wait for new one
             {
@@ -329,14 +363,15 @@ int main(int argc, char **argv)
             rd_in = read(fd_in, buffer, size);
 
             // deserialise from buffer array
-            ProtoMeas::Measurements measurements;
-            const bool protomeas_ok = measurements.ParseFromArray(buffer, size);
+            ProtoMeasX::MeasurementX measurementx;
+            const bool protomeas_ok = measurementx.ParseFromArray(buffer, size);
 
             // free memory
             free(buffer);
 
-            if (protomeas_ok) // if measurement parsed properly from pipe
+            if  (protomeas_ok && measurementx.meastype_case() == ProtoMeasX::MeasurementX::MeastypeCase::kMeasurements) // if measurement parsed properly from pipe
             {
+                ProtoMeasX::Measurements measurements = measurementx.measurements();
                 // sanitise measurement inputs
                 if (CheckValidMeasurement(measurements))
                 {
@@ -386,11 +421,45 @@ int main(int argc, char **argv)
                     mekf.Reset();
                     
                 }
+                
                 else // if bad measurement received, skip measurement update
                 {
                     std::cout << "Received bad measurement, skipping measurement update." << std::endl;
                 }
             }
+            else if(protomeas_ok && measurementx.meastype_case() == ProtoMeasX::MeasurementX::MeastypeCase::kPose)
+            {   
+                // TODO: add back in check if (CheckValidMeasurement(measurements))
+                // {
+                ProtoMeasX::Pose pose_in = measurementx.pose();
+                received_first_meas = true;
+                Pose pose;
+                pose.pos(0) = pose_in.pos().x();
+                pose.pos(1) = pose_in.pos().y();
+                pose.pos(2) = pose_in.pos().z();
+                pose.quat.w() = pose_in.att().qw();
+                pose.quat.x() = pose_in.att().qx();
+                pose.quat.y() = pose_in.att().qy();
+                pose.quat.z() = pose_in.att().qz();
+
+                Vector3d pos_meas_wrapper = pose.pos;
+
+                // wrap pose solution as MEKF measurement
+                VectorXd meas_wrapper(7);
+                meas_wrapper(0) = pose.quat.normalized().w();
+                meas_wrapper(1) = pose.quat.normalized().x();
+                meas_wrapper(2) = pose.quat.normalized().y();
+                meas_wrapper(3) = pose.quat.normalized().z();
+                meas_wrapper.tail(3) = pose.pos;
+                
+                // MEKF measurement update step
+                //mekf.R_ = pose_sol.cov_pose;
+                mekf.Update(meas_wrapper);
+
+                // MEKF reset step
+                mekf.Reset();
+            }
+
             else // if message not parsed properly, skip measurement update
             {
                 std::cout << "Received unparsable measurement, skipping measurement update." << std::endl;
@@ -515,7 +584,7 @@ int main(int argc, char **argv)
  * @brief checks whether measurement input sizing is consistent
  * @return true if consistent, false if not
  */
-bool CheckValidMeasurement(const ProtoMeas::Measurements& measurements)
+bool CheckValidMeasurement(const ProtoMeasX::Measurements& measurements)
 {
     unsigned int num_feature_points = measurements.num_feature_points();
     unsigned int verify_num_ft_pt_1 = measurements.feature_points_size();

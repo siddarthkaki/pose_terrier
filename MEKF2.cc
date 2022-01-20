@@ -13,7 +13,16 @@ namespace MEKF2 {
         processed_measurement_ = false;
     }
 
-    void MEKF2::Init(const double &process_noise_std, const double &measurement_noise_std, const double &dt)
+    void MEKF2::Init(
+        const double &process_noise_std, 
+        const double &measurement_noise_std, 
+        const double &dt, 
+        const double &tau,
+        const double &qpsd_, 
+        const double &max_flip_thresh_deg,  
+        const double &pos_uw_threshold,
+        const double &pos_uw_pct
+    )
     {
         num_att_states_ = 9; // delta_gibbs(3), omega(3), alpha(3)
         num_pos_states_ = 9; // pos(3), posDot(3), posDotDot(3)
@@ -22,12 +31,15 @@ namespace MEKF2 {
         num_pos_measurements_ = 3; // pos(3)
         num_measurements_ = num_pos_measurements_ + num_att_measurements_;
         dt_ = dt;
-        tau_ = 1.0; // TODO PASS AS ARGUMENT
+        tau_ = tau; // TODO PASS AS ARGUMENT
+        max_flip_thresh_deg_ = max_flip_thresh_deg;
+        pos_uw_threshold_ = pos_uw_threshold;
+        pos_uw_pct_ = pos_uw_pct;
         
         // TODO: spilt process & measurement noise std for pos and att
 
         Q_ = MatrixXd::Identity(num_states_, num_states_)*pow(process_noise_std,2); // process_noise_covariance
-        double qpsd = 1e5;
+        double qpsd = qpsd_;
         double pss = qpsd*tau_/2.0;
         Q_(6,6) *= ( 1.0 - exp(-2.0*dt_/tau_) )*pss;
         Q_(7,7) *= ( 1.0 - exp(-2.0*dt_/tau_) )*pss;
@@ -96,7 +108,91 @@ namespace MEKF2 {
 
         processed_measurement_ = false;
     }
+    void MEKF2::Init(const double &process_noise_std, const double &measurement_noise_std, const double &dt)
+    {
+        num_att_states_ = 9; // delta_gibbs(3), omega(3), alpha(3)
+        num_pos_states_ = 9; // pos(3), posDot(3), posDotDot(3)
+        num_states_ = num_att_states_ + num_pos_states_;
+        num_att_measurements_ = 3; // delta_gibbs(3)
+        num_pos_measurements_ = 3; // pos(3)
+        num_measurements_ = num_pos_measurements_ + num_att_measurements_;
+        dt_ = dt;
+        tau_ = 1.0;
+        max_flip_thresh_deg_ = 30;
+        pos_uw_threshold_ = 1.5;
+        pos_uw_pct_ = 0.2;
+        // TODO: spilt process & measurement noise std for pos and att
 
+        Q_ = MatrixXd::Identity(num_states_, num_states_)*pow(process_noise_std,2); // process_noise_covariance
+        double qpsd = 1e5;
+        double pss = qpsd*tau_/2.0;
+        Q_(6,6) *= ( 1.0 - exp(-2.0*dt_/tau_) )*pss;
+        Q_(7,7) *= ( 1.0 - exp(-2.0*dt_/tau_) )*pss;
+        Q_(8,8) *= ( 1.0 - exp(-2.0*dt_/tau_) )*pss;
+        MatrixXd Q_pos_ = MatrixXd::Identity(num_pos_states_, num_pos_states_); // position_process_noise_covariance
+        Q_pos_(0,0) = 0.25*pow(dt,4);
+        Q_pos_(1,1) = 0.25*pow(dt,4);
+        Q_pos_(2,2) = 0.25*pow(dt,4);
+        Q_pos_(3,3) = pow(dt,2);
+        Q_pos_(4,4) = pow(dt,2);
+        Q_pos_(5,5) = pow(dt,2);
+        Q_pos_(6,6) = 1.0;
+        Q_pos_(7,7) = 1.0;
+        Q_pos_(8,8) = 1.0;
+        Q_pos_(0,3) = 0.5*pow(dt,3);
+        Q_pos_(1,4) = 0.5*pow(dt,3);
+        Q_pos_(2,5) = 0.5*pow(dt,3);
+        Q_pos_(3,6) = dt;
+        Q_pos_(4,7) = dt;
+        Q_pos_(5,8) = dt;
+        Q_pos_(3,0) = 0.5*pow(dt,3);
+        Q_pos_(4,1) = 0.5*pow(dt,3);
+        Q_pos_(5,2) = 0.5*pow(dt,3);
+        Q_pos_(6,3) = dt;
+        Q_pos_(7,4) = dt;
+        Q_pos_(8,5) = dt;
+        Q_pos_(0,6) =0.5*pow(dt,2);
+        Q_pos_(1,7) =0.5*pow(dt,2);
+        Q_pos_(2,8) =0.5*pow(dt,2);
+        Q_pos_(6,0) =0.5*pow(dt,2);
+        Q_pos_(7,1) =0.5*pow(dt,2);
+        Q_pos_(8,2) =0.5*pow(dt,2);
+        Q_pos_ = Q_pos_*pow(process_noise_std,2);
+        Q_.bottomRightCorner(num_pos_states_, num_pos_states_) = Q_pos_;
+        
+        R_ = MatrixXd::Identity(num_measurements_, num_measurements_)*pow(measurement_noise_std,2); // measurement_noise_covariance
+
+        A_ = MatrixXd::Identity(4, 4); // quaternion_propagation
+
+        F_ = MatrixXd::Identity(num_states_, num_states_); // convariance_dynamics_propagation
+        F_.block(3, 3, 3, 3) = I33;
+        F_.block(3, 6, 3, 3) = I33 * dt_;
+        F_.block(6, 6, 3, 3) = I33 * exp(-dt_ / tau_);
+        F_pos_ = MatrixXd::Identity(num_pos_states_, num_pos_states_); // position_dynamics_propagation
+        F_pos_(0,3) = dt_;
+        F_pos_(1,4) = dt_;
+        F_pos_(2,5) = dt_;
+        F_pos_(3,6) = dt_;
+        F_pos_(4,7) = dt_;
+        F_pos_(5,8) = dt_;
+        F_pos_(0,6) = 0.5*pow(dt_,2);
+        F_pos_(1,7) = 0.5*pow(dt_,2);
+        F_pos_(2,8) = 0.5*pow(dt_,2);
+        F_.bottomRightCorner(num_pos_states_, num_pos_states_) = F_pos_;
+
+        H_ = MatrixXd::Zero(num_measurements_, num_states_); // measurement_model
+        H_.block(0, 0, num_att_measurements_, num_att_measurements_) = Matrix3d::Identity();
+        H_.block(num_att_measurements_, num_att_states_, num_pos_measurements_, num_pos_measurements_) = Matrix3d::Identity();
+
+        pos_est_ = Vector3d::Zero();
+        quat_est_ = Quaterniond::Identity();
+        delta_gibbs_est_ = Vector3d::Zero();
+        state_est_ = VectorXd::Zero(num_states_);
+
+        covar_est_ = MatrixXd::Zero(num_states_, num_states_);
+
+        processed_measurement_ = false;
+    }
     void MEKF2::SetInitialStateAndCovar(const Quaterniond &quat0, const Vector3d &omega0, const Vector3d &alpha0, const VectorXd &x0, const MatrixXd &covar0)
     {
          quat_est_ =  quat0;
@@ -146,7 +242,15 @@ namespace MEKF2 {
         
         Matrix3d pos_covar_est = covar_est_.block(num_att_states_, num_att_states_, 3, 3);
         Matrix3d R_pos = R_.bottomRightCorner(3, 3);
-        Matrix3d K_pos = pos_covar_est * I33.transpose() * ((I33 * pos_covar_est * I33.transpose() + R_pos).inverse());
+        // calculate underweighting factor
+        float alpha_u = sqrt(pos_covar_est.trace());
+        float beta_u = 0.0;
+        if(alpha_u > 1.1){ // need to tune alpha and beta
+            beta_u = 0.2;
+            std::cout << "UW ALPHA: " << alpha_u << std::endl;
+        }
+
+        Matrix3d K_pos = pos_covar_est * I33.transpose() * (( (1+beta_u) * (I33 * pos_covar_est * I33.transpose()) + R_pos).inverse());
 
 
         // delta Gibbs update
@@ -179,12 +283,20 @@ namespace MEKF2 {
         // NOTE: heuristic method to ignore 180 deg pose ambiguities
         Quaterniond dq = CppRot::QuatMult_S(quat_est_, quat_star.inverse());
         double dangle = 2.0*acos( abs( dq.w() ) );
-        if (dangle < 30.0*Utilities::DEG2RAD)
+        /*MatrixXd att_covar_est = covar_est_.block(0, 0, num_att_states_, num_att_states_);
+        double att_covar_rm = sqrt(att_covar_est.trace() / num_att_states_);
+        
+        std::cout << "ATT COV: "<< att_covar_rm * Utilities::RAD2DEG << std::endl;
+        if (att_covar_rm < 10 * Utilities::DEG2RAD)*/
+        if (dangle < max_flip_thresh_deg_ * Utilities::DEG2RAD)
         {
             quat_est_ = quat_star;
+            //std::cout << "flip heuristic triggered: "<< dangle*Utilities::RAD2DEG << std::endl;
         }
-        
-        quat_est_ = quat_star;
+        else{
+            std::cout << "flip heuristic triggered: "<< dangle* Utilities::RAD2DEG << std::endl;
+        }
+        //quat_est_ = quat_star;
 
         delta_gibbs_est_ = Vector3d::Zero();        
        
