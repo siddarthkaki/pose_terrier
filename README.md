@@ -19,6 +19,12 @@ sudo ln -s /usr/include/eigen3/Eigen /usr/include/Eigen
 sudo ln -s /usr/include/eigen3/unsupported/ /usr/include/unsupported
 ```
 
+Compile protobufs for employed protobuf version. From cloned directory, execute:
+```
+protoc pose.proto --cpp_out=$PWD
+protoc measurement.proto --cpp_out=$PWD
+```
+
 CMake is employed for building. From the cloned directory, execute:
 ```
 mkdir build
