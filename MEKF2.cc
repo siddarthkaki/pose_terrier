@@ -233,7 +233,6 @@ namespace MEKF2 {
         
         // propagate covariance
         covar_est_ = F_ * covar_est_ * F_.transpose() + Q_;
-
     }
 
     // Update step
@@ -269,7 +268,14 @@ namespace MEKF2 {
         //std::cout << pos_est_.transpose() << std::endl << std::endl;
 
         state_est_.segment(num_att_states_, 3) = pos_est_;
-        
+
+        Matrix3d att_covar_est = covar_est_.block(0, 0, 3, 3);
+        double att_covar_rm = sqrt(att_covar_est.trace() / 3);
+        std::cout << "ATT COV: " << att_covar_rm * Utilities::RAD2DEG << std::endl;
+        // Eigen::VectorXcd eivals = att_covar_est.eigenvalues();
+        // std::cout << "evals: " << std::endl << eivals << std::endl;
+        // std::cout << "a is of size " << att_covar_est.rows() << "x" << att_covar_est.cols() << std::endl;
+
         // Joseph update (general)
         MatrixXd I = MatrixXd::Identity(num_states_, num_states_);
         covar_est_ = (I - K * H_) * covar_est_ * ((I - K * H_).transpose()) + K * R_ * (K.transpose());
@@ -283,22 +289,22 @@ namespace MEKF2 {
         delta_quat.vec() = 0.5*delta_gibbs_est_;
         Quaterniond quat_star = CppRot::QuatMult_S(delta_quat, quat_est_).normalized();
         
-        
         // NOTE: heuristic method to ignore 180 deg pose ambiguities
         Quaterniond dq = CppRot::QuatMult_S(quat_est_, quat_star.inverse());
         double dangle = 2.0*acos( abs( dq.w() ) );
-        /*MatrixXd att_covar_est = covar_est_.block(0, 0, num_att_states_, num_att_states_);
-        double att_covar_rm = sqrt(att_covar_est.trace() / num_att_states_);
+                
+        Matrix3d att_covar_est = covar_est_.block(0, 0, 3, 3);
+        double att_covar_rm = sqrt(att_covar_est.trace() / 3);
+        std::cout << "ATT COV: " << att_covar_rm * Utilities::RAD2DEG << std::endl << std::endl;
+        // if (att_covar_rm < 10 * Utilities::DEG2RAD)
         
-        std::cout << "ATT COV: "<< att_covar_rm * Utilities::RAD2DEG << std::endl;
-        if (att_covar_rm < 10 * Utilities::DEG2RAD)*/
         if (dangle < max_flip_thresh_deg_ * Utilities::DEG2RAD)
         {
             quat_est_ = quat_star;
-            //std::cout << "flip heuristic triggered: "<< dangle*Utilities::RAD2DEG << std::endl;
         }
-        else{
-            std::cout << "flip heuristic triggered: "<< dangle* Utilities::RAD2DEG << std::endl;
+        else
+        {
+            std::cout << "Flip heuristic triggered: "<< dangle * Utilities::RAD2DEG << std::endl;
         }
         //quat_est_ = quat_star;
 
