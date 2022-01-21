@@ -2,7 +2,7 @@
 clear; close all; clc;
 
 %% init
-prefix = "../data/" + "1569773815" + "_";
+prefix = "../data/" + "1626467305" + "_";
 
 tVec = f_read_timestamps(prefix + "timestamps.csv");
 
@@ -46,7 +46,7 @@ legend('LS','KF','Location','Northwest')
 xlabel('time [s]')
 ylabel('z [m]')
 %ylim([0,50])
-
+boldify;
 
 %% plotting attitude
 figure(2)
@@ -77,3 +77,4 @@ grid on
 legend('LS','KF','Location','Northwest')
 xlabel('time [s]')
 ylabel('\psi [deg]')
+boldify;
