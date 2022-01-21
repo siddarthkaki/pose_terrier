@@ -245,8 +245,8 @@ namespace MEKF2 {
         // calculate underweighting factor
         float alpha_u = sqrt(pos_covar_est.trace());
         float beta_u = 0.0;
-        if(alpha_u > 1.1){ // need to tune alpha and beta
-            beta_u = 0.2;
+        if(alpha_u > pos_uw_threshold_){ // need to tune alpha and beta
+            beta_u = pos_uw_pct_;
             std::cout << "UW ALPHA: " << alpha_u << std::endl;
         }
 
