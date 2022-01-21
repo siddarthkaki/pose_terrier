@@ -81,7 +81,7 @@ class MEKF2
             const double &measurement_noise_std, 
             const double &dt, 
             const double &tau,  
-            const double &qpsd_, 
+            const double &qpsd, 
             const double &max_flip_thresh_deg,  
             const double &pos_uw_threshold,
             const double &pos_uw_pct

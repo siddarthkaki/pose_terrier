@@ -18,7 +18,7 @@ namespace MEKF2 {
         const double &measurement_noise_std, 
         const double &dt, 
         const double &tau,
-        const double &qpsd_, 
+        const double &qpsd, 
         const double &max_flip_thresh_deg,  
         const double &pos_uw_threshold,
         const double &pos_uw_pct
@@ -31,7 +31,7 @@ namespace MEKF2 {
         num_pos_measurements_ = 3; // pos(3)
         num_measurements_ = num_pos_measurements_ + num_att_measurements_;
         dt_ = dt;
-        tau_ = tau; // TODO PASS AS ARGUMENT
+        tau_ = tau;
         max_flip_thresh_deg_ = max_flip_thresh_deg;
         pos_uw_threshold_ = pos_uw_threshold;
         pos_uw_pct_ = pos_uw_pct;
@@ -39,8 +39,8 @@ namespace MEKF2 {
         // TODO: spilt process & measurement noise std for pos and att
 
         Q_ = MatrixXd::Identity(num_states_, num_states_)*pow(process_noise_std,2); // process_noise_covariance
-        double qpsd = qpsd_;
-        double pss = qpsd*tau_/2.0;
+        double qpsd_ = qpsd;
+        double pss = qpsd_*tau_/2.0;
         Q_(6,6) *= ( 1.0 - exp(-2.0*dt_/tau_) )*pss;
         Q_(7,7) *= ( 1.0 - exp(-2.0*dt_/tau_) )*pss;
         Q_(8,8) *= ( 1.0 - exp(-2.0*dt_/tau_) )*pss;
@@ -108,6 +108,7 @@ namespace MEKF2 {
 
         processed_measurement_ = false;
     }
+
     void MEKF2::Init(const double &process_noise_std, const double &measurement_noise_std, const double &dt)
     {
         num_att_states_ = 9; // delta_gibbs(3), omega(3), alpha(3)
@@ -193,6 +194,7 @@ namespace MEKF2 {
 
         processed_measurement_ = false;
     }
+    
     void MEKF2::SetInitialStateAndCovar(const Quaterniond &quat0, const Vector3d &omega0, const Vector3d &alpha0, const VectorXd &x0, const MatrixXd &covar0)
     {
          quat_est_ =  quat0;
@@ -242,15 +244,17 @@ namespace MEKF2 {
         
         Matrix3d pos_covar_est = covar_est_.block(num_att_states_, num_att_states_, 3, 3);
         Matrix3d R_pos = R_.bottomRightCorner(3, 3);
-        // calculate underweighting factor
+        
+        // calculate underweighting factor (Lear's method)
         float alpha_u = sqrt(pos_covar_est.trace());
         float beta_u = 0.0;
-        if(alpha_u > pos_uw_threshold_){ // need to tune alpha and beta
+        if(alpha_u > pos_uw_threshold_) // TODO: need to tune alpha and beta
+        { 
             beta_u = pos_uw_pct_;
             std::cout << "UW ALPHA: " << alpha_u << std::endl;
         }
 
-        Matrix3d K_pos = pos_covar_est * I33.transpose() * (( (1+beta_u) * (I33 * pos_covar_est * I33.transpose()) + R_pos).inverse());
+        Matrix3d K_pos = pos_covar_est * I33.transpose() * (( (1 + beta_u) * (I33 * pos_covar_est * I33.transpose()) + R_pos).inverse());
 
 
         // delta Gibbs update
