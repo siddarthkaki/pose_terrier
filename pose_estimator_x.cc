@@ -414,7 +414,6 @@ int main(int argc, char **argv)
                     {
                         std::cout << std::fixed << std::setprecision(9);
                         std::cout << "Invalid pose solution; skipping measurement. Quat norm: " << pose_sol.pose.quat.norm() << std::endl;
-                        received_first_meas = false;
                         continue;
                     }
 
