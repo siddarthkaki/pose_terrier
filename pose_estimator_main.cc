@@ -239,6 +239,14 @@ int main(int argc, char **argv)
                     // solve for pose with ceres (via wrapper)
                     PoseSolution pose_sol = PoseSolver::SolvePoseReinit(pose0, yVec, rCamVec, rFeaMat, bearing_meas_std);
 
+                    if (abs(pose_sol.pose.quat.norm() - 1.0) > 1e-4)
+                    {
+                        std::cout << std::fixed << std::setprecision(9);
+                        std::cout << "Invalid pose solution; skipping measurement. Quat norm: " << pose_sol.pose.quat.norm() << std::endl;
+                        received_first_meas = false;
+                        continue;
+                    }
+
                     Pose conj_pose_temp = Utilities::ConjugatePose(pose_sol.pose);
                     Pose conj_pose = PoseSolver::SolvePose(conj_pose_temp, yVec, rCamVec, rFeaMat, bearing_meas_std).pose;
 
@@ -366,6 +374,13 @@ int main(int argc, char **argv)
 
                     // solve for pose with ceres (via wrapper)
                     pose_sol = PoseSolver::SolvePoseReinit(pose0, yVec, rCamVec, rFeaMat, bearing_meas_std);
+
+                    if (abs(pose_sol.pose.quat.norm() - 1.0) > 1e-4)
+                    {
+                        std::cout << std::fixed << std::setprecision(9);
+                        std::cout << "Invalid pose solution; skipping measurement. Quat norm: " << pose_sol.pose.quat.norm() << std::endl;
+                        continue;
+                    }
 
                     // wrap NLS position solution as KF measurement
                     Vector3d pos_meas_wrapper = pose_sol.pose.pos;
