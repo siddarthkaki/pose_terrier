@@ -236,17 +236,11 @@ int main(int argc, char **argv)
                     // solve for pose with ceres (via wrapper)
                     PoseSolution pose_sol = PoseSolver::SolvePoseReinit(pose0, yVec, rCamVec, rFeaMat, bearing_meas_std);
 
-                    if (abs(pose_sol.pose.quat.norm() - 1.0) > 1e-4)
+                    // check if pose solution is valid
+                    if (abs(pose_sol.pose.quat.norm() - 1.0) < 1e-4)
                     {
-                        std::cout << std::fixed << std::setprecision(9);
-                        std::cout << "Invalid pose solution; skipping measurement. Quat norm: " << pose_sol.pose.quat.norm() << std::endl;
-                        received_first_meas = false;
-                        valid_pose = false;
-                    }
-                    else
-                    {
-                        Pose conj_pose_temp = Utilities::ConjugatePose(pose_sol.pose);
-                        Pose conj_pose = PoseSolver::SolvePose(conj_pose_temp, yVec, rCamVec, rFeaMat, bearing_meas_std).pose;
+                        // Pose conj_pose_temp = Utilities::ConjugatePose(pose_sol.pose);
+                        // Pose conj_pose = PoseSolver::SolvePose(conj_pose_temp, yVec, rCamVec, rFeaMat, bearing_meas_std).pose;
 
                         // MEKF priors
                         Quaterniond init_quat = pose_sol.pose.quat;
@@ -264,6 +258,15 @@ int main(int argc, char **argv)
                         timestamps.push_back(0.0);
                         init_t = std::chrono::high_resolution_clock::now();
                     }
+                    else // reject the measurement
+                    {
+                        std::cout << std::fixed << std::setprecision(9);
+                        std::cout << "Invalid pose solution; skipping measurement. Quat norm: " << pose_sol.pose.quat.norm() << std::endl;
+                        received_first_meas = false;
+                        valid_pose = false;
+                    }
+
+                    // write pose to pipe
                     if (output_to_pipe)
                     {
                         ProtoPose::Pose proto_pose;
@@ -276,7 +279,7 @@ int main(int argc, char **argv)
                         att->set_qx(pose_sol.pose.quat.x());
                         att->set_qy(pose_sol.pose.quat.y());
                         att->set_qz(pose_sol.pose.quat.z());
-                        proto_pose.set_time_stamp(0);
+                        proto_pose.set_time_stamp(0.0);
                         proto_pose.set_valid_pose(valid_pose);
 
                         // store byte size of pose object
@@ -340,6 +343,8 @@ int main(int argc, char **argv)
                 filtered_poses.push_back(pose);
                 timestamps.push_back(0.0);
                 init_t = std::chrono::high_resolution_clock::now();
+                
+                // write pose to pipe
                 if (output_to_pipe)
                 {
                     ProtoPose::Pose proto_pose;
@@ -352,7 +357,7 @@ int main(int argc, char **argv)
                     att->set_qx(pose.quat.x());
                     att->set_qy(pose.quat.y());
                     att->set_qz(pose.quat.z());
-                    proto_pose.set_time_stamp(0);
+                    proto_pose.set_time_stamp(0.0);
                     proto_pose.set_valid_pose(true);
 
                     // store byte size of pose object
@@ -485,14 +490,9 @@ int main(int argc, char **argv)
                     // solve for pose with ceres (via wrapper)
                     pose_sol = PoseSolver::SolvePoseReinit(pose0, yVec, rCamVec, rFeaMat, bearing_meas_std);
 
-                    if (abs(pose_sol.pose.quat.norm() - 1.0) > 1e-4)
+                    // check if pose solution is valid
+                    if (abs(pose_sol.pose.quat.norm() - 1.0) < 1e-4)
                     {
-                        std::cout << std::fixed << std::setprecision(9);
-                        std::cout << "Invalid pose solution; skipping measurement. Quat norm: " << pose_sol.pose.quat.norm() << std::endl;
-                    }
-                    else
-                    {
-
                         // wrap NLS position solution as KF measurement
                         Vector3d pos_meas_wrapper = pose_sol.pose.pos;
 
@@ -510,6 +510,11 @@ int main(int argc, char **argv)
 
                         // MEKF reset step
                         mekf.Reset();
+                    }
+                    else // reject the measurement
+                    {
+                        std::cout << std::fixed << std::setprecision(9);
+                        std::cout << "Invalid pose solution; skipping measurement. Quat norm: " << pose_sol.pose.quat.norm() << std::endl;
                     }
                     
                 }
