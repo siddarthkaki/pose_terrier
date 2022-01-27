@@ -199,9 +199,6 @@ int main(int argc, char **argv)
             // read serialised measurement object from pipe
             rd_in = read(fd_in, buffer, size);
 
-            // close pipe
-            close(fd_in);
-
             // deserialise from buffer array
             ProtoMeas::Measurements measurements;
             const bool protomeas_ok = measurements.ParseFromArray(buffer, size);
@@ -218,7 +215,7 @@ int main(int argc, char **argv)
                     received_first_meas = true;
 
                     unsigned int num_feature_points = measurements.num_feature_points();
-
+                    bool valid_pose = true;
                     // Construct Eigen::MatrixXd out of feature point locations
                     MatrixXd rFeaMat(num_feature_points, 3);
                     for (unsigned int idx = 0; idx < num_feature_points; idx++)
@@ -244,27 +241,68 @@ int main(int argc, char **argv)
                         std::cout << std::fixed << std::setprecision(9);
                         std::cout << "Invalid pose solution; skipping measurement. Quat norm: " << pose_sol.pose.quat.norm() << std::endl;
                         received_first_meas = false;
-                        continue;
+                        valid_pose = false;
                     }
+                    else
+                    {
+                        Pose conj_pose_temp = Utilities::ConjugatePose(pose_sol.pose);
+                        Pose conj_pose = PoseSolver::SolvePose(conj_pose_temp, yVec, rCamVec, rFeaMat, bearing_meas_std).pose;
 
-                    Pose conj_pose_temp = Utilities::ConjugatePose(pose_sol.pose);
-                    Pose conj_pose = PoseSolver::SolvePose(conj_pose_temp, yVec, rCamVec, rFeaMat, bearing_meas_std).pose;
+                        // MEKF priors
+                        Quaterniond init_quat = pose_sol.pose.quat;
+                        Vector3d init_omega = 0.005 * Vector3d::Random();
+                        Vector3d init_alpha = 0.01 * Vector3d::Random();
+                        MatrixXd init_covar = MatrixXd::Identity(mekf.num_states_, mekf.num_states_);
+                        VectorXd x0 = VectorXd::Zero(mekf.num_pos_states_);
+                        x0.head(3) = pose_sol.pose.pos;
+                        x0.segment(3,3) = 0.005 * Vector3d::Random();
+                        x0.tail(3) = 0.001 * Vector3d::Random();
+                        mekf.SetInitialStateAndCovar(init_quat, init_omega, init_alpha, x0, init_covar);
 
-                    // MEKF priors
-                    Quaterniond init_quat = pose_sol.pose.quat;
-                    Vector3d init_omega = 0.005 * Vector3d::Random();
-                    Vector3d init_alpha = 0.01 * Vector3d::Random();
-                    MatrixXd init_covar = MatrixXd::Identity(mekf.num_states_, mekf.num_states_);
-                    VectorXd x0 = VectorXd::Zero(mekf.num_pos_states_);
-                    x0.head(3) = pose_sol.pose.pos;
-                    x0.segment(3,3) = 0.005 * Vector3d::Random();
-                    x0.tail(3) = 0.001 * Vector3d::Random();
-                    mekf.SetInitialStateAndCovar(init_quat, init_omega, init_alpha, x0, init_covar);
+                        solved_poses.push_back(pose_sol.pose);
+                        filtered_poses.push_back(pose_sol.pose);
+                        timestamps.push_back(0.0);
+                        init_t = std::chrono::high_resolution_clock::now();
+                    }
+                    if (output_to_pipe)
+                    {
+                        ProtoPose::Pose proto_pose;
+                        ProtoPose::Position *pos = proto_pose.mutable_pos();
+                        ProtoPose::Attitude *att = proto_pose.mutable_att();
+                        pos->set_x(pose_sol.pose.pos(0));
+                        pos->set_y(pose_sol.pose.pos(1));
+                        pos->set_z(pose_sol.pose.pos(2));
+                        att->set_qw(pose_sol.pose.quat.w());
+                        att->set_qx(pose_sol.pose.quat.x());
+                        att->set_qy(pose_sol.pose.quat.y());
+                        att->set_qz(pose_sol.pose.quat.z());
+                        proto_pose.set_time_stamp(0);
+                        proto_pose.set_valid_pose(valid_pose);
 
-                    solved_poses.push_back(pose_sol.pose);
-                    filtered_poses.push_back(pose_sol.pose);
-                    timestamps.push_back(0.0);
-                    init_t = std::chrono::high_resolution_clock::now();
+                        // store byte size of pose object
+                        size_t size_out = proto_pose.ByteSize();
+
+                        // allocate sufficient buffer space
+                        void *buffer_out = malloc(size_out);
+
+                        // serialise to the buffer array
+                        proto_pose.SerializeToArray(buffer_out, size_out);
+
+                        // Open FIFO for write only, without blocking
+                        fd_out = open(fifo_path_output, O_WRONLY | O_NONBLOCK);
+
+                        // write size of pose object to pipe
+                        write(fd_out, &size_out, sizeof(size_out));
+
+                        // write serialised pose object to pipe
+                        write(fd_out, buffer_out, size_out);
+
+                        // close FIFO
+                        close(fd_out);
+
+                        // free memory
+                        free(buffer_out);
+                    }
                 }
                 else // if bad measurement received, wait for new one
                 {
@@ -278,14 +316,15 @@ int main(int argc, char **argv)
         }
         else
         { // if no size message found
-            // std::cout << "Awaiting first measurement..." << std::endl;
+            //std::cout << "Awaiting first measurement..." << std::endl;
         }
     }
 
     //------------------------------------------------------------------------/
 
     // continue once first measurement has been received
-
+     // close pipe
+    close(fd_in);
     // set-up exit handler
     struct sigaction sigIntHandler;
     sigIntHandler.sa_handler = exit_handler;
@@ -379,26 +418,28 @@ int main(int argc, char **argv)
                     {
                         std::cout << std::fixed << std::setprecision(9);
                         std::cout << "Invalid pose solution; skipping measurement. Quat norm: " << pose_sol.pose.quat.norm() << std::endl;
-                        continue;
                     }
+                    else
+                    {
 
-                    // wrap NLS position solution as KF measurement
-                    Vector3d pos_meas_wrapper = pose_sol.pose.pos;
+                        // wrap NLS position solution as KF measurement
+                        Vector3d pos_meas_wrapper = pose_sol.pose.pos;
 
-                    // wrap NLS pose solution as MEKF measurement
-                    VectorXd meas_wrapper(7);
-                    meas_wrapper(0) = pose_sol.pose.quat.normalized().w();
-                    meas_wrapper(1) = pose_sol.pose.quat.normalized().x();
-                    meas_wrapper(2) = pose_sol.pose.quat.normalized().y();
-                    meas_wrapper(3) = pose_sol.pose.quat.normalized().z();
-                    meas_wrapper.tail(3) = pose_sol.pose.pos;
-                    
-                    // MEKF measurement update step
-                    mekf.R_ = pose_sol.cov_pose;
-                    mekf.Update(meas_wrapper);
+                        // wrap NLS pose solution as MEKF measurement
+                        VectorXd meas_wrapper(7);
+                        meas_wrapper(0) = pose_sol.pose.quat.normalized().w();
+                        meas_wrapper(1) = pose_sol.pose.quat.normalized().x();
+                        meas_wrapper(2) = pose_sol.pose.quat.normalized().y();
+                        meas_wrapper(3) = pose_sol.pose.quat.normalized().z();
+                        meas_wrapper.tail(3) = pose_sol.pose.pos;
+                        
+                        // MEKF measurement update step
+                        mekf.R_ = pose_sol.cov_pose;
+                        mekf.Update(meas_wrapper);
 
-                    // MEKF reset step
-                    mekf.Reset();
+                        // MEKF reset step
+                        mekf.Reset();
+                    }
                     
                 }
                 else // if bad measurement received, skip measurement update
@@ -449,7 +490,7 @@ int main(int argc, char **argv)
             att->set_qy(pose_filtered.quat.y());
             att->set_qz(pose_filtered.quat.z());
             proto_pose.set_time_stamp(curr_elapsed_t);
-
+            proto_pose.set_valid_pose(true);
             // store byte size of pose object
             size_t size_out = proto_pose.ByteSize();
 
