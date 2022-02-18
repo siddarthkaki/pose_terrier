@@ -382,6 +382,7 @@ int main(int argc, char **argv)
             att->set_qy(pose_filtered.quat.y());
             att->set_qz(pose_filtered.quat.z());
             proto_pose.set_time_stamp(curr_elapsed_t);
+            proto_pose.set_valid_pose(true);
 
             // store byte size of pose object
             size_t size_out = proto_pose.ByteSize();
