@@ -275,7 +275,7 @@ namespace MEKF2 {
         double att_covar_rm = sqrt(att_covar_est.trace() / 3);
         std::cout << "ATT COV: " << att_covar_rm * Utilities::RAD2DEG << std::endl << std::endl;
        
-        if (dangle < 6 * att_covar_rm)
+        if (dangle < max_flip_thresh_deg_ * att_covar_rm)
         {
             // position update
             pos_est_ = pos_est_ + K_pos*( measurement.tail(3) - I33*pos_est_ );
