@@ -114,11 +114,25 @@ int main(int argc, char **argv)
     // double kf_process_noise_std = 0.01;
     // double kf_measurement_noise_std = 0.05;
 
-    double mekf_process_noise_std = 0.01;
+    double mekf_process_noise_std = double(json_params["process_noise_std"]);//0.01;
     double mekf_measurement_noise_std = double(json_params["measurement_noise_std"]);//0.05;
+    double tau = double(json_params["tau"]);
+    double max_flip_thresh_deg = double(json_params["max_flip_thresh_deg"]);
+    double pos_uw_threshold = double(json_params["pos_uw_threshold"]);
+    double pos_uw_pct = double(json_params["pos_uw_pct"]);
+    double qpsd = double(json_params["qpsd"]);
 
     MEKF2::MEKF2 mekf(mekf_dt);
-    mekf.Init(mekf_process_noise_std, mekf_measurement_noise_std, mekf_dt);
+    mekf.Init(
+        mekf_process_noise_std, 
+        mekf_measurement_noise_std, 
+        mekf_dt, 
+        tau,
+        qpsd,  
+        max_flip_thresh_deg, 
+        pos_uw_threshold, 
+        pos_uw_pct
+    );
 
     //-- Init sequence -------------------------------------------------------/
 
@@ -382,6 +396,7 @@ int main(int argc, char **argv)
             att->set_qy(pose_filtered.quat.y());
             att->set_qz(pose_filtered.quat.z());
             proto_pose.set_time_stamp(curr_elapsed_t);
+            proto_pose.set_valid_pose(true);
 
             // store byte size of pose object
             size_t size_out = proto_pose.ByteSize();
