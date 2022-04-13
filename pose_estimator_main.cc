@@ -10,6 +10,7 @@
 #include <math.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <signal.h>
 
 #include "ceres/ceres.h"
 #include "glog/logging.h"
@@ -53,6 +54,16 @@ bool CheckValidMeasurement(const ProtoMeas::Measurements& measurements);
  */
 int main(int argc, char **argv)
 {
+
+    struct sigaction sa;
+    sa.sa_handler = SIG_IGN;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    if (sigaction(SIGPIPE, &sa, 0) == -1)
+    {
+        std::cout << "SIGPIPE ERROR" << std::endl;
+    }
+    
     //google::InitGoogleLogging(argv[0]);
     google::InstallFailureSignalHandler();
 
