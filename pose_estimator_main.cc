@@ -153,11 +153,13 @@ int main(int argc, char **argv)
 
     // declare vectors for storage
     std::vector<Pose> solved_poses, filtered_poses;
+    std::vector<VectorXd> filtered_covar_diag;
     std::vector<double> timestamps; // [s]
 
     // pre-allocate memory
     solved_poses.reserve(vector_reserve_size);
     filtered_poses.reserve(vector_reserve_size);
+    filtered_covar_diag.reserve(vector_reserve_size);
     timestamps.reserve(vector_reserve_size);
 
     // clock object
@@ -266,6 +268,7 @@ int main(int argc, char **argv)
 
                         solved_poses.push_back(pose_sol.pose);
                         filtered_poses.push_back(pose_sol.pose);
+                        filtered_covar_diag.push_back(pose_sol.cov_pose.diagonal());
                         timestamps.push_back(0.0);
                         init_t = std::chrono::high_resolution_clock::now();
                     }
@@ -476,6 +479,10 @@ int main(int argc, char **argv)
         pose_filtered.pos = mekf.pos_est_;
         pose_filtered.quat = mekf.quat_est_.normalized();
 
+        // VectorXd covar_filtered_diag = mekf.covar_est_.diagonal();
+        // Vector6d pose_covar_filtered_diag;
+        // pose_covar_filtered_diag << pose_covar_filtered_diag.segment(0,3), pose_covar_filtered_diag.segment(9,3);
+
         curr_t = std::chrono::high_resolution_clock::now();
         curr_elapsed_t = (double)std::chrono::duration_cast<std::chrono::nanoseconds>(curr_t - init_t).count();
         curr_elapsed_t *= pow(10.0, -9.0);
@@ -485,6 +492,7 @@ int main(int argc, char **argv)
         //-- Data Storage ----------------------------------------------------/        
         solved_poses.push_back(pose_sol.pose);
         filtered_poses.push_back(pose_filtered);
+        filtered_covar_diag.push_back(mekf.covar_est_.diagonal());
         timestamps.push_back(curr_elapsed_t);
 
         // set NLS initial guess for next time-step to latest filtered estimate
@@ -537,11 +545,13 @@ int main(int argc, char **argv)
             bool append_mode = true;
             Utilities::WritePosesToCSV(solved_poses, prefix + "solved_poses" + postfix, append_mode);
             Utilities::WritePosesToCSV(filtered_poses, prefix + "filtered_poses" + postfix, append_mode);
+            Utilities::WriteKFStatesToCSV(filtered_covar_diag, prefix + "filtered_covar_diag" + postfix, append_mode);
             Utilities::WriteTimestampsToFile(timestamps, prefix + "timestamps" + postfix, append_mode);
 
             // clear vectors
             solved_poses.clear();
             filtered_poses.clear();
+            filtered_covar_diag.clear();
             timestamps.clear();
         }
 
@@ -564,6 +574,7 @@ int main(int argc, char **argv)
                 // write to csv files
                 Utilities::WritePosesToCSV(solved_poses, prefix + "solved_poses" + postfix, append_mode);
                 Utilities::WritePosesToCSV(filtered_poses, prefix + "filtered_poses" + postfix, append_mode);
+                Utilities::WriteKFStatesToCSV(filtered_covar_diag, prefix + "filtered_covar_diag" + postfix, append_mode);
                 Utilities::WriteTimestampsToFile(timestamps, prefix + "timestamps" + postfix, append_mode);
                 printf("Logged data to file.\n");
             }
