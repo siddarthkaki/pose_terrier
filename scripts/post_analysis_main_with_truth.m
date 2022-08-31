@@ -5,15 +5,28 @@ clear; close all; clc;
 
 pose_type = 'NLS'; % 'PnP'
 
-prefix = "../data/" + "1660851312" + "_";
+% folder = "long_test/";
+% folder = "short_test/";
+% folder = "new_test/";
+folder = "";
+
+% prefix = "../data/long_test/" + "1661875312" + "_";
+% prefix = "../data/short_test/" + "1661872620" + "_";
+% prefix = "../data/new_test/" + "1661975852" + "_";
+prefix = "../data/" + "1661982471" + "_";
+
 
 tVec = f_read_timestamps(prefix + "timestamps.csv");
 
-truePosesMat = f_read_poses("../data/true_poses.csv");
+truePosesMat = f_read_poses("../data/" + folder + "true_poses.csv");
 
 solvedPosesMat = f_read_poses(prefix + "solved_poses.csv");
 
 filteredPosesMat = f_read_poses(prefix + "filtered_poses.csv");
+
+solvedAngVelMat = f_read_omegas(prefix + "solved_omegas.csv");
+
+filteredAngVelMat = f_read_omegas(prefix + "filtered_omegas.csv");
 
 filteredCovarsDiagMat = f_read_covars(prefix + "filtered_covar_diag.csv");
 
@@ -23,7 +36,7 @@ filteredCovarsDiagMat = f_read_covars(prefix + "filtered_covar_diag.csv");
 
 [num_poses,~] = size(filteredPosesMat);
 
-tVecMeas = f_read_timestamps("../data/meas_timestamps.csv");
+tVecMeas = f_read_timestamps("../data/" + folder + "meas_timestamps.csv");
 
 %% temp fix
 % [num_true_poses,~] = size(truePosesMat);
@@ -180,7 +193,7 @@ plot(tVec, rad2deg(attScoreVec),'color',[0.8500, 0.3250, 0.0980])
 hold on
 plot(tVec, rad2deg(attScoreVecFiltered),'color',[0.4940, 0.1840, 0.5560],'LineWidth',2)
 grid on
-ylim([0 25])
+ylim([0 15])
 legend(pose_type,'MEKF')
 xlabel('time [s]')
 ylabel('att\_score [deg]')
@@ -189,4 +202,26 @@ ylabel('att\_score [deg]')
 figpos = [0 0 1920/2 1080];
 set(f2,'Position',figpos)
 boldify;
+set(gcf, 'PaperPositionMode', 'auto');
+
+
+
+%%
+
+f3 = figure(3);
+for idx = 1:3,
+    subplot(3,1,idx)
+    plot(tVec, rad2deg(solvedAngVelMat(:,idx)),'-');
+    hold on
+    plot(tVec, rad2deg(filteredAngVelMat(:,idx)),'--');
+    hold off
+    grid on
+    xlabel('time [s]')
+    ylabel('deg/s')
+end
+
+% ylim([0 10])
+% legend('\phi', '\theta', '\psi')
+
+boldify
 set(gcf, 'PaperPositionMode', 'auto');

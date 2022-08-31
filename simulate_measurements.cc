@@ -91,11 +91,11 @@ int main(int argc, char **argv)
     }
     // TEMPORARY
     
-    ///*
+    /*
     num_features = 11;
     rFeaMat = 2.5 * MatrixXd::Random(num_features, 3);
     std::cout << rFeaMat << std::endl;
-    //*/
+    */
 
     const unsigned int num_poses_test = json_params["num_poses_test"];
     const unsigned int vector_reserve_size = json_params["vector_reserve_size"];
@@ -125,15 +125,27 @@ int main(int argc, char **argv)
     Pose pose_true;
     pose_true.pos << 0.5, -0.25, 30.0;
     //pose_true.quat = Quaterniond::UnitRandom();
-    pose_true.quat.w() =  0.9993;
-    pose_true.quat.x() = -0.0029;
-    pose_true.quat.y() = -0.0298;
-    pose_true.quat.z() = -0.0231;
-    pose_true.quat.w() = 1.0;
-    pose_true.quat.vec() = Vector3d::Zero();
+
+    Vector3d axis_true;
+    axis_true << 20.0, -15.0, 35.0;
+    axis_true.normalize();
+
+    double angle_true = 20.0*Utilities::DEG2RAD;
+
+    pose_true.quat = CppRot::AngleAxis2Quat(angle_true, axis_true);
+
+    // pose_true.quat.w() =  0.9993;
+    // pose_true.quat.x() = -0.0029;
+    // pose_true.quat.y() =  0.0298;
+    // pose_true.quat.z() =  0.0231;
+    // pose_true.quat.w() = 1.0;
+    // pose_true.quat.vec() = Vector3d::Zero();
 
     pose_true.quat.normalize();
     //pose_true.quat.vec() = Vector3d::Zero();
+
+    // time-step
+    double dt = 2.0; // [sec]
 
     // if pipe does not exist, create it
     struct stat buf;
@@ -165,13 +177,35 @@ int main(int argc, char **argv)
         if (meas_count > 1)
         {   
             // generate true pose values for ith run
-            pose_true.pos(0) += 0.005;
-            pose_true.pos(1) -= 0.005;
-            pose_true.pos(2) += 0.05;
-            Quaterniond quat_step = AngleAxisd(0.01, Vector3d::UnitX()) *
-                                    AngleAxisd(-0.01, Vector3d::UnitY()) *
-                                    AngleAxisd(0.01, Vector3d::UnitZ());
+            pose_true.pos(0) += 0.00;
+            pose_true.pos(1) -= 0.00;
+            pose_true.pos(2) += 0.0;
+
+            Vector3d omega;
+            omega << 0.3, -1.0, -0.5; // [deg/sec]
+            omega = omega*Utilities::DEG2RAD;
+
+            double omega_norm = omega.norm();
+            Vector3d omega_hat = omega / omega_norm;
+
+            Matrix4d omega_hat_44_equivalent = Matrix4d::Zero();
+            omega_hat_44_equivalent.block(0, 1, 1, 3) = -omega_hat.transpose();
+            omega_hat_44_equivalent.block(1, 0, 3, 1) =  omega_hat;
+            omega_hat_44_equivalent.block(1, 1, 3, 3) = -CppRot::CrossProductEquivalent(omega_hat);
+
+            double phi = 0.5 * omega_norm * dt;
+
+            Matrix4d A = cos(phi) * Matrix4d::Identity() + sin(phi) * omega_hat_44_equivalent;
+
+            // propagate quaternion
+            pose_true.quat = Utilities::Vec4ToQuat( A * Utilities::QuatToVec4(pose_true.quat) );
+
+            /*
+            Quaterniond quat_step = AngleAxisd(0.0, Vector3d::UnitX()) *
+                                    AngleAxisd(-0.005, Vector3d::UnitY()) *
+                                    AngleAxisd(0.0, Vector3d::UnitZ());
             pose_true.quat = CppRot::QuatMult_S(quat_step, pose_true.quat);
+            */
         }
 
         // express feature points in chaser frame at the specified pose
@@ -262,8 +296,8 @@ int main(int argc, char **argv)
             exit(1);
         }
 
-        // sleep for 1.0 sec
-        usleep(1000000);
+        // sleep for dt sec
+        usleep(dt*1000000);
     }
 
     //-- Close-out -----------------------------------------------------------/

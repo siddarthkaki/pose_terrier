@@ -28,8 +28,11 @@ using Eigen::Quaterniond;
 typedef Eigen::Matrix<double, 4, 1> Vector4d;
 typedef Eigen::Matrix<double, 6, 1> Vector6d;
 typedef Eigen::Matrix<double, 3, 3, Eigen::RowMajor> Matrix3d_rm;
+typedef Eigen::Matrix<double, 4, 4> Matrix4d;
 typedef Eigen::Matrix<double, 6, 6> Matrix6d;
 typedef Eigen::Matrix<double, 6, 6, Eigen::RowMajor> Matrix6d_rm;
+typedef Eigen::Matrix<double, 4, Eigen::Dynamic> MatrixQuat;
+
 
 struct Pose
 {
@@ -55,6 +58,7 @@ class Utilities
     public:
         static Matrix3d Euler2DCM_312(const Vector3d& eulVec);
         static Vector3d DCM2Euler_312(const MatrixXd& DCM);
+        static double UnwrapAngles(const double &old_angle, const double &new_angle);
         static MatrixXd FeaPointsTargetToChaser(const Pose& state, const Vector3d& rCamVec, const MatrixXd& rFeaMat);
         static Vector2d CameraProjection(const Vector3d& point3DVec, const double& f);
         static VectorXd SimulateMeasurements(const MatrixXd& rMat, const double& focal_length);

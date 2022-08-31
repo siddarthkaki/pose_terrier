@@ -207,7 +207,7 @@ namespace MEKF2 {
     // Prediction step
     void MEKF2::Predict()
     {
-        Vector3d omega_est_ = state_est_.segment(3, 3);
+        omega_est_ = state_est_.segment(3, 3);
 
         double omega_norm = omega_est_.norm();
         Vector3d omega_hat = omega_est_ / omega_norm;
@@ -228,6 +228,8 @@ namespace MEKF2 {
         // propagate rest of the state
         state_est_.tail(num_states_-3) = F_.bottomRightCorner(num_states_-3, num_states_-3)*state_est_.tail(num_states_-3);
         pos_est_ = state_est_.segment(num_att_states_, 3);
+
+        omega_est_ = state_est_.segment(3, 3);
 
         //std::cout << pos_est_.transpose() << std::endl << std::endl;
         
@@ -292,6 +294,9 @@ namespace MEKF2 {
         {
             std::cout << "Rejected measurement; dangle = " << dangle * Utilities::RAD2DEG << std::endl << std::endl;
         }
+
+        omega_est_ = state_est_.segment(3, 3);
+        omega_covar_est_ = covar_est_.block(3, 3, 3, 3);
     }
 
     // Reset step
@@ -336,6 +341,26 @@ namespace MEKF2 {
         covark1k_  = MatrixXd::Zero(num_states_covar_, num_states_covar_);
         covark1k1_ = MatrixXd::Zero(num_states_covar_, num_states_covar_);
         */
+    }
+
+    void MEKF2::AngVelUpdate(const Vector3d &measurement, const Matrix3d &covar)
+    {
+        omega_est_ = state_est_.segment(3, 3);
+        omega_covar_est_ = covar_est_.block(3, 3, 3, 3);
+
+        Matrix3d H_angvel = Matrix3d::Identity();
+        Matrix3d R_angvel = covar;
+
+        // Kalman gain
+        MatrixXd K_angvel = omega_covar_est_ * H_angvel.transpose() * ((H_angvel * omega_covar_est_ * H_angvel.transpose() + R_angvel).inverse());
+
+        // ang. vel. update
+        omega_est_ = omega_est_ + K_angvel*( measurement - H_angvel*omega_est_ );
+        state_est_.segment(3, 3) = omega_est_;
+
+        // Joseph covariance update
+        omega_covar_est_ = (I33 - K_angvel * H_angvel) * omega_covar_est_ * ((I33 - K_angvel * H_angvel).transpose()) + K_angvel * R_angvel * (K_angvel.transpose());
+        covar_est_.block(3, 3, 3, 3) = omega_covar_est_;
     }
 
     void MEKF2::PrintModelMatrices()

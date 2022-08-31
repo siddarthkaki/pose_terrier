@@ -1,7 +1,7 @@
 project(pose_terrier)
 cmake_minimum_required(VERSION 3.10)
 
-set (CMAKE_CXX_STANDARD 11)
+set (CMAKE_CXX_STANDARD 14)
 
 include(FindProtobuf)
 find_package(Protobuf REQUIRED)
@@ -35,6 +35,10 @@ target_link_libraries(pnp_mekf_pose_tracking_test ceres glog::glog ${OpenCV_LIBS
 add_executable(pose_estimator_main pose_estimator_main.cc Utilities.cc PoseSolver.cc KalmanFilter.cc MEKF.cc MEKF2.cc pose.pb.cc measurement.pb.cc)
 target_include_directories(pose_estimator_main PUBLIC ${PROTOBUF_INCLUDE_DIR})
 target_link_libraries(pose_estimator_main ceres glog::glog ${PROTOBUF_LIBRARY} pthread)
+
+add_executable(pose_estimator_main_with_quatera pose_estimator_main_with_quatera.cc Utilities.cc PoseSolver.cc KalmanFilter.cc MEKF.cc MEKF2.cc QuateRA.cc pose.pb.cc measurement.pb.cc)
+target_include_directories(pose_estimator_main_with_quatera PUBLIC ${PROTOBUF_INCLUDE_DIR})
+target_link_libraries(pose_estimator_main_with_quatera ceres glog::glog ${PROTOBUF_LIBRARY} pthread)
 
 add_executable(pose_estimator_pose_only pose_estimator_pose_only.cc Utilities.cc PoseSolver.cc KalmanFilter.cc MEKF.cc MEKF2.cc pose.pb.cc measurement.pb.cc)
 target_include_directories(pose_estimator_pose_only PUBLIC ${PROTOBUF_INCLUDE_DIR})

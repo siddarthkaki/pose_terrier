@@ -59,13 +59,14 @@ class MEKF2
         MatrixXd A_; // quaternion_propagation_dynamics_model
         MatrixXd H_; // measurement_model
 
-        //Vector3d omega_est_;
         //Vector3d alpha_est_;
         //VectorXd x_est_;
 
         Vector3d pos_est_;
         Quaterniond quat_est_;
+        Vector3d omega_est_;
         MatrixXd covar_est_;
+        Matrix3d omega_covar_est_;
 
         //MatrixXd covarkk_;
         //MatrixXd covark1k_;
@@ -92,6 +93,7 @@ class MEKF2
         void Update(const VectorXd &measurement);
         void Reset();
         void StoreAndClean();
+        void AngVelUpdate(const Vector3d &measurement, const Matrix3d &covar);
 
         void PrintModelMatrices();
 };

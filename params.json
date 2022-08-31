@@ -16,8 +16,8 @@
     "output_to_pipe": true,
     "log_to_file": true,
     "log_periodically": true,
-    "vector_reserve_size": 500,
-    "kf_dt": 0.1,
+    "vector_reserve_size": 1000,
+    "kf_dt": 0.05,
     "rFeaMat":
     [
         {"fea1": [ 0.74638981, -4.70243406, -3.74490166]},
