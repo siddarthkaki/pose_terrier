@@ -10,6 +10,8 @@
 #include <fcntl.h>
 #include <math.h>
 #include <sys/stat.h>
+#include <boost/numeric/odeint.hpp>
+#include <boost/numeric/odeint/external/eigen/eigen_algebra.hpp>
 
 #include "glog/logging.h"
 #include "Utilities.h"
@@ -25,6 +27,9 @@ using Eigen::Quaterniond;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
 using nlohmann::json;
+using namespace boost::numeric;
+
+typedef std::vector< double > state_type;
 
 sig_atomic_t volatile finished = 0;
 
@@ -36,6 +41,28 @@ void exit_handler(int signal)
 {
     printf("Caught signal %d\n", signal);
     finished = 1;
+}
+
+/**
+ * @function f_euler_dyn
+ * @brief Euler dynamics function
+ */
+void f_euler_dyn(const state_type &x, state_type &dx,  double t)
+{
+    // Jmat\(-rot.crossProductEquivalent(omegak)*Jmat*omegak)
+
+    Vector3d omega_;
+    omega_ << x[0], x[1], x[2];
+
+    Matrix3d Jmat = Matrix3d::Zero();
+    Jmat(0,0) = 5000.0;
+    Jmat(1,1) = 7000.0;
+    Jmat(2,2) = 3000.0;
+    Vector3d omegaDot = Jmat.inverse()*(-CppRot::CrossProductEquivalent(omega_)*Jmat*omega_);
+
+    dx[0] =  omegaDot(0);
+    dx[1] =  omegaDot(1);
+    dx[2] =  omegaDot(2);
 }
 
 /**
@@ -76,6 +103,8 @@ int main(int argc, char **argv)
     // specify camera focal length
     double focal_length = json_params["focal_length"]; //5.5*pow(10,-3);
 
+    double dt = json_params["meas_sim_dt"]; // sec
+
     // specify measurement noise standard deviation (rad)
     double meas_std = double(json_params["bearing_meas_std_deg"]) * Utilities::DEG2RAD;
 
@@ -90,7 +119,6 @@ int main(int argc, char **argv)
         }
     }
     // TEMPORARY
-    
     /*
     num_features = 11;
     rFeaMat = 2.5 * MatrixXd::Random(num_features, 3);
@@ -110,10 +138,13 @@ int main(int argc, char **argv)
 
     // declare vectors for storage
     std::vector<Pose> true_poses;
+    std::vector<VectorXd> true_omegas, noisy_measurements;
     std::vector<double> timestamps;
 
     // pre-allocate memory
     true_poses.reserve(vector_reserve_size);
+    true_omegas.reserve(vector_reserve_size);
+    noisy_measurements.reserve(vector_reserve_size);
     timestamps.reserve(vector_reserve_size);
     
     // clock object
@@ -144,8 +175,18 @@ int main(int argc, char **argv)
     pose_true.quat.normalize();
     //pose_true.quat.vec() = Vector3d::Zero();
 
-    // time-step
-    double dt = 2.0; // [sec]
+    // init odeint
+    odeint::runge_kutta_dopri5<state_type> stepper;
+    
+    Vector3d omega;
+    //omega << 0.3, -1.0, -0.5; // [deg/sec]
+    omega << 3, -5, -3; // [deg/sec]
+    omega = omega*Utilities::DEG2RAD;
+
+    state_type omega_odeint(3);
+    omega_odeint[0] = omega(0); 
+    omega_odeint[1] = omega(1);
+    omega_odeint[2] = omega(2);
 
     // if pipe does not exist, create it
     struct stat buf;
@@ -181,10 +222,6 @@ int main(int argc, char **argv)
             pose_true.pos(1) -= 0.00;
             pose_true.pos(2) += 0.0;
 
-            Vector3d omega;
-            omega << 0.3, -1.0, -0.5; // [deg/sec]
-            omega = omega*Utilities::DEG2RAD;
-
             double omega_norm = omega.norm();
             Vector3d omega_hat = omega / omega_norm;
 
@@ -199,6 +236,10 @@ int main(int argc, char **argv)
 
             // propagate quaternion
             pose_true.quat = Utilities::Vec4ToQuat( A * Utilities::QuatToVec4(pose_true.quat) );
+
+            // odeint omega dynamics propagation
+            //stepper.do_step(f_euler_dyn, omega_odeint, 0.0, dt);
+            //omega << omega_odeint[0], omega_odeint[1], omega_odeint[2];
 
             /*
             Quaterniond quat_step = AngleAxisd(0.0, Vector3d::UnitX()) *
@@ -216,6 +257,7 @@ int main(int argc, char **argv)
 
         // add Gaussian noise to simulated measurements
         VectorXd yVecNoise = Utilities::AddGaussianNoiseToVector(yVec, meas_std);
+        noisy_measurements.push_back(yVecNoise);
 
         //-- Package Measurements into ProtoBuf ------------------------------/
 
@@ -269,6 +311,7 @@ int main(int argc, char **argv)
 
         // store data
         true_poses.push_back(pose_true);
+        true_omegas.push_back(omega);
         timestamps.push_back(curr_elapsed_t);
 
         // write to console
@@ -284,6 +327,8 @@ int main(int argc, char **argv)
 
                 // write to csv files
                 Utilities::WritePosesToCSV(true_poses, prefix + "true_poses" + postfix, append_mode);
+                Utilities::WriteKFStatesToCSV(true_omegas, prefix + "true_omegas" + postfix, append_mode);
+                Utilities::WriteKFStatesToCSV(noisy_measurements, prefix + "noisy_measurements" + postfix, append_mode);
                 Utilities::WriteTimestampsToFile(timestamps, prefix + "meas_timestamps" + postfix, append_mode);
 
                 printf("Logged data to file.\n");

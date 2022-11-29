@@ -2,12 +2,16 @@ project(pose_terrier)
 cmake_minimum_required(VERSION 3.10)
 
 set (CMAKE_CXX_STANDARD 14)
+set(Boost_USE_STATIC_LIBS OFF) 
+set(Boost_USE_MULTITHREADED ON)  
+set(Boost_USE_STATIC_RUNTIME OFF) 
 
 include(FindProtobuf)
 find_package(Protobuf REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(Ceres REQUIRED)
 find_package(glog REQUIRED)
+find_package(Boost 1.74.0) 
 
 SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
 
@@ -53,9 +57,14 @@ target_include_directories(pnp_pose_estimator_main PUBLIC ${PROTOBUF_INCLUDE_DIR
 target_link_libraries(pnp_pose_estimator_main ceres glog::glog ${PROTOBUF_LIBRARY} ${OpenCV_LIBS})
 
 add_executable(simulate_measurements simulate_measurements.cc Utilities.cc pose.pb.cc measurement.pb.cc)
-target_include_directories(simulate_measurements PUBLIC ${PROTOBUF_INCLUDE_DIR})
-target_link_libraries(simulate_measurements glog::glog ${PROTOBUF_LIBRARY})
+target_include_directories(simulate_measurements PUBLIC ${PROTOBUF_INCLUDE_DIR} ${Boost_INCLUDE_DIRS})
+target_link_libraries(simulate_measurements glog::glog ${PROTOBUF_LIBRARY} ${Boost_LIBRARIES})
 set_target_properties(simulate_measurements PROPERTIES LINK_FLAGS "-Wl,--no-as-needed")
+
+add_executable(read_and_publish_measurements read_and_publish_measurements.cc Utilities.cc pose.pb.cc measurement.pb.cc)
+target_include_directories(read_and_publish_measurements PUBLIC ${PROTOBUF_INCLUDE_DIR})
+target_link_libraries(read_and_publish_measurements glog::glog ${PROTOBUF_LIBRARY})
+set_target_properties(read_and_publish_measurements PROPERTIES LINK_FLAGS "-Wl,--no-as-needed")
 
 add_executable(pose_reader_example pose_reader_example.cc pose.pb.cc)
 target_include_directories(pose_reader_example PUBLIC ${PROTOBUF_INCLUDE_DIR})
