@@ -1,4 +1,4 @@
-/* Copyright (c) 2019 Siddarth Kaki
+/* Copyright (c) 2022 Siddarth Kaki
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
@@ -17,7 +17,6 @@
 
 #include "Utilities.h"
 #include "PoseSolver.h"
-//#include "KalmanFilter.h"
 #include "MEKF2.h"
 #include "pose.pb.h"
 #include "measurement.pb.h"
@@ -144,21 +143,27 @@ int main(int argc, char **argv)
         pos_uw_threshold, 
         pos_uw_pct
     );
+
     //-- Init sequence -------------------------------------------------------/
 
     // log path name prefixing and postfixing
     std::string init_time_str = std::to_string(std::time(nullptr));
     std::string prefix = "../data/" + init_time_str + "_";
+    //std::string prefix = "../data/";
     std::string postfix = ".csv";
 
     // declare vectors for storage
     std::vector<Pose> solved_poses, filtered_poses;
+    std::vector<VectorXd> filtered_omegas, filtered_alphas, filtered_pos_states;
     std::vector<VectorXd> filtered_covar_diag;
     std::vector<double> timestamps; // [s]
 
     // pre-allocate memory
     solved_poses.reserve(vector_reserve_size);
     filtered_poses.reserve(vector_reserve_size);
+    filtered_omegas.reserve(vector_reserve_size);
+    filtered_alphas.reserve(vector_reserve_size);
+    filtered_pos_states.reserve(vector_reserve_size);
     filtered_covar_diag.reserve(vector_reserve_size);
     timestamps.reserve(vector_reserve_size);
 
@@ -266,8 +271,14 @@ int main(int argc, char **argv)
                         x0.tail(3) = 0.001 * Vector3d::Random();
                         mekf.SetInitialStateAndCovar(init_quat, init_omega, init_alpha, x0, init_covar);
 
+                        std::cout << "init_omega: " << init_omega << std::endl << std::endl;
+                        std::cout << "Q_att: " << std::endl << mekf.Q_.topLeftCorner(9, 9) << std::endl << std::endl;
+
                         solved_poses.push_back(pose_sol.pose);
                         filtered_poses.push_back(pose_sol.pose);
+                        filtered_omegas.push_back(init_omega);
+                        filtered_alphas.push_back(init_alpha);
+                        filtered_pos_states.push_back(mekf.state_est_.tail(9));
                         filtered_covar_diag.push_back(pose_sol.cov_pose.diagonal());
                         timestamps.push_back(0.0);
                         init_t = std::chrono::high_resolution_clock::now();
@@ -451,6 +462,12 @@ int main(int argc, char **argv)
 
                         // MEKF reset step
                         mekf.Reset();
+
+                        curr_t = std::chrono::high_resolution_clock::now();
+                        curr_elapsed_t = (double)std::chrono::duration_cast<std::chrono::nanoseconds>(curr_t - init_t).count();
+                        curr_elapsed_t *= pow(10.0, -9.0);
+
+                        std::cout << curr_elapsed_t << " sec" << std::endl << std::endl;
                     }
                     else // reject the measurement
                     {
@@ -479,6 +496,8 @@ int main(int argc, char **argv)
         pose_filtered.pos = mekf.pos_est_;
         pose_filtered.quat = mekf.quat_est_.normalized();
 
+        Vector3d alpha_filtered = mekf.state_est_.segment(6, 3);
+
         // VectorXd covar_filtered_diag = mekf.covar_est_.diagonal();
         // Vector6d pose_covar_filtered_diag;
         // pose_covar_filtered_diag << pose_covar_filtered_diag.segment(0,3), pose_covar_filtered_diag.segment(9,3);
@@ -492,6 +511,9 @@ int main(int argc, char **argv)
         //-- Data Storage ----------------------------------------------------/        
         solved_poses.push_back(pose_sol.pose);
         filtered_poses.push_back(pose_filtered);
+        filtered_omegas.push_back(mekf.omega_est_);
+        filtered_alphas.push_back(alpha_filtered);
+        filtered_pos_states.push_back(mekf.state_est_.tail(9));
         filtered_covar_diag.push_back(mekf.covar_est_.diagonal());
         timestamps.push_back(curr_elapsed_t);
 
@@ -543,14 +565,21 @@ int main(int argc, char **argv)
         {
             // write to csv files
             bool append_mode = true;
+            // write to csv files
             Utilities::WritePosesToCSV(solved_poses, prefix + "solved_poses" + postfix, append_mode);
             Utilities::WritePosesToCSV(filtered_poses, prefix + "filtered_poses" + postfix, append_mode);
+            Utilities::WriteKFStatesToCSV(filtered_omegas, prefix + "filtered_omegas" + postfix, append_mode);
+            Utilities::WriteKFStatesToCSV(filtered_alphas, prefix + "filtered_alphas" + postfix, append_mode);
+            Utilities::WriteKFStatesToCSV(filtered_pos_states, prefix + "filtered_pos_states" + postfix, append_mode);
             Utilities::WriteKFStatesToCSV(filtered_covar_diag, prefix + "filtered_covar_diag" + postfix, append_mode);
             Utilities::WriteTimestampsToFile(timestamps, prefix + "timestamps" + postfix, append_mode);
-
+                
             // clear vectors
             solved_poses.clear();
             filtered_poses.clear();
+            filtered_omegas.clear();
+            filtered_alphas.clear();
+            filtered_pos_states.clear();
             filtered_covar_diag.clear();
             timestamps.clear();
         }
@@ -574,6 +603,9 @@ int main(int argc, char **argv)
                 // write to csv files
                 Utilities::WritePosesToCSV(solved_poses, prefix + "solved_poses" + postfix, append_mode);
                 Utilities::WritePosesToCSV(filtered_poses, prefix + "filtered_poses" + postfix, append_mode);
+                Utilities::WriteKFStatesToCSV(filtered_omegas, prefix + "filtered_omegas" + postfix, append_mode);
+                Utilities::WriteKFStatesToCSV(filtered_alphas, prefix + "filtered_alphas" + postfix, append_mode);
+                Utilities::WriteKFStatesToCSV(filtered_pos_states, prefix + "filtered_pos_states" + postfix, append_mode);
                 Utilities::WriteKFStatesToCSV(filtered_covar_diag, prefix + "filtered_covar_diag" + postfix, append_mode);
                 Utilities::WriteTimestampsToFile(timestamps, prefix + "timestamps" + postfix, append_mode);
                 printf("Logged data to file.\n");

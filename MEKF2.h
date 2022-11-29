@@ -32,7 +32,6 @@ class MEKF2
     private:
         bool processed_measurement_;
         Vector3d delta_gibbs_est_;
-        VectorXd state_est_;
 
         Matrix3d I33 = Matrix3d::Identity();
         MatrixXd I44 = MatrixXd::Identity(4, 4);
@@ -61,6 +60,8 @@ class MEKF2
 
         //Vector3d alpha_est_;
         //VectorXd x_est_;
+
+        VectorXd state_est_;
 
         Vector3d pos_est_;
         Quaterniond quat_est_;

@@ -39,6 +39,8 @@ namespace MEKF2 {
         // TODO: spilt process & measurement noise std for pos and att
 
         Q_ = MatrixXd::Identity(num_states_, num_states_)*pow(process_noise_std,2); // process_noise_covariance
+        //Q_.block(3, 3, 3, 3) = MatrixXd::Zero(3, 3);
+        Q_.topLeftCorner(6, 6) = Matrix6d::Zero();
         double qpsd_ = qpsd;
         double pss = qpsd_*tau_/2.0;
         Q_(6,6) *= ( 1.0 - exp(-2.0*dt_/tau_) )*pss;
@@ -80,9 +82,9 @@ namespace MEKF2 {
         A_ = MatrixXd::Identity(4, 4); // quaternion_propagation
 
         F_ = MatrixXd::Identity(num_states_, num_states_); // convariance_dynamics_propagation
-        F_.block(3, 3, 3, 3) = I33;
-        F_.block(3, 6, 3, 3) = I33 * dt_;
-        F_.block(6, 6, 3, 3) = I33 * exp(-dt_ / tau_);
+        //F_.block(3, 3, 3, 3) = I33;
+        //F_.block(3, 6, 3, 3) = I33 * dt_;
+        //F_.block(6, 6, 3, 3) = I33 * exp(-dt_ / tau_);
         F_pos_ = MatrixXd::Identity(num_pos_states_, num_pos_states_); // position_dynamics_propagation
         F_pos_(0,3) = dt_;
         F_pos_(1,4) = dt_;
@@ -94,6 +96,8 @@ namespace MEKF2 {
         F_pos_(1,7) = 0.5*pow(dt_,2);
         F_pos_(2,8) = 0.5*pow(dt_,2);
         F_.bottomRightCorner(num_pos_states_, num_pos_states_) = F_pos_;
+
+        //std::cout << "F:" << std::endl << F_ << std::endl << std::endl;
 
         H_ = MatrixXd::Zero(num_measurements_, num_states_); // measurement_model
         H_.block(0, 0, num_att_measurements_, num_att_measurements_) = Matrix3d::Identity();
@@ -220,7 +224,17 @@ namespace MEKF2 {
         double phi = 0.5 * omega_norm * dt_;
 
         A_ = cos(phi) * I44 + sin(phi) * omega_hat_44_equivalent;
-        F_.block(0, 0, 3, 3) = (-CppRot::CrossProductEquivalent(omega_est_) * dt_).exp();
+
+        MatrixXd A_att_states = MatrixXd::Zero(num_att_states_, num_att_states_);
+        A_att_states.topLeftCorner(3, 3) = -CppRot::CrossProductEquivalent(omega_est_);
+        A_att_states.block(0, 3, 3, 3) = Matrix3d::Identity();
+        A_att_states.block(3, 6, 3, 3) = Matrix3d::Identity();
+        A_att_states.bottomRightCorner(3, 3) = -1/tau_*Matrix3d::Identity();
+
+        F_.topLeftCorner(num_att_states_, num_att_states_) = (A_att_states * dt_).exp();
+
+        //std::cout << "A_att_states:" << std::endl << A_att_states << std::endl << std::endl;
+        //std::cout << "F_att_states:" << std::endl << F_.topLeftCorner(9, 9) << std::endl << std::endl;
 
         // propagate quaternion
         quat_est_ = Utilities::Vec4ToQuat( A_ * Utilities::QuatToVec4(quat_est_) );
@@ -235,14 +249,32 @@ namespace MEKF2 {
         
         // propagate covariance
         covar_est_ = F_ * covar_est_ * F_.transpose() + Q_;
+
+        //std::cout << "Pk:" << std::endl << covar_est_ << std::endl << std::endl;
     }
 
     // Update step
     void MEKF2::Update(const VectorXd &measurement)
     {
+        // Innovation covariance
+        MatrixXd inncovar = H_ * covar_est_ * H_.transpose() + R_;
+
         // Kalman gain
-        MatrixXd K = covar_est_ * H_.transpose() * ((H_ * covar_est_ * H_.transpose() + R_).inverse());
+        MatrixXd K = covar_est_ * H_.transpose() * (inncovar.inverse());
         
+        /*
+        std::cout << "H:" << std::endl << H_ << std::endl << std::endl;
+
+        std::cout << "Pk:" << std::endl << covar_est_ << std::endl << std::endl;
+
+        std::cout << "Pk*H^T:" << std::endl << covar_est_ * H_.transpose() << std::endl << std::endl;
+
+        std::cout << "(H*Pk*H^T + R)^-1:" << std::endl << ((H_ * covar_est_ * H_.transpose() + R_).inverse()) << std::endl << std::endl;
+
+        std::cout << "K:" << std::endl << K << std::endl << std::endl;
+        */
+
+       /*
         Matrix3d pos_covar_est = covar_est_.block(num_att_states_, num_att_states_, 3, 3);
         Matrix3d R_pos = R_.bottomRightCorner(3, 3);
         
@@ -256,12 +288,23 @@ namespace MEKF2 {
         }
 
         Matrix3d K_pos = pos_covar_est * I33.transpose() * (( (1 + beta_u) * (I33 * pos_covar_est * I33.transpose()) + R_pos).inverse());
-
+        */
+    
         // delta Gibbs update
         Quaterniond quat_meas = Utilities::Vec4ToQuat(measurement.head(4));
         Quaterniond delta_quat = CppRot::QuatMult_S(quat_meas, quat_est_.inverse());
-        Vector3d meas_innovation = 2.0 * delta_quat.vec() / delta_quat.w();
-        delta_gibbs_est_ = K.block(0, 0, 3, 3)*meas_innovation;
+        Vector3d meas_att_innovation = 2.0 * delta_quat.vec() / delta_quat.w();
+
+        Vector3d meas_pos_innovation = measurement.tail(3) - pos_est_;
+        Vector6d meas_innovation = Vector6d::Zero();
+        meas_innovation.head(3) = meas_att_innovation;
+        meas_innovation.tail(3) = meas_pos_innovation;
+
+        VectorXd delta_x = K*meas_innovation;
+
+        //std::cout << "state_update_delta:" << std::endl << delta_x << std::endl << std::endl;
+
+        delta_gibbs_est_ = delta_x.head(3);
 
         // reset step
         Quaterniond delta_quat_temp = Quaterniond::Identity();
@@ -270,18 +313,43 @@ namespace MEKF2 {
         Quaterniond quat_star = CppRot::QuatMult_S(delta_quat_temp, quat_est_).normalized();
         
         // check whether attitude component of measurement is a statistical outlier
+        
+        /*
         Quaterniond dq = CppRot::QuatMult_S(quat_est_, quat_star.inverse());
-        double dangle = 2.0*acos( abs( dq.w() ) );
-                
+        double dangle = 2.0*acos( abs( dq.w() ) );      
         Matrix3d att_covar_est = covar_est_.block(0, 0, 3, 3);
         double att_covar_rm = sqrt(att_covar_est.trace() / 3);
-        std::cout << "ATT COV: " << att_covar_rm * Utilities::RAD2DEG << std::endl << std::endl;
-       
-        if (dangle < max_flip_thresh_deg_ * att_covar_rm)
+        */
+
+        double dangle = meas_att_innovation.mean();
+        double dpos = meas_pos_innovation.mean();  
+
+        double att_covar_rm = sqrt(inncovar.topLeftCorner(3, 3).trace() / 3);
+        double pos_covar_rm = sqrt(inncovar.bottomRightCorner(3, 3).trace() / 3);
+
+        std::cout << "dangle: " << dangle * Utilities::RAD2DEG << std::endl;
+        std::cout << "ATT INN COV: " << att_covar_rm * Utilities::RAD2DEG << std::endl << std::endl;
+
+        std::cout << "dpos: " << dpos << std::endl;
+        std::cout << "POS INN COV: " << pos_covar_rm << std::endl << std::endl << std::endl;
+
+
+        if ( abs(dangle) > 3 * att_covar_rm )
         {
-            // position update
-            pos_est_ = pos_est_ + K_pos*( measurement.tail(3) - I33*pos_est_ );
-            state_est_.segment(num_att_states_, 3) = pos_est_;
+            std::cout << "Rejected measurement; dangle = " << dangle * Utilities::RAD2DEG << std::endl << std::endl;
+        }
+        else if ( abs(dpos) > 3 * pos_covar_rm )
+        {
+            std::cout << "Rejected measurement; dpos = " << dpos << std::endl << std::endl;
+        }
+        else
+        {
+            // state update
+            state_est_ = state_est_ + delta_x;
+                        
+            //pos_est_ = pos_est_ + K_pos*meas_pos_innovation;
+            pos_est_ = state_est_.segment(num_att_states_, 3);
+            //state_est_.segment(num_att_states_, 3) = pos_est_;
 
             // measurement update
             quat_est_ = quat_star;
@@ -289,10 +357,6 @@ namespace MEKF2 {
             // Joseph update (general)
             MatrixXd I = MatrixXd::Identity(num_states_, num_states_);
             covar_est_ = (I - K * H_) * covar_est_ * ((I - K * H_).transpose()) + K * R_ * (K.transpose());
-        }
-        else // reject measurement if attitude component is a statistical outlier
-        {
-            std::cout << "Rejected measurement; dangle = " << dangle * Utilities::RAD2DEG << std::endl << std::endl;
         }
 
         omega_est_ = state_est_.segment(3, 3);
@@ -302,7 +366,9 @@ namespace MEKF2 {
     // Reset step
     void MEKF2::Reset()
     {
-        delta_gibbs_est_ = Vector3d::Zero();        
+        delta_gibbs_est_ = Vector3d::Zero();
+
+        state_est_.segment(0, 3) = Vector3d::Zero();   
        
         processed_measurement_ = true;
     }
@@ -345,6 +411,7 @@ namespace MEKF2 {
 
     void MEKF2::AngVelUpdate(const Vector3d &measurement, const Matrix3d &covar)
     {
+        // TODO: make update for all states!!!
         omega_est_ = state_est_.segment(3, 3);
         omega_covar_est_ = covar_est_.block(3, 3, 3, 3);
 
