@@ -22,9 +22,8 @@
     "adapt_window_size": false,
     "window_size": 25,
     "max_window_size": 1000,
-    "min_window_size": 50,
-    "eps_mean": 5.3765e-04,
-    "eps_std": 1.0816e-04,
+    "min_window_size": 10,
+    "quatera_angle_noise_std_deg": 5.0,
     "eps_threshold_n": 3.0,
     "rFeaMat":
     [

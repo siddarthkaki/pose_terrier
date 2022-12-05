@@ -8,31 +8,47 @@ pose_type = 'NLS'; % 'PnP'
 % folder = "long_test/";
 % folder = "short_test/";
 % folder = "new_test/";
-folder = "";
+folder = "../data/";%500s_noadapt_quatera/";
 
 % prefix = "../data/long_test/" + "1661875312" + "_";
 % prefix = "../data/short_test/" + "1661872620" + "_";
 % prefix = "../data/new_test/" + "1661975852" + "_";
-prefix = "../data/" + "1670198683" + "_";
+prefix = folder + "1670198514" + "_";
 
 
 tVec = f_read_timestamps(prefix + "timestamps.csv");
 
-truePosesMat = f_read_poses("../data/" + folder + "true_poses.csv");
+truePosesMat = f_read_poses(folder + "true_poses.csv");
 
 solvedPosesMat = f_read_poses(prefix + "solved_poses.csv");
 
 filteredPosesMat = f_read_poses(prefix + "filtered_poses.csv");
 
+trueAngVelMat = f_read_omegas(folder + "true_omegas.csv");
+
+solvedAngVelMat = f_read_omegas(prefix + "solved_omegas.csv");
+
+filteredAngVelMat = f_read_omegas(prefix + "filtered_omegas.csv");
+
+filteredAngAccMat = f_read_omegas(prefix + "filtered_alphas.csv");
+
+filteredPosStates = f_read_pos_states(prefix + "filtered_pos_states.csv");
+filteredVelMat = filteredPosStates(:,4:6);
+filteredAccMat = filteredPosStates(:,7:9);
+
 filteredCovarsDiagMat = f_read_covars(prefix + "filtered_covar_diag.csv");
 
-%statesMat = f_read_covars(prefix + "kf_states.csv");
+% statesMat = f_read_covars(prefix + "kf_states.csv");
 
-%covarsMat = f_read_covars(prefix + "kf_covars.csv");
+% covarsMat = f_read_covars(prefix + "kf_covars.csv");
 
 [num_poses,~] = size(filteredPosesMat);
 
-tVecMeas = f_read_timestamps("../data/" + folder + "meas_timestamps.csv");
+tVecMeas = f_read_timestamps(folder + "meas_timestamps.csv");
+
+windowSize = f_read_timestamps(prefix + "window_size.csv");
+
+epsHistory = f_read_timestamps(prefix + "eps_history.csv");
 
 
 %% temp fix
@@ -40,8 +56,14 @@ tVecMeas = f_read_timestamps("../data/" + folder + "meas_timestamps.csv");
 % truePosesMat = [truePosesMat; zeros(num_poses - num_true_poses,6)];
 % tVecMeas = 0:0.04:num_poses-1;
 
+% truePosesMat(:,5) = wrapTo2Pi(truePosesMat(:,5));
+% solvedPosesMat(:,5) = wrapTo2Pi(solvedPosesMat(:,5));
+% filteredPosesMat(:,5) = wrapTo2Pi(filteredPosesMat(:,5));
+
 %% covar -> std extraction
 attStdMat = sqrt(filteredCovarsDiagMat(:,1:3));
+angVelStdMat = sqrt(filteredCovarsDiagMat(:,4:6));
+angAccStdMat = sqrt(filteredCovarsDiagMat(:,7:9));
 posStdMat = sqrt(filteredCovarsDiagMat(:,10:12));
 
 %% truth interpolation
@@ -85,6 +107,10 @@ for idx = 1:num_poses,
     attScoreVecFiltered(idx) = 2*acos( abs( dquatFiltered(1) ) ); % rad
 end
 
+%%
+% epsmean = meanr(epsHistory(100:end))
+% epsstd = std(epsHistory(100:end))
+
 %% TEST plotting 3sigmas
 f100 = figure(100);
 subplot(2,1,1)
@@ -103,6 +129,34 @@ legend('x', 'y', 'z')
 boldify;
 set(gcf, 'PaperPositionMode', 'auto');
 
+
+%% att 3sigmas
+f101 = figure(101);
+subplot(3,1,1)
+plot(tVec, 3*rad2deg(attStdMat));
+grid on
+ylabel('deg')
+ylim([0 15])
+title('3\sigma')
+
+subplot(3,1,2)
+plot(tVec, 3*rad2deg(angVelStdMat));
+grid on
+ylabel('deg/s')
+% ylim([0 10])
+
+subplot(3,1,3)
+plot(tVec, 3*rad2deg(angAccStdMat));
+grid on
+ylabel('deg/s^2')
+% ylim([0 10])
+
+legend('\phi', '\theta', '\psi')
+
+boldify;
+set(gcf, 'PaperPositionMode', 'auto');
+
+
 %% plotting position
 f1 = figure(1);
 subplot(4,1,1)
@@ -115,6 +169,7 @@ grid on
 legend('true',pose_type,'MEKF','Location','Southwest')
 xlabel('time [s]')
 ylabel('x [m]')
+xlim([tVec(1) tVec(end)])
 
 subplot(4,1,2)
 plot(tVecMeas, truePosesMat(:,2))
@@ -122,9 +177,10 @@ hold on
 plot(tVec, solvedPosesMat(:,2))
 plot(tVec, filteredPosesMat(:,2),'color',[0.4940, 0.1840, 0.5560],'LineWidth',2)
 grid on
-%legend('true',pose_type,'MEKF','Location','Northeast')
+legend('true',pose_type,'MEKF','Location','Northeast')
 xlabel('time [s]')
 ylabel('y [m]')
+xlim([tVec(1) tVec(end)])
 
 subplot(4,1,3)
 plot(tVecMeas, truePosesMat(:,3))
@@ -132,9 +188,10 @@ hold on
 plot(tVec, solvedPosesMat(:,3))
 plot(tVec, filteredPosesMat(:,3),'color',[0.4940, 0.1840, 0.5560],'LineWidth',2)
 grid on
-%legend('true',pose_type,'MEKF','Location','Southwest')
+legend('true',pose_type,'MEKF','Location','Southwest')
 xlabel('time [s]')
 ylabel('z [m]')
+xlim([tVec(1) tVec(end)])
 %ylim([0,50])
 
 subplot(4,1,4)
@@ -145,6 +202,8 @@ grid on
 legend(pose_type,'MEKF')
 xlabel('time [s]')
 ylabel('pos\_score [m]')
+ylim([0 5])
+xlim([tVec(1) tVec(end)])
 
 figpos = [0 0 1920/2 1080];
 set(f1,'Position',figpos)
@@ -163,6 +222,7 @@ grid on
 legend('true',pose_type,'MEKF','Location','Southeast')
 xlabel('time [s]')
 ylabel('\phi [deg]')
+xlim([tVec(1) tVec(end)])
 %ylim( [min(rad2deg(truePosesMat(:,4)))-5, max(rad2deg(truePosesMat(:,4)))+5] )
 
 subplot(4,1,2)
@@ -171,17 +231,19 @@ hold on
 plot(tVec, rad2deg(solvedPosesMat(:,5)))
 plot(tVec, rad2deg(filteredPosesMat(:,5)),'color',[0.4940, 0.1840, 0.5560],'LineWidth',2)
 grid on
-%legend('true',pose_type,'MEKF','Location','Southeast')
+legend('true',pose_type,'MEKF','Location','Southeast')
+xlim([tVec(1) tVec(end)])
 xlabel('time [s]')
 ylabel('\theta [deg]')
 
 subplot(4,1,3)
-plot(tVecMeas, rad2deg(truePosesMat(:,6)))
+plot(tVecMeas, rad2deg(wrapTo2Pi(truePosesMat(:,6))))
 hold on
-plot(tVec, rad2deg(solvedPosesMat(:,6)))
-plot(tVec, rad2deg(filteredPosesMat(:,6)),'color',[0.4940, 0.1840, 0.5560],'LineWidth',2)
+plot(tVec, rad2deg(wrapTo2Pi(solvedPosesMat(:,6))))
+plot(tVec, rad2deg(wrapTo2Pi(filteredPosesMat(:,6))),'color',[0.4940, 0.1840, 0.5560],'LineWidth',2)
 grid on
-%legend('true',pose_type,'MEKF','Location','Southeast')
+legend('true',pose_type,'MEKF','Location','Southeast')
+xlim([tVec(1) tVec(end)])
 xlabel('time [s]')
 ylabel('\psi [deg]')
 
@@ -190,7 +252,8 @@ plot(tVec, rad2deg(attScoreVec),'color',[0.8500, 0.3250, 0.0980])
 hold on
 plot(tVec, rad2deg(attScoreVecFiltered),'color',[0.4940, 0.1840, 0.5560],'LineWidth',2)
 grid on
-ylim([0 15])
+xlim([tVec(1) tVec(end)])
+ylim([0 40])
 legend(pose_type,'MEKF')
 xlabel('time [s]')
 ylabel('att\_score [deg]')
@@ -200,3 +263,107 @@ figpos = [0 0 1920/2 1080];
 set(f2,'Position',figpos)
 boldify;
 set(gcf, 'PaperPositionMode', 'auto');
+
+
+
+%% plotting angular velocity
+
+f3 = figure(3);
+for idx = 1:3,
+    subplot(3,1,idx)
+    plot(tVecMeas, rad2deg(trueAngVelMat(:,idx)),'-');
+    hold on
+    plot(tVec, rad2deg(solvedAngVelMat(:,idx)),'-');
+    plot(tVec, rad2deg(filteredAngVelMat(:,idx)),'--','color',[0.4940, 0.1840, 0.5560]);%,'LineWidth',2);
+    hold off
+    grid on
+    xlabel('time [s]')
+    ylabel('deg/s')
+    if idx == 1, title('Angular Velocity'); end
+end
+
+% ylim([0 10])
+legend('true', 'quatera', 'filtered')
+
+boldify
+set(gcf, 'PaperPositionMode', 'auto');
+
+%% plotting angular acceleration
+
+f13 = figure(13);
+for idx = 1:3,
+    subplot(3,1,idx)
+    plot(tVec, rad2deg(filteredAngAccMat(:,idx)),'--','color',[0.4940, 0.1840, 0.5560]);%,'LineWidth',2);
+    hold off
+    grid on
+    xlabel('time [s]')
+    ylabel('deg/s^2')
+    if idx == 1, title('Angular Acceleration'); end
+end
+
+% ylim([0 10])
+legend('filtered')
+
+boldify
+set(gcf, 'PaperPositionMode', 'auto');
+
+%% plotting translational velocity
+
+f4 = figure(4);
+for idx = 1:3,
+    subplot(3,1,idx)
+    plot(tVec, filteredVelMat(:,idx),'--','color',[0.4940, 0.1840, 0.5560]);%,'LineWidth',2);
+    hold off
+    grid on
+    xlabel('time [s]')
+    ylabel('m')
+    if idx == 1, title('Translational Velocity'); end
+end
+
+% ylim([0 10])
+legend('filtered')
+
+boldify
+set(gcf, 'PaperPositionMode', 'auto');
+
+%% plotting translational acceleration
+
+f14 = figure(14);
+for idx = 1:3,
+    subplot(3,1,idx)
+    plot(tVec, filteredAccMat(:,idx),'--','color',[0.4940, 0.1840, 0.5560]);%,'LineWidth',2);
+    hold off
+    grid on
+    xlabel('time [s]')
+    ylabel('m/s^2')
+    if idx == 1, title('Translational Acceleration'); end
+end
+
+% ylim([0 10])
+legend('filtered')
+
+boldify
+set(gcf, 'PaperPositionMode', 'auto');
+
+% %%
+f5 = figure(5);
+subplot(2,1,1)
+plot(epsHistory./(windowSize - 2))
+title('eps')
+grid on
+boldify
+
+subplot(2,1,2)
+plot(windowSize)
+title('window size')
+grid on
+boldify
+
+%%
+% window_start = 40;
+% 
+% lambda3_mean = mean(epsHistory(window_start:end))
+% lambda3_std = std(epsHistory(window_start:end))
+% 
+% varepsSq_est = mean(epsHistory(window_start:end)./(windowSize(window_start:end)-2))
+% vareps_est = mean(sqrt(epsHistory(window_start:end)./(windowSize(window_start:end)-2)))

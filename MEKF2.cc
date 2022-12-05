@@ -19,9 +19,7 @@ namespace MEKF2 {
         const double &dt, 
         const double &tau,
         const double &qpsd, 
-        const double &max_flip_thresh_deg,  
-        const double &pos_uw_threshold,
-        const double &pos_uw_pct
+        const double &max_flip_thresh_deg
     )
     {
         num_att_states_ = 9; // delta_gibbs(3), omega(3), alpha(3)
@@ -33,8 +31,6 @@ namespace MEKF2 {
         dt_ = dt;
         tau_ = tau;
         max_flip_thresh_deg_ = max_flip_thresh_deg;
-        pos_uw_threshold_ = pos_uw_threshold;
-        pos_uw_pct_ = pos_uw_pct;
         
         // TODO: spilt process & measurement noise std for pos and att
 
@@ -124,8 +120,6 @@ namespace MEKF2 {
         dt_ = dt;
         tau_ = 1.0;
         max_flip_thresh_deg_ = 30;
-        pos_uw_threshold_ = 1.5;
-        pos_uw_pct_ = 0.2;
         // TODO: spilt process & measurement noise std for pos and att
 
         Q_ = MatrixXd::Identity(num_states_, num_states_)*pow(process_noise_std,2); // process_noise_covariance
@@ -324,21 +318,21 @@ namespace MEKF2 {
         double dangle = meas_att_innovation.mean();
         double dpos = meas_pos_innovation.mean();  
 
-        double att_covar_rm = sqrt(inncovar.topLeftCorner(3, 3).trace() / 3);
-        double pos_covar_rm = sqrt(inncovar.bottomRightCorner(3, 3).trace() / 3);
+        double att_inn_std = sqrt(inncovar.topLeftCorner(3, 3).trace() / 3.0);
+        double pos_inn_std = sqrt(inncovar.bottomRightCorner(3, 3).trace() / 3.0);
 
         std::cout << "dangle: " << dangle * Utilities::RAD2DEG << std::endl;
-        std::cout << "ATT INN COV: " << att_covar_rm * Utilities::RAD2DEG << std::endl << std::endl;
+        std::cout << "ATT INN STD: " << att_inn_std * Utilities::RAD2DEG << std::endl << std::endl;
 
         std::cout << "dpos: " << dpos << std::endl;
-        std::cout << "POS INN COV: " << pos_covar_rm << std::endl << std::endl << std::endl;
+        std::cout << "POS INN STD: " << pos_inn_std << std::endl << std::endl << std::endl;
 
 
-        if ( abs(dangle) > 3 * att_covar_rm )
+        if ( abs(dangle) > 3.0 * att_inn_std )
         {
             std::cout << "Rejected measurement; dangle = " << dangle * Utilities::RAD2DEG << std::endl << std::endl;
         }
-        else if ( abs(dpos) > 3 * pos_covar_rm )
+        else if ( abs(dpos) > 3.0 * pos_inn_std )
         {
             std::cout << "Rejected measurement; dpos = " << dpos << std::endl << std::endl;
         }
@@ -411,23 +405,23 @@ namespace MEKF2 {
 
     void MEKF2::AngVelUpdate(const Vector3d &measurement, const Matrix3d &covar)
     {
-        // TODO: make update for all states!!!
-        omega_est_ = state_est_.segment(3, 3);
-        omega_covar_est_ = covar_est_.block(3, 3, 3, 3);
-
-        Matrix3d H_angvel = Matrix3d::Identity();
+        MatrixXd H_angvel = MatrixXd::Zero(3, num_states_);
+        H_angvel.block(0, 3, 3, 3) = Matrix3d::Identity();
         Matrix3d R_angvel = covar;
 
         // Kalman gain
-        MatrixXd K_angvel = omega_covar_est_ * H_angvel.transpose() * ((H_angvel * omega_covar_est_ * H_angvel.transpose() + R_angvel).inverse());
+        MatrixXd K_angvel = covar_est_ * H_angvel.transpose() * ((H_angvel * covar_est_ * H_angvel.transpose() + R_angvel).inverse());
 
         // ang. vel. update
-        omega_est_ = omega_est_ + K_angvel*( measurement - H_angvel*omega_est_ );
-        state_est_.segment(3, 3) = omega_est_;
+        state_est_ = state_est_ + K_angvel*( measurement - H_angvel*state_est_ );
+        omega_est_ = state_est_.segment(3, 3);
+
+        //std::cout << "Ang vel residual: " << std::endl << ( measurement - H_angvel*state_est_ ) << std::endl << std::endl;
 
         // Joseph covariance update
-        omega_covar_est_ = (I33 - K_angvel * H_angvel) * omega_covar_est_ * ((I33 - K_angvel * H_angvel).transpose()) + K_angvel * R_angvel * (K_angvel.transpose());
-        covar_est_.block(3, 3, 3, 3) = omega_covar_est_;
+        MatrixXd I = MatrixXd::Identity(num_states_, num_states_);
+        covar_est_ = (I - K_angvel * H_angvel) * covar_est_ * ((I - K_angvel * H_angvel).transpose()) + K_angvel * R_angvel * (K_angvel.transpose());
+        omega_covar_est_ = covar_est_.block(3, 3, 3, 3);
     }
 
     void MEKF2::PrintModelMatrices()

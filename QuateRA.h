@@ -40,8 +40,7 @@ class QuateRA
 
         MatrixXd Hk_;
 
-        double eps_cr_hi_;
-        double eps_cr_lw_;
+        //Vector3d e1uv;
 
         Vector4d ProjectQuatToPlane(const Vector4d &quat, const Vector4d &u1, const Vector4d &u2);
 
@@ -49,15 +48,20 @@ class QuateRA
     
         double dt_; // measurement time-step
         double tk_; // current time
-        unsigned int L_; // adaptive sliding window size 
+        bool adapt_window_size_; // toggle window size adaptation
+        unsigned int L_; // sliding window size 
         unsigned int Lmin_; // minimum feasible window size
         unsigned int Lmax_; // maximum feasible window size
 
         // double euler_noise_std_; // orientation measurement std. dev.
 
+        double angle_noise_std_; // std. dev. of attitude estimation error
         double eps_mean_; // statistically determined mean of window size thresholding value
         double eps_std_; // statistically determined std. dev. of window size thresholding value
         double threshold_n_;
+
+        std::vector<double> L_history;
+        std::vector<double> eps_history;
         
         Matrix3d R_; // measurement noise covariance
         Matrix6d F_; // covariance propagation dynamics model
@@ -65,6 +69,7 @@ class QuateRA
         MatrixXd H_; // measurement model
 
         MatrixQuat Qmat_; // quaternion measurement storage
+        //MatrixXd RUVmat_; // rotated unit vector storage 
 
         VectorXd tvec_; // measurement time storage
 
@@ -75,11 +80,11 @@ class QuateRA
 
         QuateRA(const double &dt);
         void Init(
+            const bool &adapt_window_size,
             const unsigned int &L, 
             const unsigned int &Lmin, 
             const unsigned int &Lmax,  
-            const double &eps_mean, 
-            const double &eps_std,  
+            const double &angle_noise_std_,
             const double &threshold_n
         );
         void InitMeasurement(const Vector4d &measurement, const Matrix3d &covar);

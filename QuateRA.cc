@@ -14,30 +14,35 @@ namespace QuateRA {
     }
 
     void QuateRA::Init(
+            const bool &adapt_window_size,
             const unsigned int &L, 
             const unsigned int &Lmin, 
             const unsigned int &Lmax,  
-            const double &eps_mean, 
-            const double &eps_std,  
+            const double &angle_noise_std,
             const double &threshold_n
     )
     {
+        adapt_window_size_ = adapt_window_size;
         L_ = L;
         Lmin_ = Lmin;
         Lmax_ = Lmax;
-        eps_mean_ = eps_mean;
-        eps_std_ = eps_std;
+        angle_noise_std_ = angle_noise_std;
         threshold_n_ = threshold_n;
 
+        L_history.reserve(L_);
+        eps_history.reserve(L_);
+
         Qmat_ = Vector4d::Zero(); // TODO double check matrix ops on matrices with uninitialised values
+        //RUVmat_ = Vector3d::Zero();
+        //e1uv << 1.0, 0.0, 0.0;
 
         tvec_ = VectorXd::Zero(1,1);
 
         H_ = MatrixXd::Zero(3,6);
         H_.block(0, 0, 3, 3) = I33;
 
-        eps_cr_hi_ = eps_mean_ + threshold_n_*eps_std_;
-        eps_cr_lw_ = eps_mean_ - threshold_n_*eps_std_;
+        //eps_cr_hi_ = eps_mean_ + threshold_n_*eps_std_;
+        //eps_cr_lw_ = eps_mean_ - threshold_n_*eps_std_;
 
         ang_vel_est_ = Vector3d::Zero();
         covar_est_ = 10000.0*Matrix6d::Identity();
@@ -49,6 +54,7 @@ namespace QuateRA {
     void QuateRA::InitMeasurement(const Vector4d &measurement, const Matrix3d &covar)
     {
         Qmat_ = measurement;
+        //RUVmat_ = CppRot::Quat2Tmat(Utilities::Vec4ToQuat(measurement))*e1uv;
         tvec_(0) = 0.0;
 
         R_ = covar;
@@ -62,6 +68,9 @@ namespace QuateRA {
         unsigned int ql = Qmat_.cols(); 
         Qmat_.conservativeResize(4,ql+1);
         Qmat_.rightCols(1) = measurement;
+
+        //RUVmat_.conservativeResize(3,ql+1);
+        //RUVmat_.rightCols(1) = CppRot::Quat2Tmat(Utilities::Vec4ToQuat(measurement))*e1uv;
 
         tvec_.conservativeResize(ql+1);
         tvec_(ql) = tk;
@@ -77,8 +86,10 @@ namespace QuateRA {
                 //std::cout << tvec_(ql-1) << " - " << tvec_(0) << " = " << tvec_(ql-1) - tvec_(0) << " " << std::endl << std::endl;
 
                 MatrixQuat Qmat_new = Qmat_.rightCols(L_);
+                //MatrixXd RUVmat_new = RUVmat_.rightCols(L_);
                 VectorXd tvec_new = tvec_.tail(L_);
                 Qmat_ = Qmat_new;
+                //RUVmat_ = RUVmat_new;
                 tvec_ = tvec_new;
                 ql = L_;
 
@@ -92,7 +103,7 @@ namespace QuateRA {
 
 
             Matrix4d Zmat_ = Qmat_*Qmat_.transpose();
-            Eigen::JacobiSVD<MatrixXd> svd( Zmat_, Eigen::ComputeFullU | Eigen::ComputeFullV);
+            Eigen::JacobiSVD<MatrixXd> svd( Zmat_, Eigen::ComputeFullU);
 
             Vector4d u1 = svd.matrixU().col(0);
             Vector4d u2 = svd.matrixU().col(1);
@@ -104,7 +115,7 @@ namespace QuateRA {
             Quaterniond u2_quat = Utilities::Vec4ToQuat(u2);
             Quaterniond SADk1_quat = CppRot::QuatMult_S( u2_quat, u1_quat.inverse() );
 
-            Vector3d SADk1 = SADk1_quat.vec();
+            Vector3d SADk1 = SADk1_quat.vec().normalized();
 
             // measurement re-projection onto spin-axis plane
             // MatrixQuat Qproj = MatrixQuat::Zero(4,ql);
@@ -120,10 +131,8 @@ namespace QuateRA {
             Vector4d q0_proj_perp = SADk1_cross*q0_proj;
 
             for (unsigned int qdx = 0; qdx < ql; qdx++)
-            {
-                Vector4d qtemp = Qmat_.col(qdx);
-                
-                Vector4d qtemp_proj = ProjectQuatToPlane(qtemp, u1, u2);
+            {                
+                Vector4d qtemp_proj = ProjectQuatToPlane(Qmat_.col(qdx), u1, u2);
 
                 // Qproj.col(qdx) = qtemp_proj;
                 
@@ -148,10 +157,64 @@ namespace QuateRA {
             //std::cout << std::endl << std::endl;
 
             // least-squares solution to spin rate
-            VectorXd Xhat = ((Hmat.transpose()*Hmat).inverse())*Hmat.transpose()*Phivec;
+            MatrixXd HHTInv = (Hmat.transpose()*Hmat).inverse();
+            VectorXd Xhat = HHTInv*Hmat.transpose()*Phivec;
             double OmegaEstNormk1 = Xhat(1);
 
             ang_vel_est_ = OmegaEstNormk1*SADk1;
+
+            /*
+            // covariance estimation
+            MatrixXd P_XHat = pow(angle_noise_std_*2.0,2.0)/3.0*HHTInv;
+            double OmegaEstVar = P_XHat.bottomRightCorner(1,1).value();
+
+            double OmegaHat = ang_vel_est_.norm();
+            double n = ql;
+
+            double lambdaBar1 = n/2 + sin(n*OmegaHat/2)/(2*sin(OmegaHat/2));
+            double lambdaBar2 = n/2 - sin(n*OmegaHat/2)/(2*sin(OmegaHat/2));
+            double lambdaBar3 = 0.0;
+            double lambdaBar4 = 0.0;
+
+            double cosval = cos((n+1)*OmegaHat/4.0);
+            double sinval = sin((n+1)*OmegaHat/4.0);
+
+            Vector4d uBar1 = Vector4d::Zero();
+            uBar1(0) = cosval;
+            uBar1.segment(1, 3) = sinval*SADk1;
+
+            Vector4d uBar2 = Vector4d::Zero();
+            uBar2(0) = -sinval;
+            uBar2.segment(1, 3) = cosval*SADk1;
+
+            Vector4d uBar3;
+            uBar3 << 0.0, -SADk1(1), SADk1(0), 0.0;
+            uBar3.normalize();
+
+            Vector4d uBar4;
+            uBar4 << 0.0, -SADk1(2), 0.0, SADk1(0);
+            uBar4.normalize();
+
+            
+            Vector4d sigmaVec_u1 = Vector4d::Zero();
+            //Vector4d sigmaVec_u2 = Vector4d::Zero();
+                    
+            for (unsigned int idx = 0; idx < 4; idx++)
+            {
+                sigmaVec_u1(idx) = (lambdaBar2 + lambdaBar1)/pow(lambdaBar2 - lambdaBar1,2)*pow(uBar2(idx),2)
+                                 + (lambdaBar3 + lambdaBar1)/pow(lambdaBar3 - lambdaBar1,2)*pow(uBar3(idx),2)
+                                 + (lambdaBar4 + lambdaBar1)/pow(lambdaBar4 - lambdaBar1,2)*pow(uBar4(idx),2);
+                
+                sigmaVec_u1(idx) = angle_noise_std_*sqrt(sigmaVec_u1(idx));
+            }
+
+
+            Matrix3d PnHat = ( sigmaVec_u1.segment(1,3)/u1.segment(1,3).norm() ).array().pow(2).matrix().asDiagonal();
+
+            covar_est_ = (( pow(OmegaHat,2) + OmegaEstVar )*( SADk1.array().pow(2).matrix() + PnHat.diagonal() ) - pow(OmegaHat,2)*SADk1.array().pow(2).matrix()).asDiagonal();
+            */
+
+
 
             // covariance propagation
             R_ = covar;
@@ -166,12 +229,43 @@ namespace QuateRA {
 
             FIM_ = Finv_.transpose()*FIM_*Finv_ + H_.transpose()*R_.inverse()*H_;
             covar_est_ = FIM_.inverse();
-
             //std::cout << covar_est_ << std::endl << std::endl;
 
-            // TODO adaptive sliding window length
-        }
 
+
+            // adaptive sliding window length
+            double lambdaTilde = ( pow(sigmas(2),2.0) + pow(sigmas(3),2.0) )/2.0;
+
+            if (adapt_window_size_)
+            {
+                double vareps = angle_noise_std_;
+                eps_mean_ = pow(vareps, 2.0)/2.0*(ql - 2.0);
+                eps_std_  = pow(vareps, 2.0)/2.0*sqrt(ql - 2.0);
+
+                double eps_cr_hi = eps_mean_ + threshold_n_*eps_std_;
+                double eps_cr_lw = eps_mean_ - threshold_n_*eps_std_;
+
+                std::cout << angle_noise_std_*Utilities::RAD2DEG << " deg" << std::endl;
+                std::cout << lambdaTilde << " lambdaTilde" << std::endl;
+                std::cout << eps_cr_lw << " " << eps_mean_ << " " << eps_cr_hi << std::endl;
+                std::cout << L_ << " window size" << std::endl << std::endl;
+
+                if (ql == L_)
+                {
+                    if (lambdaTilde > eps_cr_hi && L_ > Lmin_)
+                    {
+                        L_ = L_ - 1;
+                    }   
+                    else if (lambdaTilde < eps_cr_lw && L_ < Lmax_)
+                    {
+                        L_ = L_ + 1;
+                    }
+                }
+            }
+            L_history.push_back(ql);
+            eps_history.push_back(lambdaTilde);
+
+        }
         
     }
 
