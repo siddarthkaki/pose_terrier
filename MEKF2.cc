@@ -308,33 +308,37 @@ namespace MEKF2 {
         
         // check whether attitude component of measurement is a statistical outlier
         
-        /*
+        
         Quaterniond dq = CppRot::QuatMult_S(quat_est_, quat_star.inverse());
         double dangle = 2.0*acos( abs( dq.w() ) );      
-        Matrix3d att_covar_est = covar_est_.block(0, 0, 3, 3);
-        double att_covar_rm = sqrt(att_covar_est.trace() / 3);
-        */
+        //Matrix3d att_covar_est = covar_est_.block(0, 0, 3, 3);
+        //double att_covar_rm = sqrt(att_covar_est.trace() / 3);
+        
 
-        double dangle = meas_att_innovation.mean();
-        double dpos = meas_pos_innovation.mean();  
+        double att_inn_mean = meas_att_innovation.mean();
+        double pos_inn_mean = meas_pos_innovation.mean();  
 
         double att_inn_std = sqrt(inncovar.topLeftCorner(3, 3).trace() / 3.0);
         double pos_inn_std = sqrt(inncovar.bottomRightCorner(3, 3).trace() / 3.0);
 
-        std::cout << "dangle: " << dangle * Utilities::RAD2DEG << std::endl;
+        std::cout << "ATT INN MEAN: " << att_inn_mean * Utilities::RAD2DEG << std::endl;
         std::cout << "ATT INN STD: " << att_inn_std * Utilities::RAD2DEG << std::endl << std::endl;
 
-        std::cout << "dpos: " << dpos << std::endl;
+        std::cout << "POS INN MEAN: " << pos_inn_mean << std::endl;
         std::cout << "POS INN STD: " << pos_inn_std << std::endl << std::endl << std::endl;
 
 
-        if ( abs(dangle) > 3.0 * att_inn_std )
+        if ( abs(att_inn_mean) > 3.0 * att_inn_std )
         {
-            std::cout << "Rejected measurement; dangle = " << dangle * Utilities::RAD2DEG << std::endl << std::endl;
+            std::cout << "Rejected measurement; ATT INN MEAN = " << att_inn_mean * Utilities::RAD2DEG << std::endl << std::endl;
         }
-        else if ( abs(dpos) > 3.0 * pos_inn_std )
+        else if ( abs(dangle) > max_flip_thresh_deg_*Utilities::DEG2RAD )
         {
-            std::cout << "Rejected measurement; dpos = " << dpos << std::endl << std::endl;
+            std::cout << "Rejected measurement; DANGLE = " << dangle * Utilities::RAD2DEG << std::endl << std::endl;
+        }
+        else if ( abs(pos_inn_mean) > 3.0 * pos_inn_std )
+        {
+            std::cout << "Rejected measurement; POS INN MEAN = " << pos_inn_mean << std::endl << std::endl;
         }
         else
         {
