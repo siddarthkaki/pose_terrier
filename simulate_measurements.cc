@@ -158,7 +158,7 @@ int main(int argc, char **argv)
     //pose_true.quat = Quaterniond::UnitRandom();
 
     Vector3d axis_true;
-    axis_true << 20.0, -15.0, 35.0;
+    axis_true << 20.0, 15.0, 35.0;
     axis_true.normalize();
 
     double angle_true = 20.0*Utilities::DEG2RAD;
@@ -218,9 +218,9 @@ int main(int argc, char **argv)
         if (meas_count > 1)
         {   
             // generate true pose values for ith run
-            pose_true.pos(0) += 0.00;
-            pose_true.pos(1) -= 0.00;
-            pose_true.pos(2) += 0.0;
+            pose_true.pos(0) += 0.01;
+            pose_true.pos(1) -= 0.01;
+            pose_true.pos(2) += 0.1;
 
             double omega_norm = omega.norm();
             Vector3d omega_hat = omega / omega_norm;
@@ -256,7 +256,18 @@ int main(int argc, char **argv)
         VectorXd yVec = Utilities::SimulateMeasurements(rMat, focal_length);
 
         // add Gaussian noise to simulated measurements
-        VectorXd yVecNoise = Utilities::AddGaussianNoiseToVector(yVec, meas_std);
+
+        double meas_std_temp = meas_std;
+        if (curr_elapsed_t > 15 && curr_elapsed_t < 25)
+        {
+            meas_std_temp = meas_std*100.0;
+        }
+        else
+        {
+            meas_std_temp = meas_std;
+        }
+
+        VectorXd yVecNoise = Utilities::AddGaussianNoiseToVector(yVec, meas_std_temp);
         noisy_measurements.push_back(yVecNoise);
 
         //-- Package Measurements into ProtoBuf ------------------------------/
