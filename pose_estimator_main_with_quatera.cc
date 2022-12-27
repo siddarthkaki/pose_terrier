@@ -129,8 +129,6 @@ int main(int argc, char **argv)
     double mekf_measurement_noise_std = double(json_params["measurement_noise_std"]);//0.05;
     double tau = double(json_params["tau"]);
     double max_flip_thresh_deg = double(json_params["max_flip_thresh_deg"]);
-    double pos_uw_threshold = double(json_params["pos_uw_threshold"]);
-    double pos_uw_pct = double(json_params["pos_uw_pct"]);
     double qpsd = double(json_params["qpsd"]);
 
     MEKF2::MEKF2 mekf(mekf_dt);
@@ -501,7 +499,7 @@ int main(int argc, char **argv)
 
                             quatera.Update(Utilities::QuatToVec4(pose_sol.pose.quat), pose_sol.cov_pose.topLeftCorner(3,3), curr_elapsed_t);
 
-                            mekf.AngVelUpdate(quatera.ang_vel_est_, quatera.covar_est_.topLeftCorner(3,3));
+                            mekf.AngVelUpdate(quatera.ang_vel_est_, quatera.covar_est_.bottomRightCorner(3,3));
                         }
 
                         //quatera.eps_mean_ = eps_mean * pow(euler_noise_std*Utilities::RAD2DEG/2.0, 2);

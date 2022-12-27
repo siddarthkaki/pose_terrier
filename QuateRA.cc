@@ -163,7 +163,7 @@ namespace QuateRA {
 
             ang_vel_est_ = OmegaEstNormk1*SADk1;
 
-            /*
+            
             // covariance estimation
             MatrixXd P_XHat = pow(angle_noise_std_*2.0,2.0)/3.0*HHTInv;
             double OmegaEstVar = P_XHat.bottomRightCorner(1,1).value();
@@ -211,11 +211,11 @@ namespace QuateRA {
 
             Matrix3d PnHat = ( sigmaVec_u1.segment(1,3)/u1.segment(1,3).norm() ).array().pow(2).matrix().asDiagonal();
 
-            covar_est_ = (( pow(OmegaHat,2) + OmegaEstVar )*( SADk1.array().pow(2).matrix() + PnHat.diagonal() ) - pow(OmegaHat,2)*SADk1.array().pow(2).matrix()).asDiagonal();
-            */
+            Matrix3d covar_est_plus = (( pow(OmegaHat,2) + OmegaEstVar )*( SADk1.array().pow(2).matrix() + PnHat.diagonal() ) - pow(OmegaHat,2)*SADk1.array().pow(2).matrix()).asDiagonal();
+            
+            std::cout << covar_est_plus.diagonal().transpose() << std::endl << std::endl;
 
-
-
+            
             // covariance propagation
             R_ = covar;
 
@@ -229,8 +229,9 @@ namespace QuateRA {
 
             FIM_ = Finv_.transpose()*FIM_*Finv_ + H_.transpose()*R_.inverse()*H_;
             covar_est_ = FIM_.inverse();
-            //std::cout << covar_est_ << std::endl << std::endl;
+            //std::cout << covar_est_.diagonal().segment(3,3).transpose() << std::endl << std::endl;
 
+            covar_est_.bottomRightCorner(3,3) = covar_est_plus;       
 
 
             // adaptive sliding window length
