@@ -147,7 +147,7 @@ int main(int argc, char **argv)
     unsigned int L = int(json_params["window_size"]);
     unsigned int Lmin = int(json_params["min_window_size"]);
     unsigned int Lmax = int(json_params["max_window_size"]);
-    double angle_noise_std_deg =  double(json_params["quatera_angle_noise_std_deg"]);
+    double angle_noise_std =  double(json_params["quatera_angle_noise_std"]);
     double threshold_n = double(json_params["eps_threshold_n"]);
 
     QuateRA::QuateRA quatera(mekf_dt);
@@ -156,7 +156,7 @@ int main(int argc, char **argv)
         L,
         Lmin,
         Lmax,
-        angle_noise_std_deg*Utilities::DEG2RAD,
+        angle_noise_std,
         threshold_n
     );
 
@@ -471,7 +471,7 @@ int main(int argc, char **argv)
 
                         meas_counter++;
 
-                        if (meas_counter % 2 != 0)
+                        if (meas_counter % 3 != 0)
                         {
                             // wrap NLS pose solution as MEKF measurement
                             VectorXd meas_wrapper(7);
@@ -495,7 +495,9 @@ int main(int argc, char **argv)
                             curr_elapsed_t = (double)std::chrono::duration_cast<std::chrono::nanoseconds>(curr_t - init_t).count();
                             curr_elapsed_t *= pow(10.0, -9.0);
                             
-                            quatera.angle_noise_std_ = sqrt(mekf.covar_est_.diagonal().head(3).mean());
+                            //quatera.angle_noise_std_ = sqrt(mekf.covar_est_.diagonal().head(3).mean());
+
+                            //std::cout << "QuateRA vareps = " << quatera.angle_noise_std_ << std::endl << std::endl;
 
                             quatera.Update(Utilities::QuatToVec4(pose_sol.pose.quat), pose_sol.cov_pose.topLeftCorner(3,3), curr_elapsed_t);
 

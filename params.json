@@ -2,7 +2,7 @@
     "rPos0": [0.0, 0.0, 20.0],
     "rCamVec": [0.0, 0.0, 0.0],
     "focal_length": 0.0055,
-    "bearing_meas_std_deg": 2.0,
+    "bearing_meas_std_deg": 1.0,
     "num_poses_test": 500,
     "process_noise_std": 0.01,
     "measurement_noise_std": 0.05,
@@ -21,7 +21,7 @@
     "window_size": 15,
     "max_window_size": 1000,
     "min_window_size": 10,
-    "quatera_angle_noise_std_deg": 2.0,
+    "quatera_angle_noise_std": 0.07,
     "eps_threshold_n": 3.0,
     "rFeaMat":
     [
