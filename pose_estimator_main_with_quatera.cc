@@ -87,6 +87,8 @@ int main(int argc, char **argv)
     const std::string pipe_path_input = json_params["pipe_path_input"];
     const std::string pipe_path_output = json_params["pipe_path_output"];
 
+    const std::string log_directory = json_params["log_directory"];
+
     // specify initial guess of relative position vector of target wrt chaser in chaser frame
     Vector3d rPos0;
     for (unsigned int idx = 0; idx < 3; idx++)
@@ -164,8 +166,7 @@ int main(int argc, char **argv)
 
     // log path name prefixing and postfixing
     std::string init_time_str = std::to_string(std::time(nullptr));
-    std::string prefix = "../data/" + init_time_str + "_";
-    //std::string prefix = "../data/";
+    std::string prefix = log_directory + init_time_str + "_";
     std::string postfix = ".csv";
 
     // declare vectors for storage
@@ -496,7 +497,6 @@ int main(int argc, char **argv)
                             curr_elapsed_t *= pow(10.0, -9.0);
                             
                             //quatera.angle_noise_std_ = sqrt(mekf.covar_est_.diagonal().head(3).mean());
-
                             //std::cout << "QuateRA vareps = " << quatera.angle_noise_std_ << std::endl << std::endl;
 
                             quatera.Update(Utilities::QuatToVec4(pose_sol.pose.quat), pose_sol.cov_pose.topLeftCorner(3,3), curr_elapsed_t);
