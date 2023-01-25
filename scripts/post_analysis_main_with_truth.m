@@ -5,7 +5,7 @@ clear; close all; clc;
 
 pose_type = 'NLS'; % 'PnP'
 
-prefix = "../data/" + "1642790757" + "_";
+prefix = "../data/" + "1660851312" + "_";
 
 tVec = f_read_timestamps(prefix + "timestamps.csv");
 
@@ -14,6 +14,8 @@ truePosesMat = f_read_poses("../data/true_poses.csv");
 solvedPosesMat = f_read_poses(prefix + "solved_poses.csv");
 
 filteredPosesMat = f_read_poses(prefix + "filtered_poses.csv");
+
+filteredCovarsDiagMat = f_read_covars(prefix + "filtered_covar_diag.csv");
 
 %statesMat = f_read_covars(prefix + "kf_states.csv");
 
@@ -27,6 +29,10 @@ tVecMeas = f_read_timestamps("../data/meas_timestamps.csv");
 % [num_true_poses,~] = size(truePosesMat);
 % truePosesMat = [truePosesMat; zeros(num_poses - num_true_poses,6)];
 % tVecMeas = 0:0.04:num_poses-1;
+
+%% covar -> std extraction
+attStdMat = sqrt(filteredCovarsDiagMat(:,1:3));
+posStdMat = sqrt(filteredCovarsDiagMat(:,10:12));
 
 %% truth interpolation
 truePosesMatInterp = zeros(size(filteredPosesMat));
@@ -68,6 +74,24 @@ for idx = 1:num_poses,
     attScoreVec(idx)         = 2*acos( abs( dquat(1) ) ); % rad
     attScoreVecFiltered(idx) = 2*acos( abs( dquatFiltered(1) ) ); % rad
 end
+
+%% TEST plotting 3sigmas
+f100 = figure(100);
+subplot(2,1,1)
+plot(tVec, 3*rad2deg(attStdMat));
+grid on
+ylabel('deg')
+ylim([0 10])
+legend('\phi', '\theta', '\psi')
+
+subplot(2,1,2)
+plot(tVec, 3*posStdMat);
+grid on
+ylabel('m')
+legend('x', 'y', 'z')
+
+boldify;
+set(gcf, 'PaperPositionMode', 'auto');
 
 %% plotting position
 f1 = figure(1);

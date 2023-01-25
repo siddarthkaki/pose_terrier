@@ -22,4 +22,5 @@ message Pose
     Position pos = 1;
     Attitude att = 2;
     double time_stamp = 3;
+    bool valid_pose = 4;
 }
