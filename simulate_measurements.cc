@@ -10,6 +10,8 @@
 #include <fcntl.h>
 #include <math.h>
 #include <sys/stat.h>
+#include <boost/numeric/odeint.hpp>
+#include <boost/numeric/odeint/external/eigen/eigen_algebra.hpp>
 
 #include "glog/logging.h"
 #include "Utilities.h"
@@ -25,6 +27,9 @@ using Eigen::Quaterniond;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
 using nlohmann::json;
+using namespace boost::numeric;
+
+typedef std::vector< double > state_type;
 
 sig_atomic_t volatile finished = 0;
 
@@ -36,6 +41,28 @@ void exit_handler(int signal)
 {
     printf("Caught signal %d\n", signal);
     finished = 1;
+}
+
+/**
+ * @function f_euler_dyn
+ * @brief Euler dynamics function
+ */
+void f_euler_dyn(const state_type &x, state_type &dx,  double t)
+{
+    // Jmat\(-rot.crossProductEquivalent(omegak)*Jmat*omegak)
+
+    Vector3d omega_;
+    omega_ << x[0], x[1], x[2];
+
+    Matrix3d Jmat = Matrix3d::Zero();
+    Jmat(0,0) = 5000.0;
+    Jmat(1,1) = 7000.0;
+    Jmat(2,2) = 3000.0;
+    Vector3d omegaDot = Jmat.inverse()*(-CppRot::CrossProductEquivalent(omega_)*Jmat*omega_);
+
+    dx[0] =  omegaDot(0);
+    dx[1] =  omegaDot(1);
+    dx[2] =  omegaDot(2);
 }
 
 /**
@@ -76,6 +103,8 @@ int main(int argc, char **argv)
     // specify camera focal length
     double focal_length = json_params["focal_length"]; //5.5*pow(10,-3);
 
+    double dt = json_params["meas_sim_dt"]; // sec
+
     // specify measurement noise standard deviation (rad)
     double meas_std = double(json_params["bearing_meas_std_deg"]) * Utilities::DEG2RAD;
 
@@ -90,12 +119,11 @@ int main(int argc, char **argv)
         }
     }
     // TEMPORARY
-    
-    ///*
+    /*
     num_features = 11;
     rFeaMat = 2.5 * MatrixXd::Random(num_features, 3);
     std::cout << rFeaMat << std::endl;
-    //*/
+    */
 
     const unsigned int num_poses_test = json_params["num_poses_test"];
     const unsigned int vector_reserve_size = json_params["vector_reserve_size"];
@@ -110,10 +138,13 @@ int main(int argc, char **argv)
 
     // declare vectors for storage
     std::vector<Pose> true_poses;
+    std::vector<VectorXd> true_omegas, noisy_measurements;
     std::vector<double> timestamps;
 
     // pre-allocate memory
     true_poses.reserve(vector_reserve_size);
+    true_omegas.reserve(vector_reserve_size);
+    noisy_measurements.reserve(vector_reserve_size);
     timestamps.reserve(vector_reserve_size);
     
     // clock object
@@ -125,15 +156,37 @@ int main(int argc, char **argv)
     Pose pose_true;
     pose_true.pos << 0.5, -0.25, 30.0;
     //pose_true.quat = Quaterniond::UnitRandom();
-    pose_true.quat.w() =  0.9993;
-    pose_true.quat.x() = -0.0029;
-    pose_true.quat.y() = -0.0298;
-    pose_true.quat.z() = -0.0231;
-    pose_true.quat.w() = 1.0;
-    pose_true.quat.vec() = Vector3d::Zero();
+
+    Vector3d axis_true;
+    axis_true << 20.0, 15.0, 35.0;
+    axis_true.normalize();
+
+    double angle_true = 20.0*Utilities::DEG2RAD;
+
+    pose_true.quat = CppRot::AngleAxis2Quat(angle_true, axis_true);
+
+    // pose_true.quat.w() =  0.9993;
+    // pose_true.quat.x() = -0.0029;
+    // pose_true.quat.y() =  0.0298;
+    // pose_true.quat.z() =  0.0231;
+    // pose_true.quat.w() = 1.0;
+    // pose_true.quat.vec() = Vector3d::Zero();
 
     pose_true.quat.normalize();
     //pose_true.quat.vec() = Vector3d::Zero();
+
+    // init odeint
+    odeint::runge_kutta_dopri5<state_type> stepper;
+    
+    Vector3d omega;
+    //omega << 0.3, -1.0, -0.5; // [deg/sec]
+    omega << 3, -5, -3; // [deg/sec]
+    omega = omega*Utilities::DEG2RAD;
+
+    state_type omega_odeint(3);
+    omega_odeint[0] = omega(0); 
+    omega_odeint[1] = omega(1);
+    omega_odeint[2] = omega(2);
 
     // if pipe does not exist, create it
     struct stat buf;
@@ -165,13 +218,35 @@ int main(int argc, char **argv)
         if (meas_count > 1)
         {   
             // generate true pose values for ith run
-            pose_true.pos(0) += 0.005;
-            pose_true.pos(1) -= 0.005;
-            pose_true.pos(2) += 0.05;
-            Quaterniond quat_step = AngleAxisd(0.01, Vector3d::UnitX()) *
-                                    AngleAxisd(-0.01, Vector3d::UnitY()) *
-                                    AngleAxisd(0.01, Vector3d::UnitZ());
+            pose_true.pos(0) += 0.01;
+            pose_true.pos(1) -= 0.01;
+            pose_true.pos(2) += 0.1;
+
+            double omega_norm = omega.norm();
+            Vector3d omega_hat = omega / omega_norm;
+
+            Matrix4d omega_hat_44_equivalent = Matrix4d::Zero();
+            omega_hat_44_equivalent.block(0, 1, 1, 3) = -omega_hat.transpose();
+            omega_hat_44_equivalent.block(1, 0, 3, 1) =  omega_hat;
+            omega_hat_44_equivalent.block(1, 1, 3, 3) = -CppRot::CrossProductEquivalent(omega_hat);
+
+            double phi = 0.5 * omega_norm * dt;
+
+            Matrix4d A = cos(phi) * Matrix4d::Identity() + sin(phi) * omega_hat_44_equivalent;
+
+            // propagate quaternion
+            pose_true.quat = Utilities::Vec4ToQuat( A * Utilities::QuatToVec4(pose_true.quat) );
+
+            // odeint omega dynamics propagation
+            stepper.do_step(f_euler_dyn, omega_odeint, 0.0, dt);
+            omega << omega_odeint[0], omega_odeint[1], omega_odeint[2];
+
+            /*
+            Quaterniond quat_step = AngleAxisd(0.0, Vector3d::UnitX()) *
+                                    AngleAxisd(-0.005, Vector3d::UnitY()) *
+                                    AngleAxisd(0.0, Vector3d::UnitZ());
             pose_true.quat = CppRot::QuatMult_S(quat_step, pose_true.quat);
+            */
         }
 
         // express feature points in chaser frame at the specified pose
@@ -181,7 +256,19 @@ int main(int argc, char **argv)
         VectorXd yVec = Utilities::SimulateMeasurements(rMat, focal_length);
 
         // add Gaussian noise to simulated measurements
-        VectorXd yVecNoise = Utilities::AddGaussianNoiseToVector(yVec, meas_std);
+
+        double meas_std_temp = meas_std;
+        if (curr_elapsed_t > 15 && curr_elapsed_t < 25)
+        {
+            meas_std_temp = meas_std*100.0;
+        }
+        else
+        {
+            meas_std_temp = meas_std;
+        }
+
+        VectorXd yVecNoise = Utilities::AddGaussianNoiseToVector(yVec, meas_std_temp);
+        noisy_measurements.push_back(yVecNoise);
 
         //-- Package Measurements into ProtoBuf ------------------------------/
 
@@ -235,6 +322,7 @@ int main(int argc, char **argv)
 
         // store data
         true_poses.push_back(pose_true);
+        true_omegas.push_back(omega);
         timestamps.push_back(curr_elapsed_t);
 
         // write to console
@@ -250,6 +338,8 @@ int main(int argc, char **argv)
 
                 // write to csv files
                 Utilities::WritePosesToCSV(true_poses, prefix + "true_poses" + postfix, append_mode);
+                Utilities::WriteKFStatesToCSV(true_omegas, prefix + "true_omegas" + postfix, append_mode);
+                Utilities::WriteKFStatesToCSV(noisy_measurements, prefix + "noisy_measurements" + postfix, append_mode);
                 Utilities::WriteTimestampsToFile(timestamps, prefix + "meas_timestamps" + postfix, append_mode);
 
                 printf("Logged data to file.\n");
@@ -262,8 +352,8 @@ int main(int argc, char **argv)
             exit(1);
         }
 
-        // sleep for 1.0 sec
-        usleep(1000000);
+        // sleep for dt sec
+        usleep(dt*1000000);
     }
 
     //-- Close-out -----------------------------------------------------------/

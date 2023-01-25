@@ -18,6 +18,7 @@
 #include "Utilities.h"
 #include "PoseSolver.h"
 #include "MEKF2.h"
+#include "QuateRA.h"
 #include "pose.pb.h"
 #include "measurement.pb.h"
 
@@ -142,6 +143,25 @@ int main(int argc, char **argv)
         max_flip_thresh_deg
     );
 
+    //-- Init QuateRA --------------------------------------------------------/
+
+    bool adapt_window_size = (json_params["adapt_window_size"]);
+    unsigned int L = int(json_params["window_size"]);
+    unsigned int Lmin = int(json_params["min_window_size"]);
+    unsigned int Lmax = int(json_params["max_window_size"]);
+    double angle_noise_std =  double(json_params["quatera_angle_noise_std"]);
+    double threshold_n = double(json_params["eps_threshold_n"]);
+
+    QuateRA::QuateRA quatera(mekf_dt);
+    quatera.Init(
+        adapt_window_size,
+        L,
+        Lmin,
+        Lmax,
+        angle_noise_std,
+        threshold_n
+    );
+
     //-- Init sequence -------------------------------------------------------/
 
     // log path name prefixing and postfixing
@@ -151,13 +171,14 @@ int main(int argc, char **argv)
 
     // declare vectors for storage
     std::vector<Pose> solved_poses, filtered_poses;
-    std::vector<VectorXd> filtered_omegas, filtered_alphas, filtered_pos_states;
+    std::vector<VectorXd> solved_omegas, filtered_omegas, filtered_alphas, filtered_pos_states;
     std::vector<VectorXd> filtered_covar_diag;
     std::vector<double> timestamps; // [s]
 
     // pre-allocate memory
     solved_poses.reserve(vector_reserve_size);
     filtered_poses.reserve(vector_reserve_size);
+    solved_omegas.reserve(vector_reserve_size);
     filtered_omegas.reserve(vector_reserve_size);
     filtered_alphas.reserve(vector_reserve_size);
     filtered_pos_states.reserve(vector_reserve_size);
@@ -271,8 +292,12 @@ int main(int argc, char **argv)
                         std::cout << "init_omega: " << init_omega << std::endl << std::endl;
                         std::cout << "Q_att: " << std::endl << mekf.Q_.topLeftCorner(9, 9) << std::endl << std::endl;
 
+                        // QuateRA init measurement
+                        quatera.InitMeasurement(Utilities::QuatToVec4(init_quat), pose_sol.cov_pose.topLeftCorner(3,3));
+
                         solved_poses.push_back(pose_sol.pose);
                         filtered_poses.push_back(pose_sol.pose);
+                        solved_omegas.push_back(Vector3d::Zero());
                         filtered_omegas.push_back(init_omega);
                         filtered_alphas.push_back(init_alpha);
                         filtered_pos_states.push_back(mekf.state_est_.tail(9));
@@ -368,6 +393,8 @@ int main(int argc, char **argv)
     auto last_t = std::chrono::high_resolution_clock::now();
     auto curr_t = std::chrono::high_resolution_clock::now();
 
+    unsigned int meas_counter = 1;
+
     //-- Main Loop -----------------------------------------------------------/
     while (true)
     {
@@ -442,28 +469,55 @@ int main(int argc, char **argv)
                     // check if pose solution is valid
                     if (abs(pose_sol.pose.quat.norm() - 1.0) < 1e-4)
                     {
-                        // wrap NLS position solution as KF measurement
-                        Vector3d pos_meas_wrapper = pose_sol.pose.pos;
 
-                        // wrap NLS pose solution as MEKF measurement
-                        VectorXd meas_wrapper(7);
-                        meas_wrapper(0) = pose_sol.pose.quat.normalized().w();
-                        meas_wrapper(1) = pose_sol.pose.quat.normalized().x();
-                        meas_wrapper(2) = pose_sol.pose.quat.normalized().y();
-                        meas_wrapper(3) = pose_sol.pose.quat.normalized().z();
-                        meas_wrapper.tail(3) = pose_sol.pose.pos;
-                        
-                        // MEKF measurement update step
-                        mekf.R_ = pose_sol.cov_pose;
-                        mekf.Update(meas_wrapper);
+                        meas_counter++;
 
-                        // MEKF reset step
-                        mekf.Reset();
+                        if (meas_counter % 3 != 0)
+                        {
+                            // wrap NLS pose solution as MEKF measurement
+                            VectorXd meas_wrapper(7);
+                            meas_wrapper(0) = pose_sol.pose.quat.normalized().w();
+                            meas_wrapper(1) = pose_sol.pose.quat.normalized().x();
+                            meas_wrapper(2) = pose_sol.pose.quat.normalized().y();
+                            meas_wrapper(3) = pose_sol.pose.quat.normalized().z();
+                            meas_wrapper.tail(3) = pose_sol.pose.pos;
+                            
+                            // MEKF measurement update step
+                            mekf.R_ = pose_sol.cov_pose;
+                            mekf.Update(meas_wrapper);
 
-                        curr_t = std::chrono::high_resolution_clock::now();
-                        curr_elapsed_t = (double)std::chrono::duration_cast<std::chrono::nanoseconds>(curr_t - init_t).count();
-                        curr_elapsed_t *= pow(10.0, -9.0);
+                            // MEKF reset step
+                            mekf.Reset();
+                        }
+                        else
+                        {
+                            // QuateRA measurement
+                            curr_t = std::chrono::high_resolution_clock::now();
+                            curr_elapsed_t = (double)std::chrono::duration_cast<std::chrono::nanoseconds>(curr_t - init_t).count();
+                            curr_elapsed_t *= pow(10.0, -9.0);
+                            
+                            //quatera.angle_noise_std_ = sqrt(mekf.covar_est_.diagonal().head(3).mean());
+                            //std::cout << "QuateRA vareps = " << quatera.angle_noise_std_ << std::endl << std::endl;
 
+                            quatera.Update(Utilities::QuatToVec4(pose_sol.pose.quat), pose_sol.cov_pose.topLeftCorner(3,3), curr_elapsed_t);
+
+                            mekf.AngVelUpdate(quatera.ang_vel_est_, quatera.covar_est_.bottomRightCorner(3,3));
+                        }
+
+                        //quatera.eps_mean_ = eps_mean * pow(euler_noise_std*Utilities::RAD2DEG/2.0, 2);
+                        //quatera.eps_std_ = eps_std * pow(euler_noise_std*Utilities::RAD2DEG/2.0, 2);
+
+                        //std::cout << quatera.eps_mean_ << " eps mean" << std::endl;
+                        //std::cout << quatera.eps_std_ << " eps std" << std::endl << std::endl;
+
+                        /*
+                        std::cout << Utilities::RAD2DEG*mekf.omega_est_.transpose() << std::endl;
+                        std::cout << Utilities::RAD2DEG*quatera.ang_vel_est_.transpose() << std::endl << std::endl;
+
+                        std::cout << Utilities::RAD2DEG*mekf.omega_est_.norm() << std::endl;
+                        std::cout << Utilities::RAD2DEG*quatera.ang_vel_est_.norm() << std::endl << std::endl;
+                        */
+                    
                         std::cout << curr_elapsed_t << " sec" << std::endl << std::endl;
                     }
                     else // reject the measurement
@@ -508,6 +562,7 @@ int main(int argc, char **argv)
         //-- Data Storage ----------------------------------------------------/        
         solved_poses.push_back(pose_sol.pose);
         filtered_poses.push_back(pose_filtered);
+        solved_omegas.push_back(quatera.ang_vel_est_);
         filtered_omegas.push_back(mekf.omega_est_);
         filtered_alphas.push_back(alpha_filtered);
         filtered_pos_states.push_back(mekf.state_est_.tail(9));
@@ -565,20 +620,26 @@ int main(int argc, char **argv)
             // write to csv files
             Utilities::WritePosesToCSV(solved_poses, prefix + "solved_poses" + postfix, append_mode);
             Utilities::WritePosesToCSV(filtered_poses, prefix + "filtered_poses" + postfix, append_mode);
+            Utilities::WriteKFStatesToCSV(solved_omegas, prefix + "solved_omegas" + postfix, append_mode);
             Utilities::WriteKFStatesToCSV(filtered_omegas, prefix + "filtered_omegas" + postfix, append_mode);
             Utilities::WriteKFStatesToCSV(filtered_alphas, prefix + "filtered_alphas" + postfix, append_mode);
             Utilities::WriteKFStatesToCSV(filtered_pos_states, prefix + "filtered_pos_states" + postfix, append_mode);
             Utilities::WriteKFStatesToCSV(filtered_covar_diag, prefix + "filtered_covar_diag" + postfix, append_mode);
             Utilities::WriteTimestampsToFile(timestamps, prefix + "timestamps" + postfix, append_mode);
+            Utilities::WriteTimestampsToFile(quatera.L_history, prefix + "window_size" + postfix, append_mode);
+            Utilities::WriteTimestampsToFile(quatera.eps_history, prefix + "eps_history" + postfix, append_mode);
                 
             // clear vectors
             solved_poses.clear();
             filtered_poses.clear();
+            solved_omegas.clear();
             filtered_omegas.clear();
             filtered_alphas.clear();
             filtered_pos_states.clear();
             filtered_covar_diag.clear();
             timestamps.clear();
+            quatera.L_history.clear();
+            quatera.eps_history.clear();
         }
 
         //-- Handling for Program Exit ---------------------------------------/
@@ -600,11 +661,14 @@ int main(int argc, char **argv)
                 // write to csv files
                 Utilities::WritePosesToCSV(solved_poses, prefix + "solved_poses" + postfix, append_mode);
                 Utilities::WritePosesToCSV(filtered_poses, prefix + "filtered_poses" + postfix, append_mode);
+                Utilities::WriteKFStatesToCSV(solved_omegas, prefix + "solved_omegas" + postfix, append_mode);
                 Utilities::WriteKFStatesToCSV(filtered_omegas, prefix + "filtered_omegas" + postfix, append_mode);
                 Utilities::WriteKFStatesToCSV(filtered_alphas, prefix + "filtered_alphas" + postfix, append_mode);
                 Utilities::WriteKFStatesToCSV(filtered_pos_states, prefix + "filtered_pos_states" + postfix, append_mode);
                 Utilities::WriteKFStatesToCSV(filtered_covar_diag, prefix + "filtered_covar_diag" + postfix, append_mode);
                 Utilities::WriteTimestampsToFile(timestamps, prefix + "timestamps" + postfix, append_mode);
+                Utilities::WriteTimestampsToFile(quatera.L_history, prefix + "window_size" + postfix, append_mode);
+                Utilities::WriteTimestampsToFile(quatera.eps_history, prefix + "eps_history" + postfix, append_mode);
                 printf("Logged data to file.\n");
             }
 

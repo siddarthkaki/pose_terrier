@@ -32,7 +32,6 @@ class MEKF2
     private:
         bool processed_measurement_;
         Vector3d delta_gibbs_est_;
-        VectorXd state_est_;
 
         Matrix3d I33 = Matrix3d::Identity();
         MatrixXd I44 = MatrixXd::Identity(4, 4);
@@ -50,8 +49,6 @@ class MEKF2
         unsigned int num_pos_measurements_;
         unsigned int num_measurements_;
         double max_flip_thresh_deg_;
-        double pos_uw_threshold_;
-        double pos_uw_pct_;
         MatrixXd Q_; // process_noise_covariance
         MatrixXd R_; // measurement_noise_covariance
         MatrixXd F_pos_; // position_covariance_propagation_dynamics_model
@@ -59,13 +56,16 @@ class MEKF2
         MatrixXd A_; // quaternion_propagation_dynamics_model
         MatrixXd H_; // measurement_model
 
-        //Vector3d omega_est_;
         //Vector3d alpha_est_;
         //VectorXd x_est_;
 
+        VectorXd state_est_;
+
         Vector3d pos_est_;
         Quaterniond quat_est_;
+        Vector3d omega_est_;
         MatrixXd covar_est_;
+        Matrix3d omega_covar_est_;
 
         //MatrixXd covarkk_;
         //MatrixXd covark1k_;
@@ -83,15 +83,14 @@ class MEKF2
             const double &dt, 
             const double &tau,  
             const double &qpsd, 
-            const double &max_flip_thresh_deg,  
-            const double &pos_uw_threshold,
-            const double &pos_uw_pct
+            const double &max_flip_thresh_deg
         );
         void SetInitialStateAndCovar(const Quaterniond &quat0, const Vector3d &omega0, const Vector3d &alpha0, const VectorXd &x0, const MatrixXd &covar0);
         void Predict();
         void Update(const VectorXd &measurement);
         void Reset();
         void StoreAndClean();
+        void AngVelUpdate(const Vector3d &measurement, const Matrix3d &covar);
 
         void PrintModelMatrices();
 };

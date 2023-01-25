@@ -68,7 +68,7 @@ PoseSolution PoseSolver::SolvePose(const Pose& pose0, const VectorXd& yVec, cons
     // Covariance computation
     ceres::Covariance::Options cov_options;
     cov_options.algorithm_type = ceres::DENSE_SVD;
-    //cov_options.null_space_rank = 1;
+    //cov_options.null_space_rank = -1;
     ceres::Covariance covariance(cov_options);
 
     std::vector<std::pair<const double*, const double*> > covariance_blocks;    
@@ -76,26 +76,35 @@ PoseSolution PoseSolver::SolvePose(const Pose& pose0, const VectorXd& yVec, cons
     covariance_blocks.push_back(std::make_pair(posHatArr, posHatArr));
     covariance_blocks.push_back(std::make_pair(quatHatArr, posHatArr));
 
-    CHECK(covariance.Compute(covariance_blocks, &problem));
-    Matrix3d_rm cov_xx = Matrix3d_rm::Zero();
-    Matrix3d_rm cov_yy = Matrix3d_rm::Zero();
-    Matrix3d_rm cov_xy = Matrix3d_rm::Zero();
-    covariance.GetCovarianceBlockInTangentSpace(quatHatArr, quatHatArr, cov_xx.data());
-    covariance.GetCovarianceBlock(posHatArr, posHatArr, cov_yy.data());
-    covariance.GetCovarianceBlockInTangentSpace(quatHatArr, posHatArr, cov_xy.data());
+    //CHECK(covariance.Compute(covariance_blocks, &problem));
+    bool cov_check = covariance.Compute(covariance_blocks, &problem);
+
+    if (cov_check == true)
+    {
+        Matrix3d_rm cov_xx = Matrix3d_rm::Zero();
+        Matrix3d_rm cov_yy = Matrix3d_rm::Zero();
+        Matrix3d_rm cov_xy = Matrix3d_rm::Zero();
+        covariance.GetCovarianceBlockInTangentSpace(quatHatArr, quatHatArr, cov_xx.data());
+        covariance.GetCovarianceBlock(posHatArr, posHatArr, cov_yy.data());
+        covariance.GetCovarianceBlockInTangentSpace(quatHatArr, posHatArr, cov_xy.data());
+
+        // store pose covariance estimate
+        poseSol.cov_pose.topLeftCorner(3,3) = cov_xx;
+        poseSol.cov_pose.topRightCorner(3,3) = cov_xy;
+        poseSol.cov_pose.bottomLeftCorner(3,3) = cov_xy.transpose();
+        poseSol.cov_pose.bottomRightCorner(3,3) = cov_yy;
+    }
+    else
+    {
+        poseSol.cov_pose == 100000.0*Matrix6d::Identity();
+    }
     
     // convert estimated state information from double arrays to Eigen
     poseSol.pose.quat.w() = quatHatVec(0);
     poseSol.pose.quat.x() = quatHatVec(1);
     poseSol.pose.quat.y() = quatHatVec(2);
     poseSol.pose.quat.z() = quatHatVec(3);
-    poseSol.pose.pos  = posHatVec;
-    
-    // store pose covariance estimate
-    poseSol.cov_pose.topLeftCorner(3,3) = cov_xx;
-    poseSol.cov_pose.topRightCorner(3,3) = cov_xy;
-    poseSol.cov_pose.bottomLeftCorner(3,3) = cov_xy.transpose();
-    poseSol.cov_pose.bottomRightCorner(3,3) = cov_yy;
+    poseSol.pose.pos  = posHatVec;    
 
     return poseSol;
 }

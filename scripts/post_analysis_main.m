@@ -3,6 +3,10 @@ clear; close all; clc;
 
 %% init
 prefix = "../data/" + "1626467305" + "_";
+prefix = "../data/data/cygnus_jp_smooth2_1664229680_";
+prefix = "../data/data/cygnus_jp_smooth2_med_augment_1664229841_";
+prefix = "../data/data/cygnus_jp_smooth2_heavy_augment_1664230004_";
+
 
 tVec = f_read_timestamps(prefix + "timestamps.csv");
 

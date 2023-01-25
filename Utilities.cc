@@ -51,6 +51,18 @@ Vector3d Utilities::DCM2Euler_312(const MatrixXd& DCM)
 }
 
 /**
+ * @function UnwrapAngles
+ * @brief Unwraps angles in radians, assuming abs. val. between angles < 2pi
+ * @return Unwrapped new_angle in radians
+ */
+double Utilities::UnwrapAngles(const double &old_angle, const double &new_angle)
+{
+    double d = new_angle - old_angle;
+    d = d > M_PI ? d - 2 * M_PI : (d < -M_PI ? d + 2 * M_PI : d);
+    return old_angle + d;
+}
+
+/**
  * @function FeaPointsTargetToChaser
  * @brief Transforms feature points in target frame wrt target to chaser frame wrt chaser
  * @return MatrixXd of feature points in chaser frame wrt chaser
@@ -445,3 +457,6 @@ void Utilities::WriteTimestampsToFile(const std::vector<double>& timestamps, con
         std::cout << "Exception was thrown: " << ex.what() << std::endl;
     }
 }
+
+constexpr double Utilities::DEG2RAD;
+constexpr double Utilities::RAD2DEG;
