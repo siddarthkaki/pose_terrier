@@ -8,15 +8,15 @@ pose_type = 'NLS'; % 'PnP'
 % folder = "long_test/";
 % folder = "short_test/";
 % folder = "new_test/";
-folder = "";
+folder = "04_filter_data/";
 
 % prefix = "../data/long_test/" + "1661875312" + "_";
 % prefix = "../data/short_test/" + "1661872620" + "_";
 % prefix = "../data/new_test/" + "1661975852" + "_";
 % prefix = "../data/data/cygnus_jp_smooth2_1664229680_";
-prefix = "../data/data/cygnus_jp_smooth2_med_augment_1664229841_";
+%prefix = "../data/data/cygnus_jp_smooth2_med_augment_1664229841_";
 % prefix = "../data/data/cygnus_jp_smooth2_heavy_augment_1664230004_";
-
+prefix = "../data/" + folder + "1670449472_";
 
 tVec = f_read_timestamps(prefix + "timestamps.csv");
 
@@ -30,8 +30,8 @@ filteredCovarsDiagMat = f_read_covars(prefix + "filtered_covar_diag.csv");
 
 
 %% temp fix
-solvedPosesMat(:,5) = wrapTo2Pi(solvedPosesMat(:,5));
-filteredPosesMat(:,5) = wrapTo2Pi(filteredPosesMat(:,5));
+%solvedPosesMat(:,5) = wrapTo2Pi(solvedPosesMat(:,5));
+%filteredPosesMat(:,5) = wrapTo2Pi(filteredPosesMat(:,5));
 
 %% covar -> std extraction
 attStdMat = sqrt(filteredCovarsDiagMat(:,1:3));

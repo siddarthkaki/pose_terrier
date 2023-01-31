@@ -13,8 +13,9 @@ folder = "../data/";%500s_noadapt_quatera/";
 % prefix = "../data/long_test/" + "1661875312" + "_";
 % prefix = "../data/short_test/" + "1661872620" + "_";
 % prefix = "../data/new_test/" + "1661975852" + "_";
-prefix = folder + "1670198514" + "_";
+prefix = folder + "1672513095" + "_";
 
+ptl_data = f_read_filter_logs(prefix);
 
 tVec = f_read_timestamps(prefix + "timestamps.csv");
 
@@ -56,22 +57,25 @@ epsHistory = f_read_timestamps(prefix + "eps_history.csv");
 % truePosesMat = [truePosesMat; zeros(num_poses - num_true_poses,6)];
 % tVecMeas = 0:0.04:num_poses-1;
 
-% truePosesMat(:,5) = wrapTo2Pi(truePosesMat(:,5));
-% solvedPosesMat(:,5) = wrapTo2Pi(solvedPosesMat(:,5));
-% filteredPosesMat(:,5) = wrapTo2Pi(filteredPosesMat(:,5));
+for ddx = 4:6,
+    truePosesMat(:,ddx) = wrapToPi(truePosesMat(:,ddx));
+    solvedPosesMat(:,ddx) = wrapToPi(solvedPosesMat(:,ddx));
+    filteredPosesMat(:,ddx) = wrapToPi(filteredPosesMat(:,ddx));
+end
 
 %% covar -> std extraction
-attStdMat = sqrt(filteredCovarsDiagMat(:,1:3));
-angVelStdMat = sqrt(filteredCovarsDiagMat(:,4:6));
-angAccStdMat = sqrt(filteredCovarsDiagMat(:,7:9));
-posStdMat = sqrt(filteredCovarsDiagMat(:,10:12));
+attStdMat = ptl_data.FilteredStd(:,1:3);
+angVelStdMat = ptl_data.FilteredStd(:,4:6);
+angAccStdMat = ptl_data.FilteredStd(:,7:9);
+posStdMat = ptl_data.FilteredStd(:,10:12);
 
 %% truth interpolation
 truePosesMatInterp = zeros(size(filteredPosesMat));
 for idx = 1:6,
     v = truePosesMat(:,idx);
-    vq1 = interp1(tVecMeas,v,tVec);
+    vq1 = interp1(tVecMeas,v, ptl_data.Time);
     truePosesMatInterp(:,idx) = vq1;
+    truePosesMatInterp(:,4:6) = wrapToPi(truePosesMatInterp(:,4:6));
 end
 
 %% compute position score
@@ -89,15 +93,36 @@ for idx = 1:num_poses,
 end
 
 %% compute attitude score
-
 attScoreVec         = 1000*ones(num_poses,1);
 attScoreVecFiltered = 1000*ones(num_poses,1);
 
+trueQuatMat = NaN(num_poses,4);
+solvedQuatMat = NaN(num_poses,4);
+
+c_err_est_mat = NaN(num_poses,4);
+
 for idx = 1:num_poses,
 
-    quat            = angle2quat(truePosesMatInterp(idx,4), truePosesMatInterp(idx,5), truePosesMatInterp(idx,6) );
-    quatHat         = angle2quat(    solvedPosesMat(idx,4),     solvedPosesMat(idx,5),     solvedPosesMat(idx,6) );
-    quatHatFiltered = angle2quat(  filteredPosesMat(idx,4),   filteredPosesMat(idx,5),   filteredPosesMat(idx,6) );
+    temp_Tmat     = rotation.angleaxis2Rmat(truePosesMatInterp(idx,4),[1 0 0]) ...
+                  * rotation.angleaxis2Rmat(truePosesMatInterp(idx,5),[0 1 0]) ...
+                  * rotation.angleaxis2Rmat(truePosesMatInterp(idx,6),[0 0 1]);
+    quat = dcm2quat(temp_Tmat);
+    trueQuatMat(idx,:) = quat;
+
+    temp_Tmat     = rotation.angleaxis2Rmat(solvedPosesMat(idx,4),[1 0 0]) ...
+                  * rotation.angleaxis2Rmat(solvedPosesMat(idx,5),[0 1 0]) ...
+                  * rotation.angleaxis2Rmat(solvedPosesMat(idx,6),[0 0 1]);
+    quatHat = dcm2quat(temp_Tmat);
+    solvedQuatMat(idx,:) = quatHat;
+
+    temp_Tmat     = rotation.angleaxis2Rmat(filteredPosesMat(idx,4),[1 0 0]) ...
+                  * rotation.angleaxis2Rmat(filteredPosesMat(idx,5),[0 1 0]) ...
+                  * rotation.angleaxis2Rmat(filteredPosesMat(idx,6),[0 0 1]);
+    quatHatFiltered = dcm2quat(temp_Tmat);
+
+    %quat            = angle2quat(truePosesMatInterp(idx,4), truePosesMatInterp(idx,5), truePosesMatInterp(idx,6) );
+    %quatHat         = angle2quat(    solvedPosesMat(idx,4),     solvedPosesMat(idx,5),     solvedPosesMat(idx,6) );
+    %quatHatFiltered = angle2quat(  filteredPosesMat(idx,4),   filteredPosesMat(idx,5),   filteredPosesMat(idx,6) );
     
     dquat         = quatmultiply( quatnormalize(quat), quatconj(quatnormalize(quatHat)) );
     dquatFiltered = quatmultiply( quatnormalize(quat), quatconj(quatnormalize(quatHatFiltered)) );
@@ -105,9 +130,46 @@ for idx = 1:num_poses,
 
     attScoreVec(idx)         = 2*acos( abs( dquat(1) ) ); % rad
     attScoreVecFiltered(idx) = 2*acos( abs( dquatFiltered(1) ) ); % rad
+
+
+    %%%
+    a = quat.';
+    c = quatHat;
+    b = rotation.quatmult_S(c, quatinv(a.').');
+
+    c_err_est(1,1) = -b(2:4).'*a(2:4);
+    c_err_est(2,1) = a(1)*b(2) + a(3)*b(4) - a(4)*b(3);
+    c_err_est(3,1) = a(1)*b(3) - a(2)*b(4) + a(4)*b(2);
+    c_err_est(4,1) = a(1)*b(4) + a(2)*b(3) - a(3)*b(2);
+
+    c_err_est_mat(idx,:) = c_err_est;
 end
 
+f1111 = figure(1111);
+for idx = 1:4,
+    c_err_est_mat_denan(:,idx) = denan(c_err_est_mat(:,idx));
+    r = c_err_est_mat(:,idx);
+    pd = fitdist(r,'Normal');
+    subplot(4,1,idx)
+    histfit(r,100)
+    grid on
+    ylabel("\Delta q_{\eta}(" + string(idx-1) + ")")
+    set(gca,'FontWeight','bold')
+
+    %if idx == 1, xlim(1.8*[-1 1]*10^-3); end
+    %if idx ~= 1, xlim(0.08*[-1 1]); end
+end
+fontsize(f1111,scale=2)
+set(gcf, 'PaperPositionMode', 'auto');
+
+dqm = mean(c_err_est_mat_denan).'
+dqs = std(c_err_est_mat_denan).'
+
 %%
+ufm = rad2deg(mean(denan(attScoreVec)))
+flm = rad2deg(mean(denan(attScoreVecFiltered)))
+ufs = rad2deg(std(denan(attScoreVec)))
+fls = rad2deg(std(denan(attScoreVecFiltered)))
 % epsmean = meanr(epsHistory(100:end))
 % epsstd = std(epsHistory(100:end))
 
@@ -136,20 +198,20 @@ subplot(3,1,1)
 plot(tVec, 3*rad2deg(attStdMat));
 grid on
 ylabel('deg')
-ylim([0 15])
+ylim([0 10])
 title('3\sigma')
 
 subplot(3,1,2)
 plot(tVec, 3*rad2deg(angVelStdMat));
 grid on
 ylabel('deg/s')
-% ylim([0 10])
+ylim([0 10])
 
 subplot(3,1,3)
 plot(tVec, 3*rad2deg(angAccStdMat));
 grid on
 ylabel('deg/s^2')
-% ylim([0 10])
+ylim([0 10])
 
 legend('\phi', '\theta', '\psi')
 
@@ -345,10 +407,10 @@ legend('filtered')
 boldify
 set(gcf, 'PaperPositionMode', 'auto');
 
-% %%
+%%
 f5 = figure(5);
 subplot(2,1,1)
-plot(epsHistory./(windowSize - 2))
+plot(epsHistory./(windowSize - 2)*2)
 title('eps')
 grid on
 boldify
