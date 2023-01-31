@@ -55,9 +55,9 @@ void f_euler_dyn(const state_type &x, state_type &dx,  double t)
     omega_ << x[0], x[1], x[2];
 
     Matrix3d Jmat = Matrix3d::Zero();
-    Jmat(0,0) = 5000.0;
-    Jmat(1,1) = 7000.0;
-    Jmat(2,2) = 3000.0;
+    Jmat(0,0) = 114.0;
+    Jmat(1,1) = 86.0;
+    Jmat(2,2) = 87.0;
     Vector3d omegaDot = Jmat.inverse()*(-CppRot::CrossProductEquivalent(omega_)*Jmat*omega_);
 
     dx[0] =  omegaDot(0);
@@ -154,23 +154,23 @@ int main(int argc, char **argv)
 
     // true pose
     Pose pose_true;
-    pose_true.pos << 0.5, -0.25, 30.0;
+    pose_true.pos << 0.5, -0.25, 40.0;
     //pose_true.quat = Quaterniond::UnitRandom();
 
     Vector3d axis_true;
-    axis_true << 20.0, 15.0, 35.0;
+    axis_true << 25.0, 20.0, 35.0;
     axis_true.normalize();
 
-    double angle_true = 20.0*Utilities::DEG2RAD;
+    double angle_true = 0.0*Utilities::DEG2RAD;
 
-    pose_true.quat = CppRot::AngleAxis2Quat(angle_true, axis_true);
+    //pose_true.quat = CppRot::AngleAxis2Quat(angle_true, axis_true);
 
     // pose_true.quat.w() =  0.9993;
     // pose_true.quat.x() = -0.0029;
     // pose_true.quat.y() =  0.0298;
     // pose_true.quat.z() =  0.0231;
-    // pose_true.quat.w() = 1.0;
-    // pose_true.quat.vec() = Vector3d::Zero();
+    pose_true.quat.w() = 1.0;
+    pose_true.quat.vec() = Vector3d::Zero();
 
     pose_true.quat.normalize();
     //pose_true.quat.vec() = Vector3d::Zero();
@@ -180,8 +180,8 @@ int main(int argc, char **argv)
     
     Vector3d omega;
     //omega << 0.3, -1.0, -0.5; // [deg/sec]
-    omega << 3, -5, -3; // [deg/sec]
-    omega = omega*Utilities::DEG2RAD;
+    omega << 4.0, -5.0, -3.0; // [deg/sec]
+    omega = omega*Utilities::DEG2RAD*1.5;
 
     state_type omega_odeint(3);
     omega_odeint[0] = omega(0); 
@@ -238,8 +238,8 @@ int main(int argc, char **argv)
             pose_true.quat = Utilities::Vec4ToQuat( A * Utilities::QuatToVec4(pose_true.quat) );
 
             // odeint omega dynamics propagation
-            stepper.do_step(f_euler_dyn, omega_odeint, 0.0, dt);
-            omega << omega_odeint[0], omega_odeint[1], omega_odeint[2];
+            //stepper.do_step(f_euler_dyn, omega_odeint, 0.0, dt);
+            //omega << omega_odeint[0], omega_odeint[1], omega_odeint[2];
 
             /*
             Quaterniond quat_step = AngleAxisd(0.0, Vector3d::UnitX()) *
@@ -258,6 +258,7 @@ int main(int argc, char **argv)
         // add Gaussian noise to simulated measurements
 
         double meas_std_temp = meas_std;
+        /*
         if (curr_elapsed_t > 15 && curr_elapsed_t < 25)
         {
             meas_std_temp = meas_std*100.0;
@@ -266,6 +267,7 @@ int main(int argc, char **argv)
         {
             meas_std_temp = meas_std;
         }
+        */
 
         VectorXd yVecNoise = Utilities::AddGaussianNoiseToVector(yVec, meas_std_temp);
         noisy_measurements.push_back(yVecNoise);
@@ -338,6 +340,7 @@ int main(int argc, char **argv)
 
                 // write to csv files
                 Utilities::WritePosesToCSV(true_poses, prefix + "true_poses" + postfix, append_mode);
+                Utilities::WriteQuatsToCSV(true_poses, prefix + "true_quats" + postfix, append_mode);
                 Utilities::WriteKFStatesToCSV(true_omegas, prefix + "true_omegas" + postfix, append_mode);
                 Utilities::WriteKFStatesToCSV(noisy_measurements, prefix + "noisy_measurements" + postfix, append_mode);
                 Utilities::WriteTimestampsToFile(timestamps, prefix + "meas_timestamps" + postfix, append_mode);
