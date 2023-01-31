@@ -13,7 +13,7 @@ folder = "";
 % prefix = "../data/long_test/" + "1661875312" + "_";
 % prefix = "../data/short_test/" + "1661872620" + "_";
 % prefix = "../data/new_test/" + "1661975852" + "_";
-prefix = "../data/" + "1670198683" + "_";
+prefix = "../data/" + "1672513472" + "_";
 
 
 tVec = f_read_timestamps(prefix + "timestamps.csv");
@@ -67,15 +67,29 @@ for idx = 1:num_poses,
 end
 
 %% compute attitude score
-
 attScoreVec         = 1000*ones(num_poses,1);
 attScoreVecFiltered = 1000*ones(num_poses,1);
 
 for idx = 1:num_poses,
 
-    quat            = angle2quat(truePosesMatInterp(idx,4), truePosesMatInterp(idx,5), truePosesMatInterp(idx,6) );
-    quatHat         = angle2quat(    solvedPosesMat(idx,4),     solvedPosesMat(idx,5),     solvedPosesMat(idx,6) );
-    quatHatFiltered = angle2quat(  filteredPosesMat(idx,4),   filteredPosesMat(idx,5),   filteredPosesMat(idx,6) );
+    temp_Tmat     = rotation.angleaxis2Rmat(truePosesMatInterp(idx,4),[1 0 0]) ...
+                  * rotation.angleaxis2Rmat(truePosesMatInterp(idx,5),[0 1 0]) ...
+                  * rotation.angleaxis2Rmat(truePosesMatInterp(idx,6),[0 0 1]);
+    quat = dcm2quat(temp_Tmat);
+
+    temp_Tmat     = rotation.angleaxis2Rmat(solvedPosesMat(idx,4),[1 0 0]) ...
+                  * rotation.angleaxis2Rmat(solvedPosesMat(idx,5),[0 1 0]) ...
+                  * rotation.angleaxis2Rmat(solvedPosesMat(idx,6),[0 0 1]);
+    quatHat = dcm2quat(temp_Tmat);
+
+    temp_Tmat     = rotation.angleaxis2Rmat(filteredPosesMat(idx,4),[1 0 0]) ...
+                  * rotation.angleaxis2Rmat(filteredPosesMat(idx,5),[0 1 0]) ...
+                  * rotation.angleaxis2Rmat(filteredPosesMat(idx,6),[0 0 1]);
+    quatHatFiltered = dcm2quat(temp_Tmat);
+
+    %quat            = angle2quat(truePosesMatInterp(idx,4), truePosesMatInterp(idx,5), truePosesMatInterp(idx,6) );
+    %quatHat         = angle2quat(    solvedPosesMat(idx,4),     solvedPosesMat(idx,5),     solvedPosesMat(idx,6) );
+    %quatHatFiltered = angle2quat(  filteredPosesMat(idx,4),   filteredPosesMat(idx,5),   filteredPosesMat(idx,6) );
     
     dquat         = quatmultiply( quatnormalize(quat), quatconj(quatnormalize(quatHat)) );
     dquatFiltered = quatmultiply( quatnormalize(quat), quatconj(quatnormalize(quatHatFiltered)) );
@@ -84,6 +98,13 @@ for idx = 1:num_poses,
     attScoreVec(idx)         = 2*acos( abs( dquat(1) ) ); % rad
     attScoreVecFiltered(idx) = 2*acos( abs( dquatFiltered(1) ) ); % rad
 end
+
+
+%%
+ufm = rad2deg(mean(denan(attScoreVec)))
+flm = rad2deg(mean(denan(attScoreVecFiltered)))
+ufs = rad2deg(std(denan(attScoreVec)))
+fls = rad2deg(std(denan(attScoreVecFiltered)))
 
 %% TEST plotting 3sigmas
 f100 = figure(100);

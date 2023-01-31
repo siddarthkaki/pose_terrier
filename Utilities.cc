@@ -380,6 +380,30 @@ void Utilities::WritePosesToCSV(const std::vector<Pose>& vec, const std::string&
 }
 
 /**
+ * @function WriteQuatsToCSV
+ * @brief TODO
+ * @return TODO
+ */
+void Utilities::WriteQuatsToCSV(const std::vector<Pose>& vec, const std::string& filename, const bool& append_mode)
+{
+    try
+    {
+        csvfile csv(filename, append_mode); // throws exceptions!
+        // header
+        // csv << "X" << "VALUE" << endrow;
+        // data
+        for (Pose pose : vec)
+        {
+            csv << pose.quat.w() << pose.quat.x() << pose.quat.y() << pose.quat.z() << endrow;
+        }
+    }
+    catch (const std::exception &ex)
+    {
+        std::cout << "Exception was thrown: " << ex.what() << std::endl;
+    }
+}
+
+/**
  * @function WriteKFStatesToCSV
  * @brief TODO
  * @return TODO

@@ -73,6 +73,7 @@ class Utilities
         static double StdVectorVar(const std::vector<double>& vec);
         static std::string WrapVarToPath(std::string varname);
         static void WritePosesToCSV(const std::vector<Pose>& vec, const std::string& filename, const bool& append_mode);
+        static void WriteQuatsToCSV(const std::vector<Pose>& vec, const std::string& filename, const bool& append_mode);
         static void WriteKFStatesToCSV(const std::vector<VectorXd>& states, const std::string& filename, const bool& append_mode);
         static void WriteKFCovarsToCSV(const std::vector<MatrixXd>& covars, const std::string& filename, const bool& append_mode);
         static void WriteTimestampsToFile(const std::vector<double>& timestamps, const std::string& filename, const bool& append_mode);
