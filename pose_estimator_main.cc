@@ -252,7 +252,7 @@ int main(int argc, char **argv)
                     }
 
                     // solve for pose with ceres (via wrapper)
-                    PoseSolution pose_sol = PoseSolver::SolvePoseReinit(pose0, yVec, rCamVec, rFeaMat, bearing_meas_std, n_init);
+                    PoseSolution pose_sol = PoseSolver::SolvePoseReinitParallel(pose0, yVec, rCamVec, rFeaMat, bearing_meas_std, n_init);
 
                     // check if pose solution is valid
                     if (abs(pose_sol.pose.quat.norm() - 1.0) < 1e-4)
@@ -440,7 +440,7 @@ int main(int argc, char **argv)
                     //       the last filtered estimate by this point
 
                     // solve for pose with ceres (via wrapper)
-                    pose_sol = PoseSolver::SolvePoseReinit(pose0, yVec, rCamVec, rFeaMat, bearing_meas_std, n_init);
+                    pose_sol = PoseSolver::SolvePoseReinitParallel(pose0, yVec, rCamVec, rFeaMat, bearing_meas_std, n_init);
 
                     // check if pose solution is valid
                     if (abs(pose_sol.pose.quat.norm() - 1.0) < 1e-4)
