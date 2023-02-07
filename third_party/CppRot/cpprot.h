@@ -36,44 +36,9 @@ class CppRot
         };
 
         /**
-         * @function QuatMult_S
-         * 
-         * @brief   Computes q_return = q1 * q2, where * is the quaternion 
-         *          product defined by Malcolm Schuster, which is the 
-         *          composition formula for rotating-space successive 
-         *          rotations. q2 represents the first rotation applied, 
-         *          and q1 represents the second rotation applied.
-         * 
-         * @reference   Zanetti, Renato. "Rotations, Transformations, Left 
-         *              Quaternions, Right Quaternions?." The Journal of the 
-         *              Astronautical Sciences (2019): 1-21.
-         * 
-         * @return  Equivalent quaternion representation for the composite 
-         *          rotating-space rotation: q_return = q1 * q2
-         */
-        static inline Quaterniond QuatMult_S(const Quaterniond &q1, const Quaterniond &q2)
-        {
-            double q1w = q1.w(); // scalar
-            double q2w = q2.w(); // scalar
-            
-            Vector3d q1vec = q1.vec(); // vector
-            Vector3d q2vec = q2.vec(); // vector
-            
-            Quaterniond q_return;
-
-            double q3w = q1w*q2w - q1vec.dot(q2vec);
-            Vector3d q3vec = q1w*q2vec + q2w*q1vec - q1vec.cross(q2vec);
-
-            q_return.w() = q3w;
-            q_return.vec() = q3vec;
-
-            return q_return;
-        };
-
-        /**
          * @function QuatMult_H
          * 
-         * @brief   Computes q_return = q2 * q1, where * is the quaternion 
+         * @brief   Computes q_return = q2 ⊛ q1, where ⊛ is the quaternion 
          *          product defined by William Hamilton, which is the 
          *          composition formula for fixed-space successive 
          *          rotations. q1 represents the first rotation applied, 
@@ -84,7 +49,7 @@ class CppRot
          *              Astronautical Sciences (2019): 1-21.
          * 
          * @return  Equivalent quaternion representation for the composite 
-         *          fixed-space rotation: q_return = q2 * q1
+         *          fixed-space rotation: q_return = q2 ⊛ q1
          */
         static inline Quaterniond QuatMult_H(const Quaterniond &q2, const Quaterniond &q1)
         {            
@@ -103,6 +68,27 @@ class CppRot
             q_return.vec() = q3vec;
 
             return q_return;
+        };
+
+        /**
+         * @function QuatMult_S
+         * 
+         * @brief   Computes q_return = q2 ⮾ q1, where ⮾ is the quaternion 
+         *          product defined by Malcolm Schuster, which is the 
+         *          composition formula for rotating-space successive 
+         *          rotations. q1 represents the first rotation applied, 
+         *          and q2 represents the second rotation applied.
+         * 
+         * @reference   Zanetti, Renato. "Rotations, Transformations, Left 
+         *              Quaternions, Right Quaternions?." The Journal of the 
+         *              Astronautical Sciences (2019): 1-21.
+         * 
+         * @return  Equivalent quaternion representation for the composite 
+         *          rotating-space rotation: q_return = q2 ⮾ q1
+         */
+        static inline Quaterniond QuatMult_S(const Quaterniond &q2, const Quaterniond &q1)
+        {
+            return QuatMult_H(q1, q2);
         };
 
         /**
