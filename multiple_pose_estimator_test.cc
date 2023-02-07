@@ -42,6 +42,9 @@ int main(int argc, char **argv)
     json json_params;
     input_stream >> json_params;
 
+    // specify number of reinits for the NLS static pose solve
+    const unsigned int n_init = json_params["n_init"];
+
     // specify rigid position vector of camera wrt chaser in chaser frame
     Vector3d rCamVec;
     for (unsigned int idx = 0; idx < 3; idx++)
@@ -75,20 +78,20 @@ int main(int argc, char **argv)
 
     // initial state guess
     Pose pose0;
-    pose0.pos << 0.0, 0.0, 25.0;
+    pose0.pos << 0.0, 0.0, 40.0;
     pose0.quat.w() = 1.0;
     pose0.quat.vec() = Vector3d::Zero();
 
     //-- Loop ----------------------------------------------------------------/
 
     std::vector<Pose> solved_poses;
-    std::vector<Pose> solved_poses_conj;
+    //std::vector<Pose> solved_poses_conj;
     std::vector<double> solution_times; // [ms]
     std::vector<double> pos_scores;
     std::vector<double> att_scores;
 
     solved_poses.reserve(num_poses_test);
-    solved_poses_conj.reserve(num_poses_test);
+    //solved_poses_conj.reserve(num_poses_test);
     solution_times.reserve(num_poses_test);
     pos_scores.reserve(num_poses_test);
     att_scores.reserve(num_poses_test);
@@ -99,9 +102,9 @@ int main(int argc, char **argv)
 
         // generate true state values for ith run
         Pose poseTrue;
-        poseTrue.pos << 0.0, 0.0, 25.0;
+        poseTrue.pos << 0.0, 0.0, 50.0;
         poseTrue.pos.head(2) = Utilities::AddGaussianNoiseToVector(poseTrue.pos.head(2), 1);
-        poseTrue.pos.tail(1) = Utilities::AddGaussianNoiseToVector(poseTrue.pos, 3).tail(1);
+        poseTrue.pos.tail(1) = Utilities::AddGaussianNoiseToVector(poseTrue.pos.tail(1), 3);
         poseTrue.quat = Quaterniond::UnitRandom();
 
         // express feature points in chaser frame at the specified pose
@@ -121,10 +124,11 @@ int main(int argc, char **argv)
         std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
 
         // solve for pose with ceres (via wrapper)
-        PoseSolution poseSol = PoseSolver::SolvePoseReinit(pose0, yVecNoise, rCamVec, rFeaMat, bearing_meas_std);
+        //PoseSolution poseSol = PoseSolver::SolvePoseReinit(pose0, yVecNoise, rCamVec, rFeaMat, bearing_meas_std);
+        PoseSolution poseSol = PoseSolver::SolvePoseReinitParallel(pose0, yVecNoise, rCamVec, rFeaMat, bearing_meas_std, n_init);
 
-        Pose conj_pose_temp = Utilities::ConjugatePose(poseSol.pose);
-        Pose conj_pose = PoseSolver::SolvePose(conj_pose_temp, yVecNoise, rCamVec, rFeaMat, bearing_meas_std).pose;
+        //Pose conj_pose_temp = Utilities::ConjugatePose(poseSol.pose);
+        //Pose conj_pose = PoseSolver::SolvePose(conj_pose_temp, yVecNoise, rCamVec, rFeaMat, bearing_meas_std).pose;
 
         // timing
         std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
@@ -138,15 +142,15 @@ int main(int argc, char **argv)
         // compute position and attitude scores
         double pos_score = Utilities::PositionScore(poseTrue.pos, poseSol.pose.pos);
         double att_score = Utilities::AttitudeScore(poseTrue.quat, poseSol.pose.quat);
-        double conj_att_score = Utilities::AttitudeScore(poseTrue.quat, conj_pose.quat);
+        //double conj_att_score = Utilities::AttitudeScore(poseTrue.quat, conj_pose.quat);
 
         // store info from ith run
         solved_poses.push_back(poseSol.pose);
-        solved_poses_conj.push_back(conj_pose);
+        //solved_poses_conj.push_back(conj_pose);
         solution_times.push_back((double)duration);
         pos_scores.push_back(pos_score);
-        //att_scores.push_back(att_score);
-        att_scores.push_back(std::min(att_score, conj_att_score));
+        att_scores.push_back(att_score);
+        //att_scores.push_back(std::min(att_score, conj_att_score));
     }
 
     //-- Performance Metric Stats & Output -----------------------------------/

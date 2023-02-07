@@ -9,6 +9,7 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <math.h>
+#include <omp.h>
 
 #include "ceres/ceres.h"
 #include "glog/logging.h"
@@ -26,7 +27,8 @@ class PoseSolver
 {
     public:
         static PoseSolution SolvePose(const Pose& pose0, const VectorXd& yVec, const Vector3d& rCamVec, const MatrixXd& rFeaMat, const double bearing_meas_std);
-        static PoseSolution SolvePoseReinit(const Pose& pose0, const VectorXd& yVec, const Vector3d& rCamVec, const MatrixXd& rFeaMat, const double bearing_meas_std);
+        static PoseSolution SolvePoseReinit(const Pose& pose0, const VectorXd& yVec, const Vector3d& rCamVec, const MatrixXd& rFeaMat, const double bearing_meas_std, const unsigned int n_init);
+        static PoseSolution SolvePoseReinitParallel(const Pose& pose0, const VectorXd& yVec, const Vector3d& rCamVec, const MatrixXd& rFeaMat, const double bearing_meas_std, const unsigned int n_init);
         static Twist TwoPointDiffTwistEstimator(const Pose& posei, const Pose& posej, const double& T);
 };
 

@@ -1,17 +1,18 @@
 project(pose_terrier)
 cmake_minimum_required(VERSION 3.10)
 
-set (CMAKE_CXX_STANDARD 14)
-set(Boost_USE_STATIC_LIBS OFF) 
-set(Boost_USE_MULTITHREADED ON)  
-set(Boost_USE_STATIC_RUNTIME OFF) 
+set(CMAKE_CXX_STANDARD 14)
+set(Boost_USE_STATIC_LIBS OFF)      # uncomment when performing Euler rotational dynamics propagation in simulate_measurements
+set(Boost_USE_MULTITHREADED ON)     # uncomment when performing Euler rotational dynamics propagation in simulate_measurements
+set(Boost_USE_STATIC_RUNTIME OFF)   # uncomment when performing Euler rotational dynamics propagation in simulate_measurements
 
 include(FindProtobuf)
 find_package(Protobuf REQUIRED)
-find_package(OpenCV REQUIRED) # needed only when employing PnP
 find_package(Ceres REQUIRED)
 find_package(glog REQUIRED)
-find_package(Boost 1.74.0) # needed only when performing Euler rotational dynamics propagation in simulate_measurements
+find_package(OpenCV REQUIRED)   # uncomment when employing PnP
+find_package(osqp REQUIRED)     # uncomment when running online inertia estimation
+find_package(Boost 1.74.0)      # uncomment when performing Euler rotational dynamics propagation in simulate_measurements
 
 SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
 

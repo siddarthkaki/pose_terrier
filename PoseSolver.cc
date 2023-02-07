@@ -117,14 +117,12 @@ PoseSolution PoseSolver::SolvePose(const Pose& pose0, const VectorXd& yVec, cons
  *        Correspondences 
  * @return VectorXd of estimate state (pose)
  */
-PoseSolution PoseSolver::SolvePoseReinit(const Pose& pose0, const VectorXd& yVec, const Vector3d& rCamVec, const MatrixXd& rFeaMat, const double bearing_meas_std)
+PoseSolution PoseSolver::SolvePoseReinit(const Pose& pose0, const VectorXd& yVec, const Vector3d& rCamVec, const MatrixXd& rFeaMat, const double bearing_meas_std, const unsigned int n_init)
 {
-    unsigned int num_init = 5;
-
     PoseSolution posSolOptimal;
     double min_cost = 100;
 
-    for (unsigned int init_idx = 0; init_idx < num_init; init_idx++)
+    for (unsigned int init_idx = 0; init_idx < n_init; init_idx++)
     {
         Pose pose0i = pose0;
         if (init_idx > 0)
@@ -140,6 +138,44 @@ PoseSolution PoseSolver::SolvePoseReinit(const Pose& pose0, const VectorXd& yVec
     }
 
     return posSolOptimal;
+}
+
+/**
+ * @function SolvePoseReinitParallel
+ * @brief Non-linear Least-Squares Levenberg–Marquardt Solver with Multiple
+ *        Random Reinitialisations for Pose based on Relative Bearing
+ *        Measurements to Specified Feature Points with A-Priori Known 2D-3D
+ *        Correspondences Running in Parallel
+ * @return VectorXd of estimate state (pose)
+ */
+PoseSolution PoseSolver::SolvePoseReinitParallel(const Pose& pose0, const VectorXd& yVec, const Vector3d& rCamVec, const MatrixXd& rFeaMat, const double bearing_meas_std, const unsigned int n_init)
+{
+    std::vector<double> cost_vec(n_init);
+    std::vector<PoseSolution> posSol_vec(n_init);
+
+    #pragma omp parallel for
+    for (unsigned int idx = 0; idx < n_init; idx++)
+    {
+        Pose pose0i = pose0;
+        if (idx > 0) { pose0i.quat = Quaterniond::UnitRandom(); }
+        PoseSolution posSoli = SolvePose(pose0i, yVec, rCamVec, rFeaMat, bearing_meas_std);   
+    
+        cost_vec[idx] = posSoli.summary.final_cost;
+        posSol_vec[idx] = posSoli;
+    }
+
+    double min_cost = cost_vec[0];
+    unsigned int smallest_cost_idx = 0;
+	for (unsigned int idx = 1; idx < n_init; idx++)
+	{
+		if (cost_vec[idx] < min_cost)
+        {
+            min_cost = cost_vec[idx];
+			smallest_cost_idx = idx;
+        }
+	}
+
+    return posSol_vec[smallest_cost_idx];
 }
 
 /**

@@ -79,13 +79,13 @@ int main(int argc, char **argv)
     //-- Loop ----------------------------------------------------------------/
 
     std::vector<Pose> solved_poses;
-    std::vector<Pose> solved_poses_conj;
+    //std::vector<Pose> solved_poses_conj;
     std::vector<double> solution_times; // [ms]
     std::vector<double> pos_scores;
     std::vector<double> att_scores;
 
     solved_poses.reserve(num_poses_test);
-    solved_poses_conj.reserve(num_poses_test);
+    //solved_poses_conj.reserve(num_poses_test);
     solution_times.reserve(num_poses_test);
     pos_scores.reserve(num_poses_test);
     att_scores.reserve(num_poses_test);
@@ -97,9 +97,9 @@ int main(int argc, char **argv)
 
         // generate true state values for ith run
         Pose poseTrue;
-        poseTrue.pos << 0.0, 0.0, 25.0;
+        poseTrue.pos << 0.0, 0.0, 50.0;
         poseTrue.pos.head(2) = Utilities::AddGaussianNoiseToVector(poseTrue.pos.head(2), 1);
-        poseTrue.pos.tail(1) = Utilities::AddGaussianNoiseToVector(poseTrue.pos, 3).tail(1);
+        poseTrue.pos.tail(1) = Utilities::AddGaussianNoiseToVector(poseTrue.pos.tail(1), 3);
         poseTrue.quat = Quaterniond::UnitRandom();
 
         //std::cout << poseTrue.pos.transpose() << "\t\t" << poseTrue.quat.w() << " " << poseTrue.quat.vec().transpose() << std::endl;
@@ -180,7 +180,7 @@ int main(int argc, char **argv)
 
         // store info from ith run
         solved_poses.push_back(pose);
-        solved_poses_conj.push_back(conj_pose);
+        //solved_poses_conj.push_back(conj_pose);
         solution_times.push_back((double)duration);
         pos_scores.push_back(pos_score);
         //att_scores.push_back(att_score);
