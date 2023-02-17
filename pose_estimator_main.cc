@@ -83,6 +83,9 @@ int main(int argc, char **argv)
                   << "byte position of error: " << e.byte << std::endl;
     }
 
+    // specify number of reinits for the NLS static pose solve
+    const unsigned int n_init = json_params["n_init"];
+
     const std::string pipe_path_input = json_params["pipe_path_input"];
     const std::string pipe_path_output = json_params["pipe_path_output"];
 
@@ -249,7 +252,7 @@ int main(int argc, char **argv)
                     }
 
                     // solve for pose with ceres (via wrapper)
-                    PoseSolution pose_sol = PoseSolver::SolvePoseReinit(pose0, yVec, rCamVec, rFeaMat, bearing_meas_std);
+                    PoseSolution pose_sol = PoseSolver::SolvePoseReinitParallel(pose0, yVec, rCamVec, rFeaMat, bearing_meas_std, n_init);
 
                     // check if pose solution is valid
                     if (abs(pose_sol.pose.quat.norm() - 1.0) < 1e-4)
@@ -437,7 +440,7 @@ int main(int argc, char **argv)
                     //       the last filtered estimate by this point
 
                     // solve for pose with ceres (via wrapper)
-                    pose_sol = PoseSolver::SolvePoseReinit(pose0, yVec, rCamVec, rFeaMat, bearing_meas_std);
+                    pose_sol = PoseSolver::SolvePoseReinitParallel(pose0, yVec, rCamVec, rFeaMat, bearing_meas_std, n_init);
 
                     // check if pose solution is valid
                     if (abs(pose_sol.pose.quat.norm() - 1.0) < 1e-4)
