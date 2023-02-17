@@ -1,6 +1,6 @@
 # pose_terrier
 
-![logo](https://github.com/siddarthkaki/pose_terrier/blob/master/logo/pose_terrier_logo.png | width=250)
+<img src="https://github.com/siddarthkaki/pose_terrier/blob/master/logo/pose_terrier_logo.png" width="300" height="300">
 
 ## Dependencies
 * C++11 or later
