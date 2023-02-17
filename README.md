@@ -1,5 +1,7 @@
 # pose_terrier
 
+![logo](https://github.com/siddarthkaki/pose_terrier/blob/master/logo/pose_terrier_logo.png?raw=true)
+
 ## Dependencies
 * C++11 or later
 * [CMake](https://cmake.org/) (3.10 or later)
