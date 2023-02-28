@@ -19,10 +19,6 @@ using Eigen::Quaterniond;
  */
 Matrix3d Utilities::Euler2DCM_312(const Vector3d& eulVec)
 {
-    //double phi   = eulVec(0);
-    //double theta = eulVec(1);
-    //double psi   = eulVec(2);
-
     Matrix3d DCM;
     DCM =   AngleAxisd( eulVec(1), Vector3d::UnitY() ).toRotationMatrix().transpose()*
             AngleAxisd( eulVec(0), Vector3d::UnitX() ).toRotationMatrix().transpose()*
@@ -102,8 +98,7 @@ Vector2d Utilities::CameraProjection(const Vector3d& point3DVec, const double& f
             0, 0, 1, 0;
 
     VectorXd homoFeaPtVec(4);
-    homoFeaPtVec << point3DVec,
-                    1;
+    homoFeaPtVec << point3DVec, 1;
 
     Vector3d projVec = PMat*homoFeaPtVec;
 
@@ -127,32 +122,17 @@ Vector2d Utilities::CameraProjection(const Vector3d& point3DVec, const double& f
 VectorXd Utilities::SimulateMeasurements(const MatrixXd& rMat, const double& focal_length)
 {
     unsigned int numPts = rMat.rows();
-   
-    // project feature points to image plane
-    MatrixXd imgPtMat = MatrixXd::Zero(numPts, 2);
-    for (unsigned int idx = 0; idx < numPts; idx++)
-    {
-        Vector3d rVeci = rMat.row(idx);//.transpose;
-        Vector2d imgPti = CameraProjection(rVeci,focal_length);
-        imgPtMat.row(idx) = imgPti.transpose();
-    }
-
-    // azimuth & elevation measurements for feature points
-    VectorXd azVec = VectorXd::Zero(numPts);
-    VectorXd elVec = VectorXd::Zero(numPts);
-    for (unsigned int idx = 0; idx < numPts; idx++)
-    {
-        Vector2d imgPti = imgPtMat.row(idx);
-        
-        azVec(idx) = atan2(imgPti(0),focal_length);
-        elVec(idx) = atan2(imgPti(1),focal_length);
-    }
-
     VectorXd yVec(numPts*2); // vector of measurements
+  
     for (unsigned int idx = 0; idx < numPts; idx++)
     {
-        yVec(idx*2+0) = azVec(idx);
-        yVec(idx*2+1) = elVec(idx);
+        // project feature points to image plane
+        Vector3d rVeci = rMat.row(idx);
+        Vector2d imgPti = CameraProjection(rVeci,focal_length);
+
+        // azimuth & elevation measurements for feature points
+        yVec(idx*2+0) = atan2(imgPti(0),focal_length); // az
+        yVec(idx*2+1) = atan2(imgPti(1),focal_length); // el
     }
 
     return yVec;
@@ -166,10 +146,6 @@ VectorXd Utilities::SimulateMeasurements(const MatrixXd& rMat, const double& foc
 VectorXd Utilities::AddGaussianNoiseToVector(const VectorXd& vec, const double& std)
 {
     const unsigned int numMeas = vec.size();
-
-    //MatrixXd covarMat = pow(std,2)*MatrixXd::Identity(numMeas, numMeas);
-
-    //Eigen::EigenMultivariateNormal<double> normX_solver(vec, covarMat);
 
     unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
     std::default_random_engine generator (seed);
@@ -228,8 +204,6 @@ Pose Utilities::ConjugatePose(const Pose& state)
  */
 MatrixXd Utilities::ConvertToEigenMatrix(double **data, unsigned int rows, unsigned int cols)
 {
-    //unsigned int rows = LEN(&data);
-    //unsigned int cols = LEN(&data[0]);
     Eigen::MatrixXd eig_mat(rows, cols);
 
     // Notes:
