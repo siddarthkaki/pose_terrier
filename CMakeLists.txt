@@ -1,7 +1,7 @@
 project(pose_terrier)
 cmake_minimum_required(VERSION 3.10)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(Boost_USE_STATIC_LIBS OFF)      # uncomment when performing Euler rotational dynamics propagation in simulate_measurements
 set(Boost_USE_MULTITHREADED ON)     # uncomment when performing Euler rotational dynamics propagation in simulate_measurements
 set(Boost_USE_STATIC_RUNTIME OFF)   # uncomment when performing Euler rotational dynamics propagation in simulate_measurements
@@ -12,19 +12,34 @@ find_package(Ceres REQUIRED)
 find_package(glog REQUIRED)
 find_package(OpenCV REQUIRED)   # uncomment when employing PnP
 find_package(osqp REQUIRED)     # uncomment when running online inertia estimation
+find_package(absl REQUIRED)     # uncomment when running online inertia estimation
+find_package(OsqpEigen REQUIRED)# uncomment when running online inertia estimation
 find_package(Boost 1.74.0)      # uncomment when performing Euler rotational dynamics propagation in simulate_measurements
 
 SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
+
+#
+add_library(osqp-cpp third_party/osqp_cpp/osqp++.cc)
+target_link_libraries(osqp-cpp PUBLIC absl::strings absl::status absl::statusor Eigen3::Eigen PRIVATE osqp::osqpstatic ${CMAKE_DL_LIBS})
+#target_include_directories(osqp-cpp PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>")
+
+add_library(f_quadprog_coder third_party/f_quadprog_coder.so)
+set_target_properties(f_quadprog_coder PROPERTIES LINKER_LANGUAGE CXX)
 
 # the primary real-time executable
 add_executable(pose_estimator_main pose_estimator_main.cc Utilities.cc PoseSolver.cc MEKF2.cc pose.pb.cc measurement.pb.cc)
 target_include_directories(pose_estimator_main PUBLIC ${PROTOBUF_INCLUDE_DIR})
 target_link_libraries(pose_estimator_main ceres glog::glog ${PROTOBUF_LIBRARY} pthread)
 
-# the primary real-time executable with the quatera module built-in
+# the primary real-time executable with the QuateRA module built-in
 add_executable(pose_estimator_main_with_quatera pose_estimator_main_with_quatera.cc Utilities.cc PoseSolver.cc MEKF2.cc QuateRA.cc pose.pb.cc measurement.pb.cc)
 target_include_directories(pose_estimator_main_with_quatera PUBLIC ${PROTOBUF_INCLUDE_DIR})
 target_link_libraries(pose_estimator_main_with_quatera ceres glog::glog ${PROTOBUF_LIBRARY} pthread)
+
+# the primary real-time executable with the QuateRA and JESTOR modules built-in
+add_executable(pose_estimator_main_inertia pose_estimator_main_inertia.cc Utilities.cc PoseSolver.cc MEKF2.cc QuateRA.cc JESTOR.cc pose.pb.cc measurement.pb.cc)
+target_include_directories(pose_estimator_main_inertia PUBLIC ${PROTOBUF_INCLUDE_DIR})
+target_link_libraries(pose_estimator_main_inertia ceres glog::glog ${PROTOBUF_LIBRARY} pthread osqp::osqp osqp-cpp OsqpEigen::OsqpEigen)
 
 # real-time executable with only pose as measurement inputs; deprecated
 #add_executable(pose_estimator_pose_only pose_estimator_pose_only.cc Utilities.cc PoseSolver.cc MEKF2.cc pose.pb.cc measurement.pb.cc)

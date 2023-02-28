@@ -55,9 +55,8 @@ void f_euler_dyn(const state_type &x, state_type &dx,  double t)
     omega_ << x[0], x[1], x[2];
 
     Matrix3d Jmat = Matrix3d::Zero();
-    Jmat(0,0) = 114.0;
-    Jmat(1,1) = 86.0;
-    Jmat(2,2) = 87.0;
+    // Jmat.diagonal() << 114.0, 80.0, 87.0;
+    Jmat.diagonal() << 1.0, 0.5, 0.8;
     Vector3d omegaDot = Jmat.inverse()*(-CppRot::CrossProductEquivalent(omega_)*Jmat*omega_);
 
     dx[0] =  omegaDot(0);
@@ -181,7 +180,7 @@ int main(int argc, char **argv)
     Vector3d omega;
     //omega << 0.3, -1.0, -0.5; // [deg/sec]
     omega << 4.0, -5.0, -3.0; // [deg/sec]
-    omega = omega*Utilities::DEG2RAD*1.5;
+    omega = omega*Utilities::DEG2RAD/2.0;
 
     state_type omega_odeint(3);
     omega_odeint[0] = omega(0); 
@@ -238,8 +237,8 @@ int main(int argc, char **argv)
             pose_true.quat = Utilities::Vec4ToQuat( A * Utilities::QuatToVec4(pose_true.quat) );
 
             // odeint omega dynamics propagation
-            //stepper.do_step(f_euler_dyn, omega_odeint, 0.0, dt);
-            //omega << omega_odeint[0], omega_odeint[1], omega_odeint[2];
+            stepper.do_step(f_euler_dyn, omega_odeint, 0.0, dt);
+            omega << omega_odeint[0], omega_odeint[1], omega_odeint[2];
 
             /*
             Quaterniond quat_step = AngleAxisd(0.0, Vector3d::UnitX()) *

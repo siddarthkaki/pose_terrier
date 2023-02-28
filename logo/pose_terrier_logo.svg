@@ -2,6 +2,8 @@
 <!-- Generator: Adobe Illustrator 22.0.1, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
 
 <svg
+   inkscape:version="1.1.2 (0a00cf5339, 2022-02-04)"
+   sodipodi:docname="pose_terrier_logo2.svg"
    id="svg841"
    xml:space="preserve"
    enable-background="new 0 0 1343 1510.6"
@@ -11,6 +13,8 @@
    version="1.1"
    width="1200"
    height="1200"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:xlink="http://www.w3.org/1999/xlink"
    xmlns="http://www.w3.org/2000/svg"
    xmlns:svg="http://www.w3.org/2000/svg"
@@ -28,6 +32,7 @@
    xmlns:xmpG="http://ns.adobe.com/xap/1.0/g/"
    xmlns:pdf="http://ns.adobe.com/pdf/1.3/"><defs
    id="defs845"><linearGradient
+     inkscape:collect="always"
      id="linearGradient16114"><stop
        style="stop-color:#800000;stop-opacity:1;"
        offset="0"
@@ -35,6 +40,7 @@
        style="stop-color:#000000;stop-opacity:1"
        offset="1"
        id="stop16112" /></linearGradient><linearGradient
+     inkscape:collect="always"
      id="linearGradient15209"><stop
        style="stop-color:#000000;stop-opacity:1"
        offset="0"
@@ -42,13 +48,15 @@
        style="stop-color:#008000;stop-opacity:1"
        offset="1"
        id="stop15207" /></linearGradient><linearGradient
-     id="linearGradient12775"><stop
+     id="linearGradient12775"
+     inkscape:swatch="gradient"><stop
        style="stop-color:#000000;stop-opacity:1"
        offset="0"
        id="stop12771" /><stop
        style="stop-color:#008000;stop-opacity:1"
        offset="1"
        id="stop12773" /></linearGradient><linearGradient
+     inkscape:collect="always"
      id="linearGradient4558"><stop
        style="stop-color:#0000d4;stop-opacity:1"
        offset="0"
@@ -60,7 +68,9 @@
      id="Arrow2Lend"
      refX="0"
      refY="0"
-     orient="auto"><path
+     orient="auto"
+     inkscape:stockid="Arrow2Lend"
+     inkscape:isstock="true"><path
        transform="matrix(-1.1,0,0,-1.1,-1.1,0)"
        d="M 8.7185878,4.0337352 -2.2072895,0.01601326 8.7185884,-4.0017078 c -1.7454984,2.3720609 -1.7354408,5.6174519 -6e-7,8.035443 z"
        style="fill:context-stroke;fill-rule:evenodd;stroke:context-stroke;stroke-width:0.625;stroke-linejoin:round"
@@ -69,7 +79,9 @@
      id="Arrow1Lend"
      refX="0"
      refY="0"
-     orient="auto"><path
+     orient="auto"
+     inkscape:stockid="Arrow1Lend"
+     inkscape:isstock="true"><path
        transform="matrix(-0.8,0,0,-0.8,-10,0)"
        style="fill:context-stroke;fill-rule:evenodd;stroke:context-stroke;stroke-width:1pt"
        d="M 0,0 5,-5 -12.5,0 5,5 Z"
@@ -78,7 +90,9 @@
      id="Arrow2Lend-9"
      refX="0"
      refY="0"
-     orient="auto"><path
+     orient="auto"
+     inkscape:stockid="Arrow2Lend"
+     inkscape:isstock="true"><path
        transform="matrix(-1.1,0,0,-1.1,-1.1,0)"
        d="M 8.7185878,4.0337352 -2.2072895,0.01601326 8.7185884,-4.0017078 c -1.7454984,2.3720609 -1.7354408,5.6174519 -6e-7,8.035443 z"
        style="fill:context-stroke;fill-rule:evenodd;stroke:context-stroke;stroke-width:0.625;stroke-linejoin:round"
@@ -87,11 +101,14 @@
      id="Arrow2Lend-8"
      refX="0"
      refY="0"
-     orient="auto"><path
+     orient="auto"
+     inkscape:stockid="Arrow2Lend"
+     inkscape:isstock="true"><path
        transform="matrix(-1.1,0,0,-1.1,-1.1,0)"
        d="M 8.7185878,4.0337352 -2.2072895,0.01601326 8.7185884,-4.0017078 c -1.7454984,2.3720609 -1.7354408,5.6174519 -6e-7,8.035443 z"
        style="fill:context-stroke;fill-rule:evenodd;stroke:context-stroke;stroke-width:0.625;stroke-linejoin:round"
        id="path1880-1" /></marker><linearGradient
+     inkscape:collect="always"
      xlink:href="#linearGradient4558"
      id="linearGradient4690"
      gradientUnits="userSpaceOnUse"
@@ -100,6 +117,7 @@
      x2="575.72583"
      y2="448.4166"
      gradientTransform="translate(-136,-94)" /><linearGradient
+     inkscape:collect="always"
      xlink:href="#linearGradient15209"
      id="linearGradient15469"
      gradientUnits="userSpaceOnUse"
@@ -108,6 +126,7 @@
      x2="1253.7812"
      y2="838.90198"
      gradientTransform="translate(-136,-94)" /><linearGradient
+     inkscape:collect="always"
      xlink:href="#linearGradient16114"
      id="linearGradient16532"
      gradientUnits="userSpaceOnUse"
@@ -120,7 +139,9 @@
      id="Arrow2Lend-6"
      refX="0"
      refY="0"
-     orient="auto"><path
+     orient="auto"
+     inkscape:stockid="Arrow2Lend"
+     inkscape:isstock="true"><path
        transform="matrix(-1.1,0,0,-1.1,-1.1,0)"
        d="M 8.7185878,4.0337352 -2.2072895,0.01601326 8.7185884,-4.0017078 c -1.7454984,2.3720609 -1.7354408,5.6174519 -6e-7,8.035443 z"
        style="fill:context-stroke;fill-rule:evenodd;stroke:context-stroke;stroke-width:0.625;stroke-linejoin:round"
@@ -129,6 +150,8 @@
      refX="0"
      refY="0"
      orient="auto"
+     inkscape:stockid="Arrow2Lend9412"
+     inkscape:isstock="true"
      id="Arrow2Lend9412"><path
        transform="matrix(-1.1,0,0,-1.1,-1.1,0)"
        d="M 8.7185878,4.0337352 -2.2072895,0.01601326 8.7185884,-4.0017078 c -1.7454984,2.3720609 -1.7354408,5.6174519 -6e-7,8.035443 z"
@@ -138,6 +161,8 @@
      refX="0"
      refY="0"
      orient="auto"
+     inkscape:stockid="Arrow2Lend94125803"
+     inkscape:isstock="true"
      id="Arrow2Lend94125803"><path
        transform="matrix(-1.1,0,0,-1.1,-1.1,0)"
        d="M 8.7185878,4.0337352 -2.2072895,0.01601326 8.7185884,-4.0017078 c -1.7454984,2.3720609 -1.7354408,5.6174519 -6e-7,8.035443 z"
@@ -147,6 +172,8 @@
      refX="0"
      refY="0"
      orient="auto"
+     inkscape:stockid="Arrow2Lend941258032150"
+     inkscape:isstock="true"
      id="Arrow2Lend941258032150"><path
        transform="matrix(-1.1,0,0,-1.1,-1.1,0)"
        d="M 8.7185878,4.0337352 -2.2072895,0.01601326 8.7185884,-4.0017078 c -1.7454984,2.3720609 -1.7354408,5.6174519 -6e-7,8.035443 z"
@@ -156,6 +183,8 @@
      refX="0"
      refY="0"
      orient="auto"
+     inkscape:stockid="Arrow2Lend6810"
+     inkscape:isstock="true"
      id="Arrow2Lend6810"><path
        transform="matrix(-1.1,0,0,-1.1,-1.1,0)"
        d="M 8.7185878,4.0337352 -2.2072895,0.01601326 8.7185884,-4.0017078 c -1.7454984,2.3720609 -1.7354408,5.6174519 -6e-7,8.035443 z"
@@ -165,11 +194,31 @@
      refX="0"
      refY="0"
      orient="auto"
+     inkscape:stockid="Arrow2Lend68102183"
+     inkscape:isstock="true"
      id="Arrow2Lend68102183"><path
        transform="matrix(-1.1,0,0,-1.1,-1.1,0)"
        d="M 8.7185878,4.0337352 -2.2072895,0.01601326 8.7185884,-4.0017078 c -1.7454984,2.3720609 -1.7354408,5.6174519 -6e-7,8.035443 z"
        style="fill:#0000d4;fill-rule:evenodd;stroke:#0000d4;stroke-width:0.625;stroke-linejoin:round"
-       id="path35657" /></marker></defs>
+       id="path35657" /></marker></defs><sodipodi:namedview
+   id="namedview843"
+   pagecolor="#ffffff"
+   bordercolor="#666666"
+   borderopacity="1.0"
+   inkscape:pageshadow="2"
+   inkscape:pageopacity="0.0"
+   inkscape:pagecheckerboard="0"
+   showgrid="false"
+   inkscape:zoom="0.70710678"
+   inkscape:cx="412.95036"
+   inkscape:cy="726.19866"
+   inkscape:window-width="2544"
+   inkscape:window-height="1387"
+   inkscape:window-x="1928"
+   inkscape:window-y="8"
+   inkscape:window-maximized="0"
+   inkscape:current-layer="g40137"
+   width="1200px" />
 <metadata
    id="metadata2"><?xpacket begin="&#65279;" id="W5M0MpCehiHzreSzNTczkc9d"?>
 <x:xmpmeta
@@ -590,7 +639,9 @@ ZXcOtK0FR8Qwq9+xV2KuxV2KuxV2KuxV/9k=</xmpGImg:image>
 
 
 <g
+   inkscape:groupmode="layer"
    id="layer4"
+   inkscape:label="Layer 3"
    style="display:inline"><g
      id="g40137"><g
        id="Layer_1_1_"
@@ -1888,7 +1939,11 @@ ZXcOtK0FR8Qwq9+xV2KuxV2KuxV2KuxV/9k=</xmpGImg:image>
        d="m 440.06806,695.84604 c -26.95088,0 -48.70642,21.75556 -48.70642,48.70647 0,26.9509 21.75554,48.70646 48.70642,48.70646 26.95094,0 48.70649,-21.75556 48.70649,-48.70646 0,-26.95091 -21.75555,-48.70647 -48.70649,-48.70647 z m 0,90.91874 v -42.21227 h -42.21222 c 0,-23.37911 18.83315,-42.21227 42.21222,-42.21227 v 42.21227 h 42.21228 c 0,23.3791 -18.83315,42.21227 -42.21228,42.21227 z"
        id="path43-2"
        style="display:inline;stroke-width:0.185548" /></g></g><g
+   inkscape:groupmode="layer"
    id="layer2"
+   inkscape:label="Layer 2"
    style="display:none" /><g
+   inkscape:groupmode="layer"
    id="layer1"
+   inkscape:label="Layer 1"
    style="display:none" /></svg>
