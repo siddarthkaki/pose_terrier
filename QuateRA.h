@@ -26,7 +26,7 @@ using Eigen::MatrixXd;
 using Eigen::Quaterniond;
 using Eigen::AngleAxisd;
 
-namespace QuateRA {
+//namespace QuateRA {
 
 class QuateRA
 {
@@ -93,6 +93,6 @@ class QuateRA
         void PrintModelMatrices();
 };
 
-} // end namespace
+//} // end namespace
 
 #endif // QUATERA_H_

@@ -25,7 +25,7 @@ using Eigen::MatrixXd;
 using Eigen::Quaterniond;
 using Eigen::AngleAxisd;
 
-namespace MEKF2 {
+//namespace MEKF2 {
 
 class MEKF2
 {
@@ -49,12 +49,14 @@ class MEKF2
         unsigned int num_pos_measurements_;
         unsigned int num_measurements_;
         double max_flip_thresh_deg_;
-        MatrixXd Q_; // process_noise_covariance
-        MatrixXd R_; // measurement_noise_covariance
+        MatrixXd Q_;     // process_noise_covariance
+        MatrixXd R_;     // measurement_noise_covariance
         MatrixXd F_pos_; // position_covariance_propagation_dynamics_model
-        MatrixXd F_; // covariance_propagation_dynamics_model
-        MatrixXd A_; // quaternion_propagation_dynamics_model
-        MatrixXd H_; // measurement_model
+        MatrixXd F_;     // covariance_propagation_dynamics_model
+        MatrixXd A_;     // quaternion_propagation_dynamics_model
+        MatrixXd H_;     // measurement_model
+
+        Matrix3d J_;     // moment-of-inertia matrix
 
         //Vector3d alpha_est_;
         //VectorXd x_est_;
@@ -87,14 +89,17 @@ class MEKF2
         );
         void SetInitialStateAndCovar(const Quaterniond &quat0, const Vector3d &omega0, const Vector3d &alpha0, const VectorXd &x0, const MatrixXd &covar0);
         void Predict();
+        void PredictEuler();
         void Update(const VectorXd &measurement);
         void Reset();
         void StoreAndClean();
         void AngVelUpdate(const Vector3d &measurement, const Matrix3d &covar);
 
+        Matrix3d EulerDynamicsJacobian(const Vector3d &omega, const Matrix3d &J);
+
         void PrintModelMatrices();
 };
 
-} // end namespace
+//} // end namespace
 
 #endif // MEKF2_H_

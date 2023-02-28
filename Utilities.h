@@ -27,12 +27,16 @@ using Eigen::MatrixXd;
 using Eigen::Quaterniond;
 typedef Eigen::Matrix<double, 4, 1> Vector4d;
 typedef Eigen::Matrix<double, 6, 1> Vector6d;
+typedef Eigen::Matrix<double, 8, 1> Vector8d;
+typedef Eigen::Matrix<double, 9, 1> Vector9d;
 typedef Eigen::Matrix<double, 3, 3, Eigen::RowMajor> Matrix3d_rm;
 typedef Eigen::Matrix<double, 4, 4> Matrix4d;
 typedef Eigen::Matrix<double, 6, 6> Matrix6d;
 typedef Eigen::Matrix<double, 6, 6, Eigen::RowMajor> Matrix6d_rm;
+typedef Eigen::Matrix<double, 8, 8> Matrix8d;
+typedef Eigen::Matrix<double, 9, 9> Matrix9d;
 typedef Eigen::Matrix<double, 4, Eigen::Dynamic> MatrixQuat;
-
+typedef Eigen::Matrix<double, Eigen::Dynamic, 9> JESTORBatch;
 
 struct Pose
 {
