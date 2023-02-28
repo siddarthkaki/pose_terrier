@@ -30,7 +30,6 @@ using nlohmann::json;
  */
 int main(int argc, char **argv)
 {
-
     std::srand((unsigned int) time(NULL));
 
     //google::InitGoogleLogging(argv[0]);
@@ -100,11 +99,16 @@ int main(int argc, char **argv)
     {
         //-- Simulate Measurements -------------------------------------------/
 
+        unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+        std::default_random_engine generator (seed);
+        // std::uniform_real_distribution<double> dist_xy(-5.0,5.0);
+        std::uniform_real_distribution<double> dist_z(30.0,80.0);
+
         // generate true state values for ith run
         Pose poseTrue;
-        poseTrue.pos << 0.0, 0.0, 50.0;
-        poseTrue.pos.head(2) = Utilities::AddGaussianNoiseToVector(poseTrue.pos.head(2), 1);
-        poseTrue.pos.tail(1) = Utilities::AddGaussianNoiseToVector(poseTrue.pos.tail(1), 3);
+        poseTrue.pos << 0, 0, dist_z(generator);
+        poseTrue.pos.head(2) = Utilities::AddGaussianNoiseToVector(poseTrue.pos.head(2), 2);
+        // poseTrue.pos.tail(1) = Utilities::AddGaussianNoiseToVector(poseTrue.pos.tail(1), 3);
         poseTrue.quat = Quaterniond::UnitRandom();
 
         // express feature points in chaser frame at the specified pose
@@ -124,7 +128,7 @@ int main(int argc, char **argv)
         std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
 
         // solve for pose with ceres (via wrapper)
-        //PoseSolution poseSol = PoseSolver::SolvePoseReinit(pose0, yVecNoise, rCamVec, rFeaMat, bearing_meas_std);
+        //PoseSolution poseSol = PoseSolver::SolvePoseReinit(pose0, yVecNoise, rCamVec, rFeaMat, bearing_meas_std, n_init);
         PoseSolution poseSol = PoseSolver::SolvePoseReinitParallel(pose0, yVecNoise, rCamVec, rFeaMat, bearing_meas_std, n_init);
 
         //Pose conj_pose_temp = Utilities::ConjugatePose(poseSol.pose);
