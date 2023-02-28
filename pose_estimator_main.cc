@@ -135,7 +135,7 @@ int main(int argc, char **argv)
     double max_flip_thresh_deg = double(json_params["max_flip_thresh_deg"]);
     double qpsd = double(json_params["qpsd"]);
 
-    MEKF2::MEKF2 mekf(mekf_dt);
+    MEKF2 mekf(mekf_dt);
     mekf.Init(
         mekf_process_noise_std, 
         mekf_measurement_noise_std, 
@@ -270,7 +270,7 @@ int main(int argc, char **argv)
                         x0.segment(3,3) = 0.005 * Vector3d::Random();
                         x0.tail(3) = 0.001 * Vector3d::Random();
                         mekf.SetInitialStateAndCovar(init_quat, init_omega, init_alpha, x0, init_covar);
-
+                        
                         std::cout << "init_omega: " << init_omega << std::endl << std::endl;
                         std::cout << "Q_att: " << std::endl << mekf.Q_.topLeftCorner(9, 9) << std::endl << std::endl;
 

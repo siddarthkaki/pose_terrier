@@ -5,7 +5,7 @@
  
 #include "QuateRA.h"
 
-namespace QuateRA {
+//namespace QuateRA {
 
     QuateRA::QuateRA(const double &dt)
     {
@@ -287,4 +287,4 @@ namespace QuateRA {
         std::cout << "H:\t" << std::endl << H_ << std::endl << std::endl;
     }
 
-} // end namespace
+//} // end namespace
