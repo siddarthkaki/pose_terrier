@@ -92,14 +92,18 @@ int main(int argc, char **argv)
 
     for (unsigned int pose_idx = 0; pose_idx < num_poses_test; pose_idx++)
     {
-
         //-- Simulate Measurements -------------------------------------------/
+
+        unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+        std::default_random_engine generator (seed);
+        // std::uniform_real_distribution<double> dist_xy(-5.0,5.0);
+        std::uniform_real_distribution<double> dist_z(30.0,80.0);
 
         // generate true state values for ith run
         Pose poseTrue;
-        poseTrue.pos << 0.0, 0.0, 50.0;
-        poseTrue.pos.head(2) = Utilities::AddGaussianNoiseToVector(poseTrue.pos.head(2), 1);
-        poseTrue.pos.tail(1) = Utilities::AddGaussianNoiseToVector(poseTrue.pos.tail(1), 3);
+        poseTrue.pos << 0, 0, dist_z(generator);
+        poseTrue.pos.head(2) = Utilities::AddGaussianNoiseToVector(poseTrue.pos.head(2), 2);
+        // poseTrue.pos.tail(1) = Utilities::AddGaussianNoiseToVector(poseTrue.pos.tail(1), 3);
         poseTrue.quat = Quaterniond::UnitRandom();
 
         //std::cout << poseTrue.pos.transpose() << "\t\t" << poseTrue.quat.w() << " " << poseTrue.quat.vec().transpose() << std::endl;
@@ -148,8 +152,37 @@ int main(int argc, char **argv)
         cv::Mat translation_vector;
         
         // Solve for pose
-        cv::solvePnPRansac(model_points, image_points, camera_matrix, dist_coeffs, rotation_vector, translation_vector);
+        bool  	        useExtrinsicGuess = false;
+		int  	        iterationsCount = 100;
+		float  	        reprojectionError = 8.0;
+		double  	    confidence = 0.99;
+		cv::OutputArray inliers = cv::noArray();
+		int  	        flags = cv::SOLVEPNP_EPNP;
+        cv::solvePnPRansac(
+                            model_points,
+                            image_points, 
+                            camera_matrix, 
+                            dist_coeffs, 
+                            rotation_vector, 
+                            translation_vector, 
+                            useExtrinsicGuess, 
+                            iterationsCount, 
+                            reprojectionError, 
+                            confidence, 
+                            inliers, 
+                            flags );
     
+        // LM or VVS
+        /*
+        cv::solvePnPRefineVVS(
+                                model_points,
+		                        image_points,
+		                        camera_matrix,
+		              	        dist_coeffs,
+		                      	rotation_vector,
+		                    	translation_vector );
+        */
+
         Pose pose;
         cv::cv2eigen(translation_vector, pose.pos);
         cv::Mat R;
@@ -159,7 +192,7 @@ int main(int argc, char **argv)
         Eigen::Quaterniond EigenQuat(mat);
         pose.quat = EigenQuat;
 
-        Pose conj_pose = Utilities::ConjugatePose(pose);
+        //Pose conj_pose = Utilities::ConjugatePose(pose);
 
         //std::cout << pose.pos.transpose() << "\t\t" << pose.quat.w() << " " << pose.quat.vec().transpose() << std::endl;
         //std::cout << conj_pose.pos.transpose() << "\t\t" << conj_pose.quat.w() << " " << conj_pose.quat.vec().transpose() << std::endl << std::endl;
@@ -176,15 +209,15 @@ int main(int argc, char **argv)
         // compute position and attitude scores
         double pos_score = Utilities::PositionScore(poseTrue.pos, pose.pos);
         double att_score = Utilities::AttitudeScore(poseTrue.quat, pose.quat);
-        double conj_att_score = Utilities::AttitudeScore(poseTrue.quat, conj_pose.quat);
+        //double conj_att_score = Utilities::AttitudeScore(poseTrue.quat, conj_pose.quat);
 
         // store info from ith run
         solved_poses.push_back(pose);
         //solved_poses_conj.push_back(conj_pose);
         solution_times.push_back((double)duration);
         pos_scores.push_back(pos_score);
-        //att_scores.push_back(att_score);
-        att_scores.push_back(std::min(att_score, conj_att_score));
+        att_scores.push_back(att_score);
+        //att_scores.push_back(std::min(att_score, conj_att_score));
     }
 
     //-- Performance Metric Stats & Output -----------------------------------/
