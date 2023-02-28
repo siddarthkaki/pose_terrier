@@ -5,7 +5,7 @@
  
 #include "MEKF2.h"
 
-namespace MEKF2 {
+//namespace MEKF2 {
 
     MEKF2::MEKF2(const double &dt)
     {
@@ -247,6 +247,51 @@ namespace MEKF2 {
         //std::cout << "Pk:" << std::endl << covar_est_ << std::endl << std::endl;
     }
 
+    // Prediction step with Euler rotational dynamics
+    void MEKF2::PredictEuler()
+    {
+        omega_est_ = state_est_.segment(3, 3);
+
+        double omega_norm = omega_est_.norm();
+        Vector3d omega_hat = omega_est_ / omega_norm;
+
+        MatrixXd omega_hat_44_equivalent = MatrixXd::Zero(4, 4);
+        omega_hat_44_equivalent.block(0, 1, 1, 3) = -omega_hat.transpose();
+        omega_hat_44_equivalent.block(1, 0, 3, 1) =  omega_hat;
+        omega_hat_44_equivalent.block(1, 1, 3, 3) = -CppRot::CrossProductEquivalent(omega_hat);
+
+        double phi = 0.5 * omega_norm * dt_;
+
+        A_ = cos(phi) * I44 + sin(phi) * omega_hat_44_equivalent;
+
+        MatrixXd A_att_states = MatrixXd::Zero(num_att_states_, num_att_states_);
+        A_att_states.topLeftCorner(3, 3) = -CppRot::CrossProductEquivalent(omega_est_);
+        A_att_states.block(0, 3, 3, 3) = EulerDynamicsJacobian(omega_est_, J_);
+        A_att_states.block(3, 6, 3, 3) = Matrix3d::Identity();
+        A_att_states.bottomRightCorner(3, 3) = -1/tau_*Matrix3d::Identity();
+
+        F_.topLeftCorner(num_att_states_, num_att_states_) = (A_att_states * dt_).exp();
+
+        //std::cout << "A_att_states:" << std::endl << A_att_states << std::endl << std::endl;
+        //std::cout << "F_att_states:" << std::endl << F_.topLeftCorner(9, 9) << std::endl << std::endl;
+
+        // propagate quaternion
+        quat_est_ = Utilities::Vec4ToQuat( A_ * Utilities::QuatToVec4(quat_est_) );
+
+        // propagate rest of the state
+        state_est_.tail(num_states_-3) = F_.bottomRightCorner(num_states_-3, num_states_-3)*state_est_.tail(num_states_-3);
+        pos_est_ = state_est_.segment(num_att_states_, 3);
+
+        omega_est_ = state_est_.segment(3, 3);
+
+        //std::cout << pos_est_.transpose() << std::endl << std::endl;
+        
+        // propagate covariance
+        covar_est_ = F_ * covar_est_ * F_.transpose() + Q_;
+
+        //std::cout << "Pk:" << std::endl << covar_est_ << std::endl << std::endl;
+    }
+
     // Update step
     void MEKF2::Update(const VectorXd &measurement)
     {
@@ -428,6 +473,23 @@ namespace MEKF2 {
         omega_covar_est_ = covar_est_.block(3, 3, 3, 3);
     }
 
+    Matrix3d MEKF2::EulerDynamicsJacobian(const Vector3d &omega, const Matrix3d &J)
+    {
+        Matrix3d dwDot_dw = Matrix3d::Identity();
+
+        Matrix3d Jinv = J.inverse();
+
+        Vector3d e1 = Vector3d::UnitX();
+        Vector3d e2 = Vector3d::UnitY();
+        Vector3d e3 = Vector3d::UnitZ();
+
+        dwDot_dw.col(0) = -Jinv*( e1.cross(J*omega) + omega.cross(J*e1) );
+        dwDot_dw.col(1) = -Jinv*( e2.cross(J*omega) + omega.cross(J*e2) );
+        dwDot_dw.col(2) = -Jinv*( e3.cross(J*omega) + omega.cross(J*e3) );
+
+        return dwDot_dw;
+    }
+
     void MEKF2::PrintModelMatrices()
     {
         std::cout << "A:\t" << std::endl << A_ << std::endl << std::endl;
@@ -437,4 +499,4 @@ namespace MEKF2 {
         std::cout << "R:\t" << std::endl << R_ << std::endl << std::endl;
     }
 
-} // end namespace
+//} // end namespace
