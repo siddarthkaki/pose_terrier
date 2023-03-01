@@ -11,20 +11,24 @@ find_package(Protobuf REQUIRED)
 find_package(Ceres REQUIRED)
 find_package(glog REQUIRED)
 find_package(OpenCV REQUIRED)   # uncomment when employing PnP
-find_package(osqp REQUIRED)     # uncomment when running online inertia estimation
 find_package(Boost 1.74.0)      # uncomment when performing Euler rotational dynamics propagation in simulate_measurements
 
 SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
 
-# the primary real-time executable
+# the primary real-time executable with both EPnP and NLS for static pose estimation
 add_executable(pose_estimator_main pose_estimator_main.cc Utilities.cc PoseSolver.cc MEKF2.cc pose.pb.cc measurement.pb.cc)
 target_include_directories(pose_estimator_main PUBLIC ${PROTOBUF_INCLUDE_DIR})
-target_link_libraries(pose_estimator_main ceres glog::glog ${PROTOBUF_LIBRARY} pthread)
+target_link_libraries(pose_estimator_main ceres glog::glog ${PROTOBUF_LIBRARY} ${OpenCV_LIBS} pthread)
+
+# the primary real-time executable with only NLS for static pose estimation
+add_executable(nls_pose_estimator_main nls_pose_estimator_main.cc Utilities.cc PoseSolver.cc MEKF2.cc pose.pb.cc measurement.pb.cc)
+target_include_directories(nls_pose_estimator_main PUBLIC ${PROTOBUF_INCLUDE_DIR})
+target_link_libraries(nls_pose_estimator_main ceres glog::glog ${PROTOBUF_LIBRARY} pthread)
 
 # the primary real-time executable with the quatera module built-in
-add_executable(pose_estimator_main_with_quatera pose_estimator_main_with_quatera.cc Utilities.cc PoseSolver.cc MEKF2.cc QuateRA.cc pose.pb.cc measurement.pb.cc)
-target_include_directories(pose_estimator_main_with_quatera PUBLIC ${PROTOBUF_INCLUDE_DIR})
-target_link_libraries(pose_estimator_main_with_quatera ceres glog::glog ${PROTOBUF_LIBRARY} pthread)
+add_executable(pose_estimator_main_quatera pose_estimator_main_quatera.cc Utilities.cc PoseSolver.cc MEKF2.cc QuateRA.cc pose.pb.cc measurement.pb.cc)
+target_include_directories(pose_estimator_main_quatera PUBLIC ${PROTOBUF_INCLUDE_DIR})
+target_link_libraries(pose_estimator_main_quatera ceres glog::glog ${PROTOBUF_LIBRARY} pthread)
 
 # real-time executable with only pose as measurement inputs; deprecated
 #add_executable(pose_estimator_pose_only pose_estimator_pose_only.cc Utilities.cc PoseSolver.cc MEKF2.cc pose.pb.cc measurement.pb.cc)
@@ -43,9 +47,13 @@ target_link_libraries(pose_estimator_main_with_quatera ceres glog::glog ${PROTOB
 
 # test executable for multiple random static pose estimates
 add_executable(multiple_pose_estimator_test multiple_pose_estimator_test.cc Utilities.cc PoseSolver.cc)
-target_link_libraries(multiple_pose_estimator_test ceres glog::glog pthread)
+target_link_libraries(multiple_pose_estimator_test ceres glog::glog pthread ${OpenCV_LIBS})
 
-# test executable for multiple random static pose estimates with with OpenCV's PnP instead of NLS
+# test executable for multiple random static pose estimates with only NLS
+add_executable(nls_multiple_pose_estimator_test nls_multiple_pose_estimator_test.cc Utilities.cc PoseSolver.cc)
+target_link_libraries(nls_multiple_pose_estimator_test ceres glog::glog pthread)
+
+# test executable for multiple random static pose estimates with OpenCV's PnP instead of NLS
 add_executable(pnp_multiple_pose_estimator_test pnp_multiple_pose_estimator_test.cc Utilities.cc)
 target_link_libraries(pnp_multiple_pose_estimator_test ceres ${OpenCV_LIBS})
 

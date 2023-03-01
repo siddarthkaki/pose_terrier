@@ -238,8 +238,8 @@ int main(int argc, char **argv)
             pose_true.quat = Utilities::Vec4ToQuat( A * Utilities::QuatToVec4(pose_true.quat) );
 
             // odeint omega dynamics propagation
-            //stepper.do_step(f_euler_dyn, omega_odeint, 0.0, dt);
-            //omega << omega_odeint[0], omega_odeint[1], omega_odeint[2];
+            stepper.do_step(f_euler_dyn, omega_odeint, 0.0, dt);
+            omega << omega_odeint[0], omega_odeint[1], omega_odeint[2];
 
             /*
             Quaterniond quat_step = AngleAxisd(0.0, Vector3d::UnitX()) *

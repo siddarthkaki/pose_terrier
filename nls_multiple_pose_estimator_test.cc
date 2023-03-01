@@ -1,4 +1,4 @@
-/* Copyright (c) 2023 Siddarth Kaki
+/* Copyright (c) 2019 Siddarth Kaki
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
@@ -8,9 +8,6 @@
 #include <iomanip>
 #include <fstream>
 #include <math.h>
-
-#include <opencv2/opencv.hpp>
-#include <opencv2/core/eigen.hpp>
 
 #include "ceres/ceres.h"
 //#include "glog/logging.h"
@@ -70,12 +67,11 @@ int main(int argc, char **argv)
 
     //------------------------------------------------------------------------/
 
-    // 3D model points
-    std::vector<cv::Point3d> model_points;
-    for (unsigned int idx = 0; idx < num_features; idx++)
-    {
-        model_points.push_back(cv::Point3d(rFeaMat(idx, 0), rFeaMat(idx, 1), rFeaMat(idx, 2)));
-    }
+    // initial state guess
+    Pose pose0;
+    pose0.pos << 0.0, 0.0, 40.0;
+    pose0.quat.w() = 1.0;
+    pose0.quat.vec() = Vector3d::Zero();
 
     //-- Loop ----------------------------------------------------------------/
 
@@ -116,73 +112,16 @@ int main(int argc, char **argv)
         // add Gaussian noise to simulated measurements
         VectorXd yVecNoise = Utilities::AddGaussianNoiseToVector(yVec, bearing_meas_std);
 
-        // 2D image points
-        std::vector<cv::Point2d> image_points;
-
-        // project feature points to image plane
-        for (unsigned int idx = 0; idx < num_features; idx++)
-        {
-            double az = yVecNoise(idx * 2 + 0);
-            double el = yVecNoise(idx * 2 + 1);
-
-            image_points.push_back(cv::Point2d(tan(az)*focal_length, tan(el)*focal_length));
-        }
-
         //--------------------------------------------------------------------/
 
         //-- Solve for pose --------------------------------------------------/
 
-        double f = focal_length;
-        MatrixXd PMat(3,3);
-        PMat << f, 0, 0,
-                0, f, 0,
-                0, 0, 1;
-        
-        cv::Mat camera_matrix;
-        cv::eigen2cv(PMat, camera_matrix);
-
-        cv::Mat dist_coeffs = cv::Mat::zeros(4,1,cv::DataType<double>::type); // Assuming no lens distortion
-
         // timing
         std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
 
-        // Solve for pose with PnP
-        cv::Mat rotation_vector; // Rotation in axis-angle form
-        cv::Mat translation_vector;
-        
-        bool  	        useExtrinsicGuess = false;
-		int  	        iterationsCount = 100;
-		float  	        reprojectionError = 8.0;
-		double  	    confidence = 0.99;
-		cv::OutputArray inliers = cv::noArray();
-		int  	        flags = cv::SOLVEPNP_EPNP;
-        cv::solvePnPRansac(
-                            model_points,
-                            image_points, 
-                            camera_matrix, 
-                            dist_coeffs, 
-                            rotation_vector, 
-                            translation_vector, 
-                            useExtrinsicGuess, 
-                            iterationsCount, 
-                            reprojectionError, 
-                            confidence, 
-                            inliers, 
-                            flags );
-    
-        Pose pose0;
-        cv::cv2eigen(translation_vector, pose0.pos);
-        cv::Mat R;
-        cv::Rodrigues(rotation_vector, R); // R is 3x3
-        Eigen::Matrix3d mat;
-        cv::cv2eigen(R, mat);
-        Eigen::Quaterniond EigenQuat(mat);
-        pose0.quat = EigenQuat;
-
         // solve for pose with ceres (via wrapper)
-        //PoseSolution poseSol = PoseSolver::SolvePose(pose0, yVecNoise, rCamVec, rFeaMat, bearing_meas_std);
-        PoseSolution poseSol = PoseSolver::SolvePoseReinit(pose0, yVecNoise, rCamVec, rFeaMat, bearing_meas_std, n_init);
-        //PoseSolution poseSol = PoseSolver::SolvePoseReinitParallel(pose0, yVecNoise, rCamVec, rFeaMat, bearing_meas_std, n_init);
+        //PoseSolution poseSol = PoseSolver::SolvePoseReinit(pose0, yVecNoise, rCamVec, rFeaMat, bearing_meas_std, n_init);
+        PoseSolution poseSol = PoseSolver::SolvePoseReinitParallel(pose0, yVecNoise, rCamVec, rFeaMat, bearing_meas_std, n_init);
 
         //Pose conj_pose_temp = Utilities::ConjugatePose(poseSol.pose);
         //Pose conj_pose = PoseSolver::SolvePose(conj_pose_temp, yVecNoise, rCamVec, rFeaMat, bearing_meas_std).pose;
@@ -191,7 +130,7 @@ int main(int argc, char **argv)
         std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
 
         // time taken to perform NLS solution
-        auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(t2 - t1).count() / 1000000.0;
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
         //--------------------------------------------------------------------/
 
         //-- Performance Metrics & Storage -----------------------------------/

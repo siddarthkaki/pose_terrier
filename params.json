@@ -4,7 +4,7 @@
     "focal_length": 0.0055,
     "bearing_meas_std_deg": 1.0,
     "num_poses_test": 5000,
-    "n_init": 6,
+    "n_init": 1,
     "process_noise_std": 0.01,
     "measurement_noise_std": 0.05,
     "tau": 1.0,

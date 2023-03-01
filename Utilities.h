@@ -18,7 +18,11 @@
 #include "third_party/csvfile.h"
 #include "third_party/CppRot/cpprot.h"
 #include "third_party/eigenmvn/eigenmvn.h"
+#include "third_party/json.hpp"
 
+using nlohmann::json;
+
+using Eigen::AngleAxisd;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::VectorXd;

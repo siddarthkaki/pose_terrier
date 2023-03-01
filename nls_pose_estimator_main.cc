@@ -1,4 +1,4 @@
-/* Copyright (c) 2023 Siddarth Kaki
+/* Copyright (c) 2022 Siddarth Kaki
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
@@ -12,9 +12,6 @@
 #include <sys/stat.h>
 #include <signal.h>
 
-#include <opencv2/opencv.hpp>
-#include <opencv2/core/eigen.hpp>
-
 #include "ceres/ceres.h"
 #include "glog/logging.h"
 
@@ -27,6 +24,11 @@
 #include "third_party/json.hpp"
 #include "third_party/CppRot/cpprot.h"
 
+using Eigen::AngleAxisd;
+using Eigen::MatrixXd;
+using Eigen::Quaterniond;
+using Eigen::Vector3d;
+using Eigen::VectorXd;
 using nlohmann::json;
 
 #define GET_VARIABLE_NAME(Variable) (#Variable)
@@ -89,6 +91,13 @@ int main(int argc, char **argv)
 
     const std::string log_directory = json_params["log_directory"];
 
+    // specify initial guess of relative position vector of target wrt chaser in chaser frame
+    Vector3d rPos0;
+    for (unsigned int idx = 0; idx < 3; idx++)
+    {
+        rPos0(idx) = json_params["rPos0"].at(idx);
+    }
+
     // specify rigid position vector of camera wrt chaser in chaser frame
     Vector3d rCamVec;
     for (unsigned int idx = 0; idx < 3; idx++)
@@ -97,40 +106,23 @@ int main(int argc, char **argv)
     }
 
     // specify camera focal length
-    double focal_length = json_params["focal_length"]; //5.5*pow(10,-3);
+    //double focal_length = json_params["focal_length"]; //5.5*pow(10,-3);
 
     // specify measurement noise standard deviation (rad)
     double bearing_meas_std = double(json_params["bearing_meas_std_deg"]) * Utilities::DEG2RAD;
+
+    // specify expected number of time-steps for memory pre-allocation
+    const unsigned int num_poses_test = json_params["num_poses_test"];
 
     const bool output_to_pipe = json_params["output_to_pipe"];
     const bool log_to_file = json_params["log_to_file"];
     const bool log_periodically = json_params["log_periodically"];
     const unsigned int vector_reserve_size = json_params["vector_reserve_size"];
 
-    const double mekf_dt = json_params["kf_dt"];
+    const double kf_dt = json_params["kf_dt"];
+    const double mekf_dt = kf_dt;
 
     //------------------------------------------------------------------------/
-
-    //-- Init PnP ------------------------------------------------------------/
-
-    cv::Mat pnp_camera_matrix;
-    {
-        MatrixXd PMat(3,3);
-        PMat << focal_length,            0, 0,
-                           0, focal_length, 0,
-                           0,            0, 1;
-                        
-        cv::eigen2cv(PMat, pnp_camera_matrix);
-    }
-
-    cv::Mat pnp_dist_coeffs = cv::Mat::zeros(4,1,cv::DataType<double>::type); // Assuming no lens distortion
-
-    bool  	        pnp_useExtrinsicGuess = false;
-	int  	        pnp_iterationsCount = 100;
-	float  	        pnp_reprojectionError = 8.0;
-	double  	    pnp_confidence = 0.99;
-	cv::OutputArray pnp_inliers = cv::noArray();
-	int  	        pnp_flags = cv::SOLVEPNP_EPNP;
 
     //-- Init Filters --------------------------------------------------------/
     
@@ -179,8 +171,14 @@ int main(int argc, char **argv)
     auto init_t = std::chrono::high_resolution_clock::now();
     double curr_elapsed_t = 0.0;
 
-    // initial pose guess TODO
+    // initial pose guess
     Pose pose0;
+    pose0.pos = rPos0;
+    pose0.quat.w() = 1.0;
+    pose0.quat.vec() = Vector3d::Zero();
+
+    std::cout << "Initial pos guess: " << pose0.pos.transpose() << std::endl;
+    std::cout << "Initial att guess: " << pose0.quat.w() << " " << pose0.quat.vec().transpose() << std::endl << std::endl;
 
     std::cout << "Waiting for first measurement..." << std::endl;
 
@@ -236,68 +234,32 @@ int main(int argc, char **argv)
 
                     unsigned int num_feature_points = measurements.num_feature_points();
                     bool valid_pose = true;
-                    // Construct Eigen::MatrixXd and cv::Point3d vector out of feature point locations
+                    // Construct Eigen::MatrixXd out of feature point locations
                     MatrixXd rFeaMat(num_feature_points, 3);
-                    std::vector<cv::Point3d> pnp_model_points;
-
                     for (unsigned int idx = 0; idx < num_feature_points; idx++)
                     {
-                        const double f_x = measurements.feature_points(idx).x();
-                        const double f_y = measurements.feature_points(idx).y();
-                        const double f_z = measurements.feature_points(idx).z();
-
-                        rFeaMat.row(idx) << f_x, f_y, f_z;
-                        pnp_model_points.push_back(cv::Point3d(f_x, f_y, f_z));
+                        rFeaMat(idx, 0) = measurements.feature_points(idx).x();
+                        rFeaMat(idx, 1) = measurements.feature_points(idx).y();
+                        rFeaMat(idx, 2) = measurements.feature_points(idx).z();
                     }
 
-                    // Construct Eigen::VectorXd and cv::Point2d vector out of measurements
+                    // Construct Eigen::VectorXd out of measurements
                     VectorXd yVec(2 * num_feature_points);
-                    std::vector<cv::Point2d> pnp_image_points;
-
                     for (unsigned int idx = 0; idx < num_feature_points; idx++)
                     {
-                        const double az = measurements.bearings(idx).az();
-                        const double el = measurements.bearings(idx).el();
-
-                        yVec(2 * idx + 0) = az;
-                        yVec(2 * idx + 1) = el;
-
-                        pnp_image_points.push_back(cv::Point2d(tan(az)*focal_length, tan(el)*focal_length));
-                    }
-
-                    // solve for pose with PnP
-                    cv::Mat pnp_rotation_vector; // rotation in axis-angle form
-                    cv::Mat pnp_translation_vector;
-                    
-                    cv::solvePnPRansac(
-                                        pnp_model_points,
-                                        pnp_image_points, 
-                                        pnp_camera_matrix, 
-                                        pnp_dist_coeffs, 
-                                        pnp_rotation_vector, 
-                                        pnp_translation_vector, 
-                                        pnp_useExtrinsicGuess, 
-                                        pnp_iterationsCount, 
-                                        pnp_reprojectionError, 
-                                        pnp_confidence, 
-                                        pnp_inliers, 
-                                        pnp_flags );
-                    {
-                        cv::cv2eigen(pnp_translation_vector, pose0.pos);
-                        cv::Mat R;
-                        cv::Rodrigues(pnp_rotation_vector, R); // R is 3x3
-                        Eigen::Matrix3d mat;
-                        cv::cv2eigen(R, mat);
-                        Eigen::Quaterniond EigenQuat(mat);
-                        pose0.quat = EigenQuat;
+                        yVec(2 * idx + 0) = measurements.bearings(idx).az();
+                        yVec(2 * idx + 1) = measurements.bearings(idx).el();
                     }
 
                     // solve for pose with ceres (via wrapper)
-                    PoseSolution pose_sol = PoseSolver::SolvePoseReinit(pose0, yVec, rCamVec, rFeaMat, bearing_meas_std, n_init);
+                    PoseSolution pose_sol = PoseSolver::SolvePoseReinitParallel(pose0, yVec, rCamVec, rFeaMat, bearing_meas_std, n_init);
 
                     // check if pose solution is valid
                     if (abs(pose_sol.pose.quat.norm() - 1.0) < 1e-4)
                     {
+                        // Pose conj_pose_temp = Utilities::ConjugatePose(pose_sol.pose);
+                        // Pose conj_pose = PoseSolver::SolvePose(conj_pose_temp, yVec, rCamVec, rFeaMat, bearing_meas_std).pose;
+
                         // MEKF priors
                         Quaterniond init_quat = pose_sol.pose.quat;
                         Vector3d init_omega = 0.005 * Vector3d::Random();
@@ -414,7 +376,7 @@ int main(int argc, char **argv)
     {
         // TIMING : run dynamics at specified kf_dt rate
         double curr_delta_t = 0.0;
-        while (curr_delta_t < mekf_dt)
+        while (curr_delta_t < kf_dt)
         {
             curr_t = std::chrono::high_resolution_clock::now();
             curr_delta_t = (double)std::chrono::duration_cast<std::chrono::nanoseconds>(curr_t - last_t).count();
@@ -455,79 +417,30 @@ int main(int argc, char **argv)
                 {
                     unsigned int num_feature_points = measurements.num_feature_points();
 
-                    // Construct Eigen::MatrixXd and cv::Point3d vector out of feature point locations
+                    // Construct Eigen::MatrixXd out of feature point locations
                     MatrixXd rFeaMat(num_feature_points, 3);
-                    std::vector<cv::Point3d> pnp_model_points;
-
                     for (unsigned int idx = 0; idx < num_feature_points; idx++)
                     {
-                        const double f_x = measurements.feature_points(idx).x();
-                        const double f_y = measurements.feature_points(idx).y();
-                        const double f_z = measurements.feature_points(idx).z();
-
-                        rFeaMat.row(idx) << f_x, f_y, f_z;
-                        pnp_model_points.push_back(cv::Point3d(f_x, f_y, f_z));
+                        rFeaMat(idx, 0) = measurements.feature_points(idx).x();
+                        rFeaMat(idx, 1) = measurements.feature_points(idx).y();
+                        rFeaMat(idx, 2) = measurements.feature_points(idx).z();
                     }
 
-                    // Construct Eigen::VectorXd and cv::Point2d vector out of measurements
+                    // Construct Eigen::VectorXd out of measurements
                     VectorXd yVec(2 * num_feature_points);
-                    std::vector<cv::Point2d> pnp_image_points;
-
                     for (unsigned int idx = 0; idx < num_feature_points; idx++)
                     {
-                        const double az = measurements.bearings(idx).az();
-                        const double el = measurements.bearings(idx).el();
-
-                        yVec(2 * idx + 0) = az;
-                        yVec(2 * idx + 1) = el;
-
-                        pnp_image_points.push_back(cv::Point2d(tan(az)*focal_length, tan(el)*focal_length));
+                        yVec(2 * idx + 0) = measurements.bearings(idx).az();
+                        yVec(2 * idx + 1) = measurements.bearings(idx).el();
                     }
 
                     //-- Measurement update ----------------------------------/
 
-                    // solve for pose with PnP
-                    cv::Mat pnp_rotation_vector; // rotation in axis-angle form
-                    cv::Mat pnp_translation_vector;
-
-                    // Note: initial guess for this time-step (pose0) is set to
+                    // Note: NLS initial guess for this time-step (pose0) is set to
                     //       the last filtered estimate by this point
-                    /*{   // convert from Eigen types to OpenCV types 
-                        cv::Mat R;
-                        cv::eigen2cv(CppRot::Quat2Tmat(pose0.quat), R);
-                        cv::Rodrigues(R, pnp_rotation_vector);
-
-                        cv::eigen2cv(pose0.pos, pnp_translation_vector);
-                    }*/
-
-                    cv::solvePnPRansac(
-                                        pnp_model_points,
-                                        pnp_image_points, 
-                                        pnp_camera_matrix, 
-                                        pnp_dist_coeffs, 
-                                        pnp_rotation_vector, 
-                                        pnp_translation_vector, 
-                                        pnp_useExtrinsicGuess, 
-                                        pnp_iterationsCount, 
-                                        pnp_reprojectionError, 
-                                        pnp_confidence, 
-                                        pnp_inliers, 
-                                        pnp_flags );
-                    
-                    {   // convert from OpenCV types to Eigen types 
-                        cv::cv2eigen(pnp_translation_vector, pose0.pos);
-                        cv::Mat R;
-                        cv::Rodrigues(pnp_rotation_vector, R); // R is 3x3
-                        Eigen::Matrix3d mat;
-                        cv::cv2eigen(R, mat);
-                        Eigen::Quaterniond EigenQuat(mat);
-                        pose0.quat = EigenQuat;
-                    }
 
                     // solve for pose with ceres (via wrapper)
-                    //pose_sol = PoseSolver::SolvePose(pose0, yVec, rCamVec, rFeaMat, bearing_meas_std);
-                    pose_sol = PoseSolver::SolvePoseReinit(pose0, yVec, rCamVec, rFeaMat, bearing_meas_std, n_init);
-                    //pose_sol = PoseSolver::SolvePoseReinitParallel(pose0, yVec, rCamVec, rFeaMat, bearing_meas_std, n_init);
+                    pose_sol = PoseSolver::SolvePoseReinitParallel(pose0, yVec, rCamVec, rFeaMat, bearing_meas_std, n_init);
 
                     // check if pose solution is valid
                     if (abs(pose_sol.pose.quat.norm() - 1.0) < 1e-4)

@@ -15,14 +15,6 @@
 
 #include "Utilities.h"
 
-#include "third_party/json.hpp"
-
-using Eigen::MatrixXd;
-using Eigen::Quaterniond;
-using Eigen::Vector3d;
-using Eigen::VectorXd;
-using nlohmann::json;
-
 /**
  * @function main
  * @brief main function
@@ -174,7 +166,7 @@ int main(int argc, char **argv)
     
         // LM or VVS
         /*
-        cv::solvePnPRefineVVS(
+        cv::solvePnPRefineLM(
                                 model_points,
 		                        image_points,
 		                        camera_matrix,
